@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+@theme {
+  /* You can add custom theme variables here for Tailwind v4 */
+}
+
+@layer base {
+  body {
+    background-color: #000;
+    color: #fff;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    margin: 0;
+  }
+}
