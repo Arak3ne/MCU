@@ -35,7 +35,7 @@
     </div>
 
     <!-- Filters -->
-    <div class="bg-mcu-surface/50 border border-mcu-border rounded-2xl p-4 md:p-6 mb-8 flex flex-col md:flex-row gap-6">
+    <div class="bg-mcu-surface/50 border border-mcu-border rounded-2xl p-4 md:p-6 mb-8 flex flex-col gap-6 md:flex-row md:items-end">
       <div class="flex-1">
         <label class="block text-xs font-medium text-mcu-text-muted mb-3 uppercase tracking-widest">Filtrer par Rôle</label>
         <div class="flex flex-wrap gap-2">
@@ -89,6 +89,34 @@
           </div>
         </div>
       </div>
+
+      <div class="shrink-0">
+        <div class="inline-flex rounded-xl border border-mcu-border bg-mcu-surface p-1 gap-0.5">
+          <button
+            type="button"
+            title="Vue cartes"
+            @click="setPlayerView('cards')"
+            class="rounded-lg p-2.5 transition-colors"
+            :class="playerView === 'cards' ? 'bg-mcu-primary/20 text-mcu-primary' : 'text-mcu-text-muted hover:text-white hover:bg-mcu-surface-light/50'"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            title="Vue tableau"
+            @click="setPlayerView('table')"
+            class="rounded-lg p-2.5 transition-colors"
+            :class="playerView === 'table' ? 'bg-mcu-primary/20 text-mcu-primary' : 'text-mcu-text-muted hover:text-white hover:bg-mcu-surface-light/50'"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="16" rx="2" stroke-width="2" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9h18M3 14h18M9 4v16" />
+            </svg>
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Loading State -->
@@ -98,21 +126,22 @@
     </div>
 
     <!-- Players Grid -->
-    <div v-else-if="filteredPlayers.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <div v-else-if="!loading && filteredPlayers.length > 0 && playerView === 'cards'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       <div 
         v-for="player in filteredPlayers" 
         :key="player.id"
-        class="bg-mcu-surface-light rounded-2xl border border-mcu-border overflow-hidden hover:border-mcu-primary/50 transition-all duration-300 group shadow-lg"
+        class="relative bg-mcu-surface-light/80 backdrop-blur-xl rounded-2xl border border-mcu-border/70 overflow-hidden transition-all duration-300 group shadow-[0_10px_40px_rgba(0,0,0,0.55)] hover:shadow-[0_20px_70px_rgba(0,0,0,0.65)] hover:border-mcu-primary/40 hover:-translate-y-0.5"
       >
+        <!-- Full-card splash background -->
+        <img
+          :src="getChampionSplash(player.champion_signature)"
+          class="absolute inset-0 w-full h-full object-cover object-top opacity-60 scale-[1.06] transition-transform duration-700 group-hover:scale-[1.10]"
+          alt=""
+        />
+        <div class="absolute inset-0 bg-gradient-to-b from-black/15 via-mcu-surface-light/25 to-mcu-surface-light/95"></div>
+
         <!-- Card Header (Avatar + Info) -->
-        <div class="relative h-32 overflow-hidden">
-          <div class="absolute inset-0 bg-gradient-to-t from-mcu-surface-light to-transparent z-10"></div>
-          <img 
-            :src="getChampionImage(player.champion_signature)" 
-            class="w-full h-full object-cover object-top opacity-60 group-hover:scale-105 transition-transform duration-700" 
-            alt="" 
-          />
-          
+        <div class="relative h-40 overflow-hidden">
           <div class="absolute bottom-3 left-4 right-4 z-20 flex justify-between items-end">
             <div>
               <h3 class="text-xl font-title tracking-wider text-white drop-shadow-md">{{ player.pseudo }}</h3>
@@ -135,27 +164,27 @@
         </div>
 
         <!-- Card Body -->
-        <div class="p-4 space-y-4">
+        <div class="relative p-4 space-y-4">
           <div class="grid grid-cols-2 gap-2 text-xs">
-            <div class="bg-mcu-surface rounded-lg p-2 border border-mcu-border">
-              <span class="text-mcu-text-muted block mb-1 uppercase text-[10px] tracking-wider">Style</span>
-              <span class="font-bold text-white">{{ player.playstyle }}</span>
+            <div class="bg-black/35 rounded-lg p-2 border border-mcu-border/70 backdrop-blur-md">
+              <span class="text-white/75 block mb-1 uppercase text-[10px] tracking-wider font-bold">Style</span>
+              <span class="font-extrabold text-white">{{ player.playstyle }}</span>
             </div>
-            <div class="bg-mcu-surface rounded-lg p-2 border border-mcu-border">
-              <span class="text-mcu-text-muted block mb-1 uppercase text-[10px] tracking-wider">Mindset</span>
-              <span class="font-bold text-white">{{ player.mindset }}</span>
+            <div class="bg-black/35 rounded-lg p-2 border border-mcu-border/70 backdrop-blur-md">
+              <span class="text-white/75 block mb-1 uppercase text-[10px] tracking-wider font-bold">Mindset</span>
+              <span class="font-extrabold text-white">{{ player.mindset }}</span>
             </div>
           </div>
 
           <div>
-            <span class="text-mcu-text-muted block mb-2 uppercase text-[10px] tracking-wider font-bold">Champion Pool</span>
+            <span class="text-white/80 block mb-2 uppercase text-[10px] tracking-wider font-bold">Champion Pool</span>
             <div class="flex gap-2">
               <div 
                 v-for="champ in player.champion_pool" 
                 :key="champ"
-                class="w-8 h-8 rounded-full overflow-hidden border border-mcu-border relative group/champ"
+                class="w-8 h-8 rounded-full overflow-hidden border border-mcu-border/80 relative group/champ shadow-[0_6px_18px_rgba(0,0,0,0.6)]"
               >
-                <img :src="getChampionImage(champ)" class="w-full h-full object-cover" :title="champ" />
+                <img :src="getChampionSquare(champ)" class="w-full h-full object-cover" :title="champ" />
                 <div class="absolute inset-0 bg-black/60 opacity-0 group-hover/champ:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[1px]">
                   <span class="text-[8px] font-bold text-white truncate px-1">{{ champ.substring(0, 3) }}</span>
                 </div>
@@ -166,8 +195,58 @@
       </div>
     </div>
 
+    <!-- Players Table -->
+    <div v-else-if="!loading && filteredPlayers.length > 0 && playerView === 'table'" class="rounded-2xl border border-mcu-border bg-mcu-surface/40 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="min-w-[860px] w-full text-left text-sm">
+          <thead class="sticky top-0 z-10 bg-mcu-surface/95 backdrop-blur-md border-b border-mcu-border">
+            <tr class="text-[10px] font-bold uppercase tracking-widest text-mcu-text-muted">
+              <th class="px-4 py-3 whitespace-nowrap">Pseudo</th>
+              <th class="px-4 py-3 whitespace-nowrap">Rang</th>
+              <th class="px-4 py-3 whitespace-nowrap">Rôle P.</th>
+              <th class="px-4 py-3 whitespace-nowrap">Rôle S.</th>
+              <th class="px-4 py-3 whitespace-nowrap">Style</th>
+              <th class="px-4 py-3 whitespace-nowrap">Mindset</th>
+              <th class="px-4 py-3 min-w-[200px]">Champion pool</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-mcu-border/60">
+            <tr
+              v-for="player in filteredPlayers"
+              :key="player.id"
+              class="hover:bg-mcu-surface-light/40 transition-colors"
+            >
+              <td class="px-4 py-3 font-title tracking-wide text-white whitespace-nowrap">{{ player.pseudo }}</td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                <span class="text-xs font-bold px-2 py-0.5 rounded bg-black/40 text-mcu-primary border border-mcu-primary/30">
+                  {{ player.rank }}
+                </span>
+              </td>
+              <td class="px-4 py-3 text-white/90 whitespace-nowrap uppercase text-xs font-bold">{{ player.primary_role }}</td>
+              <td class="px-4 py-3 text-white/70 whitespace-nowrap uppercase text-xs font-bold">{{ player.secondary_role || '—' }}</td>
+              <td class="px-4 py-3 text-white/90 max-w-[200px]">{{ player.playstyle }}</td>
+              <td class="px-4 py-3 text-white/90 max-w-[200px]">{{ player.mindset }}</td>
+              <td class="px-4 py-3">
+                <div v-if="player.champion_pool?.length" class="flex flex-wrap items-center gap-1.5">
+                  <div
+                    v-for="champ in player.champion_pool"
+                    :key="champ"
+                    class="w-8 h-8 shrink-0 rounded-full overflow-hidden border border-mcu-border/80 shadow-[0_2px_8px_rgba(0,0,0,0.45)]"
+                    :title="champ"
+                  >
+                    <img :src="getChampionSquare(champ)" class="w-full h-full object-cover" :alt="champ" />
+                  </div>
+                </div>
+                <span v-else class="text-mcu-text-muted text-xs">—</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- Empty State -->
-    <div v-else class="text-center py-20 bg-mcu-surface/30 rounded-2xl border border-mcu-border border-dashed">
+    <div v-else-if="!loading" class="text-center py-20 bg-mcu-surface/30 rounded-2xl border border-mcu-border border-dashed">
       <svg class="w-16 h-16 text-mcu-text-muted mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
       </svg>
@@ -200,6 +279,21 @@ const searchQuery = ref('');
 const selectedRole = ref<string | null>(null);
 const selectedRank = ref<string | null>(null);
 const sortBy = ref('rank');
+
+type PlayerViewMode = 'cards' | 'table';
+const PLAYERS_VIEW_STORAGE_KEY = 'mcu_players_view';
+
+const readStoredPlayerView = (): PlayerViewMode => {
+  const raw = localStorage.getItem(PLAYERS_VIEW_STORAGE_KEY);
+  return raw === 'table' ? 'table' : 'cards';
+};
+
+const playerView = ref<PlayerViewMode>(readStoredPlayerView());
+
+const setPlayerView = (mode: PlayerViewMode) => {
+  playerView.value = mode;
+  localStorage.setItem(PLAYERS_VIEW_STORAGE_KEY, mode);
+};
 
 const roles = [
   { label: 'Top', value: 'top', icon: topIcon },
@@ -266,9 +360,14 @@ const getRoleIcon = (roleName: string) => {
   return role ? role.icon : '';
 };
 
-const getChampionImage = (name: string) => {
+const getChampionSquare = (name: string) => {
   const champ = champions.value.find(c => c.name === name);
   return champ?.image_url || '';
+};
+
+const getChampionSplash = (name: string) => {
+  const champ = champions.value.find(c => c.name === name);
+  return champ?.splash_url || champ?.image_url || '';
 };
 
 const filteredPlayers = computed(() => {
@@ -282,7 +381,8 @@ const filteredPlayers = computed(() => {
   
   // Apply Role Filter
   if (selectedRole.value) {
-    result = result.filter(p => p.primary_role === selectedRole.value || p.secondary_role === selectedRole.value);
+    // Priority role filtering: only match primary role
+    result = result.filter(p => p.primary_role === selectedRole.value);
   }
   
   // Apply Rank Filter

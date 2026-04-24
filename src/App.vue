@@ -1,7 +1,15 @@
 <script setup lang="ts">
-// Main App entry point
+import { computed } from "vue";
+import { useRoute } from "vue-router";
+import Navbar from "./components/Navbar.vue";
+
+const route = useRoute();
+const showNavbar = computed(() => !route.path.startsWith("/admin"));
 </script>
 
 <template>
-  <router-view />
+  <div>
+    <Navbar v-if="showNavbar" />
+    <router-view />
+  </div>
 </template>

@@ -7,9 +7,6 @@
       <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5 mix-blend-overlay"></div>
     </div>
 
-    <!-- Navigation -->
-    <Navbar />
-
     <!-- Main Content -->
     <main class="relative z-10 w-full px-6 py-12">
       <!-- Header -->
@@ -281,7 +278,6 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { supabase } from '../lib/supabase';
 import { fetchPlayoffMatches } from '../lib/queries';
 import { subscribeToTable } from '../lib/realtime';
-import Navbar from '../components/Navbar.vue';
 
 const matches = ref<any[]>([]);
 const loading = ref(true);

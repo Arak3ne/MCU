@@ -33,8 +33,10 @@ async function seed() {
   const champions = champsData.data;
 
   const insertData = Object.values(champions).map((champ: any) => ({
+    ddragon_key: champ.key,
     name: champ.name,
     image_url: `https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/champion/${champ.image.full}`,
+    splash_url: `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champ.id}_0.jpg`,
     is_available: true,
     roles: champ.tags,
   }));
