@@ -81,8 +81,8 @@
                     {{ team.name }}
                   </h3>
                   <p class="text-xs text-[#A1A1AA] uppercase tracking-widest mt-1.5 flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full" :class="team.wins > 0 ? 'bg-green-500 shadow-[0_0_5px_#22c55e]' : 'bg-gray-600'"></span>
-                    {{ team.wins > 0 || team.losses > 0 ? ((team.wins / (team.wins + team.losses)) * 100).toFixed(0) + '% Win Rate' : 'No matches played' }}
+                    <span class="w-2 h-2 rounded-full" :class="(team.wins ?? 0) > 0 ? 'bg-green-500 shadow-[0_0_5px_#22c55e]' : 'bg-gray-600'"></span>
+                    {{ (team.wins ?? 0) > 0 || (team.losses ?? 0) > 0 ? (((team.wins ?? 0) / ((team.wins ?? 0) + (team.losses ?? 0))) * 100).toFixed(0) + '% Win Rate' : 'No matches played' }}
                   </p>
                 </div>
               </div>
@@ -90,9 +90,9 @@
               <!-- Stats -->
               <div class="flex gap-10 md:gap-20 items-center">
                 <div class="w-20 flex justify-center items-center gap-3">
-                  <span class="text-[#4ADE80] font-bold text-xl">{{ team.wins }}W</span>
+                  <span class="text-[#4ADE80] font-bold text-xl">{{ team.wins ?? 0 }}W</span>
                   <span class="text-[#2A2A2A] font-title text-xl">-</span>
-                  <span class="text-[#EF4444] font-bold text-xl">{{ team.losses }}L</span>
+                  <span class="text-[#EF4444] font-bold text-xl">{{ team.losses ?? 0 }}L</span>
                 </div>
                 <div class="w-20 flex justify-center">
                   <span class="font-title text-4xl text-[#22C55E] drop-shadow-[0_0_15px_rgba(200,170,110,0.4)]">{{ team.points }}</span>
@@ -520,7 +520,7 @@ const fetchTeams = async () => {
 onMounted(() => {
   fetchTeams();
   
-  subscription = subscribeToTable("teams", (payload) => {
+  subscription = subscribeToTable("teams", () => {
     // Re-fetch to guarantee correct sort order after any update/insert/delete
     fetchTeams();
   });

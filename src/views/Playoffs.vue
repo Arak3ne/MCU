@@ -48,7 +48,7 @@
                 </div>
                 
                 <div class="flex flex-col justify-around flex-1 relative gap-8">
-                  <div v-for="(match, mIndex) in round.matches" :key="match.id" class="match-node relative z-10 w-full flex flex-col justify-center">
+                  <div v-for="match in round.matches" :key="match.id" class="match-node relative z-10 w-full flex flex-col justify-center">
                     
                     <div @click="startDraftForMatch(match)" 
                          class="bg-[#111111] border border-[#2A2A2A] rounded-sm flex flex-col shadow-xl transition-all group cursor-pointer"
@@ -96,7 +96,7 @@
                 </div>
                 
                 <div class="flex flex-col justify-around flex-1 relative gap-8">
-                  <div v-for="(match, mIndex) in round.matches" :key="match.id" class="match-node relative z-10 w-full flex flex-col justify-center">
+                  <div v-for="match in round.matches" :key="match.id" class="match-node relative z-10 w-full flex flex-col justify-center">
                     
                     <div @click="startDraftForMatch(match)"
                          class="bg-[#111111] border border-[#2A2A2A] rounded-sm flex flex-col shadow-xl transition-all cursor-pointer group hover:border-[#22C55E]/50"
@@ -135,7 +135,7 @@
               <div v-for="(round, rIndex) in grandFinalsRounds" :key="'gf'+rIndex" class="flex flex-col justify-center min-w-[320px]">
                 
                 <div class="flex flex-col justify-center flex-1 relative gap-8">
-                  <div v-for="(match, mIndex) in round.matches" :key="match.id" class="match-node relative z-10 w-full flex flex-col justify-center scale-110 origin-center">
+                  <div v-for="match in round.matches" :key="match.id" class="match-node relative z-10 w-full flex flex-col justify-center scale-110 origin-center">
                     
                     <div @click="startDraftForMatch(match)"
                          class="bg-[#111111] border-2 border-[#22C55E] rounded-sm flex flex-col shadow-[0_0_30px_rgba(34,197,94,0.3)] relative overflow-hidden cursor-pointer group hover:shadow-[0_0_40px_rgba(34,197,94,0.5)] transition-all"
