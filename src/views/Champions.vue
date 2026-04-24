@@ -1,166 +1,156 @@
 <template>
-  <div class="min-h-screen bg-gray-900 text-white p-6">
-    <header class="max-w-6xl mx-auto flex justify-between items-center mb-8">
-      <div>
-        <h1
-          class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500 mb-2"
-        >
-          Champions
-        </h1>
-        <router-link
-          to="/"
-          class="text-sm text-gray-400 hover:text-white transition-colors"
-          >← Back to Home</router-link
-        >
-      </div>
-      <div class="flex gap-4 items-center">
-        <!-- Available Only Toggle -->
-        <button
-          @click="showOnlyAvailable = !showOnlyAvailable"
-          :class="[
-            'px-4 py-2 rounded-lg font-semibold transition-all border',
-            showOnlyAvailable
-              ? 'bg-green-500/20 text-green-400 border-green-500/50'
-              : 'bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700',
-          ]"
-        >
-          {{ showOnlyAvailable ? "✓ Only Available" : "Show All" }}
-        </button>
-      </div>
-    </header>
+  <div class="min-h-screen bg-[#0B0F0C] text-[#F0FDF4] font-sans selection:bg-[#22C55E] selection:text-[#0B0F0C]">
+    <!-- Background accents -->
+    <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
+      <div class="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-[#4ADE80] opacity-[0.03] blur-[120px] rounded-full"></div>
+      <div class="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-[#22C55E] opacity-[0.03] blur-[120px] rounded-full"></div>
+      <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5 mix-blend-overlay"></div>
+    </div>
 
-    <main class="max-w-6xl mx-auto space-y-6">
-      <!-- Filters -->
-      <div
-        class="bg-gray-800 rounded-xl p-4 shadow-xl border border-gray-700 flex flex-col md:flex-row gap-4 justify-between items-center"
-      >
-        <!-- Search Input -->
-        <div class="relative w-full md:w-1/3">
-          <input
-            v-model="searchQuery"
-            type="text"
-            placeholder="Search champions..."
-            class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-500"
-          />
-          <span
-            v-if="searchQuery"
-            @click="searchQuery = ''"
-            class="absolute right-3 top-2.5 text-gray-500 hover:text-white cursor-pointer"
-            >✕</span
-          >
+    <!-- Navigation -->
+    <Navbar />
+
+    <!-- Main Content -->
+    <main class="relative z-10 max-w-7xl mx-auto px-6 py-12 space-y-8">
+      <!-- Header & Filters -->
+      <div class="flex flex-col md:flex-row justify-between items-end gap-6 border-b border-[#2A2A2A] pb-6">
+        <div>
+          <div class="flex items-center gap-3">
+            <h1 class="text-4xl md:text-5xl font-title uppercase tracking-wider text-transparent bg-clip-text bg-gradient-to-b from-[#F0FDF4] to-[#22C55E] drop-shadow-lg">
+              Champions
+            </h1>
+          </div>
+          <p class="text-[#A1A1AA] font-medium tracking-widest uppercase text-xs mt-2">Manage Global Champion Availability</p>
         </div>
 
-        <!-- Role Tabs -->
-        <div class="flex gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0">
+        <div class="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+          <!-- Search Input -->
+          <div class="relative w-full md:w-64 group">
+            <input
+              v-model="searchQuery"
+              type="text"
+              placeholder="Search champions..."
+              class="w-full bg-[#111111] border border-[#2A2A2A] group-hover:border-[#22C55E]/50 focus:border-[#22C55E] rounded-sm px-4 py-2 focus:outline-none focus:ring-1 focus:ring-[#22C55E] text-[#F0FDF4] placeholder-[#A1A1AA] transition-all font-medium text-sm tracking-wide shadow-inner"
+            />
+            <span
+              v-if="searchQuery"
+              @click="searchQuery = ''"
+              class="absolute right-3 top-2.5 text-[#A1A1AA] hover:text-[#22C55E] cursor-pointer transition-colors"
+            >✕</span>
+          </div>
+
+          <!-- Role Tabs -->
+          <div class="flex gap-1 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 bg-[#111111] border border-[#2A2A2A] p-1 rounded-sm">
+            <button
+              v-for="role in roles"
+              :key="role.name"
+              @click="toggleRole(role.name)"
+              :class="[
+                'flex items-center gap-2 px-3 py-1.5 rounded-sm text-xs font-bold tracking-wider uppercase transition-all whitespace-nowrap cursor-pointer border',
+                selectedRole === role.name
+                  ? 'bg-[#22C55E]/20 text-[#22C55E] border-[#22C55E] shadow-[0_0_10px_rgba(200,170,110,0.2)]'
+                  : 'bg-transparent text-[#A1A1AA] border-transparent hover:text-[#F0FDF4] hover:bg-[#1A1A1A]'
+              ]"
+              :title="role.name"
+            >
+              <img :src="role.icon" :alt="role.name" class="w-4 h-4 object-contain pointer-events-none drop-shadow-md" :class="{'brightness-0 invert opacity-60': selectedRole !== role.name}" />
+              <span class="hidden sm:inline pointer-events-none">{{ role.name }}</span>
+            </button>
+          </div>
+
+          <!-- Available Only Toggle -->
           <button
-            v-for="role in roles"
-            :key="role.name"
-            @click="toggleRole(role.name)"
+            @click="showOnlyAvailable = !showOnlyAvailable"
             :class="[
-              'flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all whitespace-nowrap',
-              selectedRole === role.name
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-700 text-gray-300 hover:bg-gray-600',
+              'px-4 py-2 rounded-sm text-xs font-bold tracking-widest uppercase transition-all border cursor-pointer whitespace-nowrap shadow-inner flex items-center gap-2',
+              showOnlyAvailable
+                ? 'bg-green-500/10 text-green-400 border-green-500/50 shadow-[0_0_10px_rgba(34,197,94,0.1)]'
+                : 'bg-[#111111] text-[#A1A1AA] border-[#2A2A2A] hover:border-[#22C55E]/30 hover:text-[#F0FDF4]',
             ]"
-            :title="role.name"
           >
-            <span>{{ role.icon }}</span>
-            <span class="hidden sm:inline">{{ role.name }}</span>
+            <div class="w-2 h-2 rounded-full" :class="showOnlyAvailable ? 'bg-green-400 shadow-[0_0_5px_#22c55e]' : 'bg-gray-600'"></div>
+            {{ showOnlyAvailable ? "Available Only" : "Show All" }}
           </button>
         </div>
       </div>
 
       <!-- Loading State -->
-      <div v-if="loading" class="text-center py-12">
-        <div
-          class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"
-        ></div>
-        <p class="text-gray-400">Loading champions...</p>
+      <div v-if="loading" class="flex flex-col items-center justify-center py-24 opacity-50">
+        <div class="w-12 h-12 border-4 border-[#2A2A2A] border-t-[#22C55E] rounded-full animate-spin mb-6"></div>
+        <p class="text-[#22C55E] uppercase tracking-widest text-sm font-bold animate-pulse">Loading Roster...</p>
       </div>
 
       <!-- Champion Grid -->
       <div
         v-else
-        class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4"
+        class="bg-[#0B0F0C]/60 backdrop-blur-sm border border-[#22C55E]/30 p-1 shadow-[0_0_40px_rgba(0,0,0,0.8)] relative before:absolute before:-inset-[1px] before:bg-gradient-to-b before:from-[#22C55E]/50 before:to-[#22C55E]/10 before:-z-10 before:rounded-sm rounded-sm"
       >
-        <div
-          v-for="champ in filteredChampions"
-          :key="champ.id"
-          class="bg-gray-800 rounded-lg overflow-hidden border transition-all duration-200 group flex flex-col"
-          :class="[
-            champ.is_available
-              ? 'border-gray-700 hover:border-blue-500'
-              : 'border-red-900/50 opacity-60 grayscale-[0.8]',
-          ]"
-        >
-          <!-- Image -->
-          <div class="relative aspect-square overflow-hidden bg-gray-900">
-            <img
-              :src="champ.image_url"
-              :alt="champ.name"
-              class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-              loading="lazy"
-            />
+        <div class="bg-[#111111] p-6 rounded-sm w-full h-full min-h-[500px]">
+          <div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 xl:grid-cols-12 gap-3 md:gap-4">
             <div
-              v-if="!champ.is_available"
-              class="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-[2px]"
+              v-for="champ in filteredChampions"
+              :key="champ.id"
+              @click="toggleAvailability(champ)"
+              class="relative rounded-sm overflow-hidden border transition-all duration-300 group flex flex-col cursor-pointer bg-[#1A1A1A]"
+              :class="[
+                champ.is_available
+                  ? 'border-[#2A2A2A] hover:border-[#22C55E] shadow-lg hover:shadow-[0_0_15px_rgba(200,170,110,0.3)] hover:-translate-y-1'
+                  : 'border-red-900/50 opacity-50 grayscale-[0.8] hover:grayscale-[0.5] hover:opacity-80 hover:border-red-500/50',
+              ]"
             >
-              <span
-                class="text-red-500 font-bold tracking-widest rotate-[-15deg] border-2 border-red-500 px-2 py-1 rounded bg-black/50"
-                >BANNED</span
-              >
-            </div>
+              <!-- Image -->
+              <div class="relative aspect-square overflow-hidden bg-[#0B0F0C]">
+                <img
+                  :src="champ.image_url"
+                  :alt="champ.name"
+                  class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  loading="lazy"
+                />
+                
+                <!-- Banned Overlay -->
+                <div
+                  v-if="!champ.is_available"
+                  class="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-[1px]"
+                >
+                  <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/diagmonds-light.png')] opacity-20 mix-blend-overlay"></div>
+                  <div class="w-full h-1 bg-red-500 rotate-45 absolute shadow-[0_0_10px_rgba(239,68,68,0.8)]"></div>
+                  <div class="w-full h-1 bg-red-500 -rotate-45 absolute shadow-[0_0_10px_rgba(239,68,68,0.8)]"></div>
+                  <span class="absolute text-red-500 font-title text-[10px] tracking-[0.2em] bg-black/80 px-2 py-1 border border-red-500/50 uppercase rounded-sm shadow-[0_0_10px_rgba(0,0,0,0.8)]">
+                    Banned
+                  </span>
+                </div>
+                
+                <!-- Hover gradient -->
+                <div class="absolute inset-0 bg-gradient-to-t from-[#0B0F0C] via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              </div>
 
-            <!-- Admin Toggle Overlay -->
-            <div
-              class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
-            >
-              <button
-                @click="toggleAvailability(champ)"
-                class="px-3 py-1.5 rounded font-bold text-xs"
-                :class="
-                  champ.is_available
-                    ? 'bg-red-600 hover:bg-red-500 text-white'
-                    : 'bg-green-600 hover:bg-green-500 text-white'
-                "
-              >
-                {{ champ.is_available ? "BAN" : "ALLOW" }}
-              </button>
+              <!-- Name -->
+              <div class="absolute bottom-0 inset-x-0 p-1.5 md:p-2 bg-gradient-to-t from-[#0B0F0C] to-transparent translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+                <h3
+                  class="font-title text-center text-[10px] md:text-xs tracking-wider uppercase text-[#F0FDF4] group-hover:text-[#22C55E] transition-colors drop-shadow-[0_1px_2px_rgba(0,0,0,1)] truncate"
+                  :title="champ.name"
+                >
+                  {{ champ.name }}
+                </h3>
+              </div>
             </div>
           </div>
 
-          <!-- Name & Roles -->
-          <div class="p-2 flex-1 flex flex-col justify-between">
-            <h3
-              class="font-bold text-center text-sm truncate"
-              :title="champ.name"
-            >
-              {{ champ.name }}
-            </h3>
-            <div class="flex justify-center gap-1 mt-1">
-              <span
-                v-for="r in champ.roles?.slice(0, 2)"
-                :key="r"
-                class="text-[10px] text-gray-400 bg-gray-900 px-1.5 rounded"
-                >{{ r }}</span
-              >
-            </div>
+          <!-- Empty State -->
+          <div
+            v-if="!loading && filteredChampions.length === 0"
+            class="flex flex-col items-center justify-center py-20 text-center"
+          >
+            <div class="text-4xl mb-4 opacity-50">🔍</div>
+            <p class="text-[#A1A1AA] uppercase tracking-widest text-sm font-bold mb-4">No champions match your filters</p>
+            <button
+              @click="resetFilters"
+              class="px-6 py-2 text-xs font-bold tracking-widest uppercase text-[#22C55E] border border-[#22C55E]/30 hover:border-[#22C55E] hover:bg-[#22C55E]/10 transition-all rounded-sm"
+             cursor-pointer>
+              Reset Filters
+            </button>
           </div>
         </div>
-      </div>
-
-      <!-- Empty State -->
-      <div
-        v-if="!loading && filteredChampions.length === 0"
-        class="text-center py-12 bg-gray-800 rounded-xl border border-gray-700"
-      >
-        <p class="text-gray-400 text-lg">No champions match your filters.</p>
-        <button
-          @click="resetFilters"
-          class="mt-4 text-blue-400 hover:text-blue-300 underline"
-        >
-          Reset Filters
-        </button>
       </div>
     </main>
   </div>
@@ -169,8 +159,15 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { getChampions, toggleChampion } from "../lib/queries";
-import { subscribeToChampions } from "../lib/realtime";
+import { subscribeToTable } from "../lib/realtime";
 import type { Database } from "../types/supabase";
+import Navbar from "../components/Navbar.vue";
+
+import topIcon from "../assets/top.png";
+import jglIcon from "../assets/jgl.png";
+import midIcon from "../assets/mid.png";
+import adcIcon from "../assets/adc.png";
+import supportIcon from "../assets/support.png";
 
 type Champion = Database["public"]["Tables"]["champions"]["Row"];
 
@@ -182,18 +179,15 @@ const selectedRole = ref<string | null>(null);
 const showOnlyAvailable = ref(false);
 let subscription: any = null;
 
-// League of Legends Roles mapping with emoji icons
+// League of Legends Positions mapping with imported icons
 const roles = [
-  { name: "All", icon: "🌍" },
-  { name: "Fighter", icon: "⚔️" },
-  { name: "Tank", icon: "🛡️" },
-  { name: "Mage", icon: "🔮" },
-  { name: "Assassin", icon: "🗡️" },
-  { name: "Marksman", icon: "🏹" },
-  { name: "Support", icon: "💖" },
+  { name: "Top", icon: topIcon, tags: ["top"] },
+  { name: "Jgl", icon: jglIcon, tags: ["jungle"] },
+  { name: "Mid", icon: midIcon, tags: ["mid"] },
+  { name: "ADC", icon: adcIcon, tags: ["adc"] },
+  { name: "Supp", icon: supportIcon, tags: ["support"] },
 ];
 
-// Computed
 const filteredChampions = computed(() => {
   return champions.value.filter((champ) => {
     // 1. Availability filter
@@ -206,11 +200,14 @@ const filteredChampions = computed(() => {
     )
       return false;
 
-    // 3. Role filter
-    if (selectedRole.value && selectedRole.value !== "All") {
-      // Data dragon tags usually match exactly: "Fighter", "Tank", etc.
-      if (!champ.roles || !champ.roles.includes(selectedRole.value))
-        return false;
+    // 3. Position filter
+    if (selectedRole.value) {
+      const position = roles.find((r) => r.name === selectedRole.value);
+      if (position && position.tags.length > 0) {
+        // If champion has ANY of the tags associated with the position
+        if (!champ.roles || !champ.roles.some(tag => position.tags.includes(tag)))
+          return false;
+      }
     }
 
     return true;
@@ -230,7 +227,7 @@ const loadChampions = async () => {
 };
 
 const toggleRole = (roleName: string) => {
-  selectedRole.value = roleName === "All" ? null : roleName;
+  selectedRole.value = selectedRole.value === roleName ? null : roleName;
 };
 
 const resetFilters = () => {
@@ -259,12 +256,14 @@ onMounted(() => {
   loadChampions();
 
   // Setup Realtime
-  subscription = subscribeToChampions((payload) => {
-    const updatedChamp = payload.new;
-    const index = champions.value.findIndex((c) => c.id === updatedChamp.id);
-    if (index !== -1) {
-      // Update the specific champion in our list
-      champions.value[index] = { ...champions.value[index], ...updatedChamp };
+  subscription = subscribeToTable("champions", (payload) => {
+    if (payload.eventType === "UPDATE") {
+      const updatedChamp = payload.new;
+      const index = champions.value.findIndex((c) => c.id === updatedChamp.id);
+      if (index !== -1) {
+        // Update the specific champion in our list
+        champions.value[index] = { ...champions.value[index], ...updatedChamp };
+      }
     }
   });
 });

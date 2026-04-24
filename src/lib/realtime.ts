@@ -1,24 +1,16 @@
 import { supabase } from "./supabase";
-import { Database } from "../types/supabase";
+import type { Database } from "../types/supabase";
 
-type Champion = Database["public"]["Tables"]["champions"]["Row"];
-
-export function subscribeToChampions(
-  callback: (payload: { new: Champion }) => void,
+export function subscribeToTable(
+  table: keyof Database["public"]["Tables"],
+  callback: (payload: any) => void
 ) {
   return supabase
-    .channel("public:champions")
+    .channel(`public:${table}`)
     .on(
       "postgres_changes",
-      {
-        event: "UPDATE",
-        schema: "public",
-        table: "champions",
-      },
-      (payload) => {
-        // payload.new contains the updated row data
-        callback(payload as any);
-      },
+      { event: "*", schema: "public", table: table },
+      (payload) => callback(payload)
     )
     .subscribe();
 }

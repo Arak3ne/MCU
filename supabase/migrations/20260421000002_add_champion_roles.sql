@@ -1,1 +1,1 @@
-ALTER TABLE champions ADD COLUMN roles TEXT[] DEFAULT '{}';
+ALTER TABLE champions ADD COLUMN IF NOT EXISTS roles TEXT[] DEFAULT '{}';

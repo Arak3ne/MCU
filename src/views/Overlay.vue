@@ -1,64 +1,89 @@
 <template>
-  <div
-    class="h-[1080px] w-[1920px] bg-transparent text-white font-sans overflow-hidden relative border-[10px] border-green-500/20"
-  >
+  <div class="h-[1080px] w-[1920px] bg-transparent text-[#F0FDF4] font-sans overflow-hidden relative">
     <!-- Scoreboard (Top Center) -->
-    <div
-      class="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[100px] bg-gray-950/90 backdrop-blur-md rounded-b-3xl border-x-2 border-b-2 border-white/10 flex items-center justify-between px-12 shadow-[0_10px_40px_rgba(0,0,0,0.5)]"
-    >
-      <div class="flex items-center gap-4">
-        <span class="text-2xl font-black italic tracking-tighter">ALPHA</span>
-        <span class="text-4xl font-mono font-black text-blue-400">1</span>
+    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[100px] bg-[#0B0F0C]/90 backdrop-blur-md rounded-b-sm border-x border-b border-[#22C55E]/50 flex items-center justify-between px-12 shadow-[0_10px_40px_rgba(0,0,0,0.8)] relative before:absolute before:-inset-[1px] before:bg-gradient-to-b before:from-transparent before:to-[#22C55E]/30 before:-z-10 before:rounded-b-sm">
+      <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-1/2 h-[2px] bg-gradient-to-r from-transparent via-[#22C55E] to-transparent shadow-[0_0_15px_#22C55E]"></div>
+      
+      <div class="flex items-center gap-6 w-[250px] justify-end">
+        <span class="text-3xl font-title uppercase tracking-wider text-[#4ADE80] drop-shadow-[0_0_8px_rgba(74,222,128,0.4)] truncate">{{ match.team1_name }}</span>
+        <span class="text-5xl font-title text-[#22C55E] drop-shadow-[0_0_15px_rgba(34,197,94,0.4)]">{{ match.team1_score }}</span>
       </div>
-      <div class="flex flex-col items-center">
-        <span class="text-xs font-bold text-gray-500 tracking-[.5em]">VS</span>
-        <div
-          class="w-12 h-12 bg-red-500 absolute -bottom-6 rounded-full border-4 border-gray-950 flex items-center justify-center font-bold text-lg italic shadow-lg"
-        >
-          L
+      
+      <div class="flex flex-col items-center justify-center w-[100px] relative">
+        <div class="w-[1px] h-8 bg-[#2A2A2A] absolute -top-2"></div>
+        <div class="text-xs font-bold text-[#22C55E] tracking-[0.3em] uppercase bg-[#111111] px-3 py-1 border border-[#2A2A2A] rounded-sm z-10 shadow-inner">VS</div>
+        <div class="w-[1px] h-8 bg-[#2A2A2A] absolute -bottom-2"></div>
+        
+        <!-- League icon -->
+        <div class="w-14 h-14 bg-gradient-to-br from-[#22C55E] to-[#14532D] absolute -bottom-10 flex items-center justify-center shadow-[0_0_20px_rgba(34,197,94,0.3)] rotate-45 border border-[#F0FDF4]/20">
+          <span class="font-title text-xl italic text-[#0B0F0C] -rotate-45">LoL</span>
         </div>
       </div>
-      <div class="flex items-center gap-4">
-        <span class="text-4xl font-mono font-black text-red-400">0</span>
-        <span class="text-2xl font-black italic tracking-tighter">OMEGA</span>
+      
+      <div class="flex items-center gap-6 w-[250px] justify-start">
+        <span class="text-5xl font-title text-[#22C55E] drop-shadow-[0_0_15px_rgba(34,197,94,0.4)]">{{ match.team2_score }}</span>
+        <span class="text-3xl font-title uppercase tracking-wider text-[#EF4444] drop-shadow-[0_0_8px_rgba(239,68,68,0.4)] truncate">{{ match.team2_name }}</span>
       </div>
     </div>
 
     <!-- Live Indicator (Bottom Left) -->
-    <div
-      class="absolute bottom-10 left-10 flex items-center gap-4 bg-black/80 px-6 py-4 rounded-2xl border border-white/10"
-    >
-      <div class="relative">
-        <div
-          class="w-4 h-4 bg-red-600 rounded-full animate-ping absolute"
-        ></div>
-        <div class="w-4 h-4 bg-red-600 rounded-full"></div>
+    <div class="absolute bottom-10 left-10 flex items-center gap-4 bg-[#0B0F0C]/90 backdrop-blur-md px-6 py-4 rounded-sm border border-[#2A2A2A] shadow-[0_0_30px_rgba(0,0,0,0.8)]">
+      <div class="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-[#22C55E]/50 to-transparent"></div>
+      <div class="relative flex items-center justify-center w-6 h-6">
+        <div class="w-3 h-3 bg-red-500 rotate-45 animate-ping absolute"></div>
+        <div class="w-3 h-3 bg-red-500 rotate-45 shadow-[0_0_10px_rgba(239,68,68,0.8)]"></div>
       </div>
       <div>
-        <div
-          class="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1"
-        >
-          Status
-        </div>
-        <div class="text-xl font-black italic">LIVE TOURNAMENT</div>
+        <div class="text-[10px] font-bold text-[#A1A1AA] uppercase tracking-widest leading-none mb-1">Status</div>
+        <div class="text-xl font-title uppercase tracking-widest text-[#22C55E]">Live Tournament</div>
       </div>
     </div>
 
     <!-- Match Info (Bottom Right) -->
-    <div
-      class="absolute bottom-10 right-10 text-right bg-gradient-to-l from-black/80 to-transparent px-10 py-4 rounded-r-none rounded-l-2xl border-r-4 border-blue-500"
-    >
-      <div
-        class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1"
-      >
-        Grand Final
-      </div>
-      <div class="text-2xl font-black italic tracking-tighter">
-        BEST OF 5 SERIES
-      </div>
+    <div class="absolute bottom-10 right-10 text-right bg-gradient-to-l from-[#0B0F0C]/90 to-transparent backdrop-blur-sm px-10 py-4 rounded-sm border-r-2 border-[#22C55E] shadow-[0_0_30px_rgba(0,0,0,0.8)]">
+      <div class="text-[10px] font-bold text-[#A1A1AA] uppercase tracking-[0.2em] mb-1">{{ match.title }}</div>
+      <div class="text-2xl font-title uppercase tracking-wider text-[#F0FDF4]">{{ match.subtitle }}</div>
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, onMounted, onUnmounted } from "vue";
+import { supabase } from "../lib/supabase";
+import { subscribeToTable } from "../lib/realtime";
+
+const match = ref({
+  team1_name: "Loading...",
+  team2_name: "Loading...",
+  team1_score: 0,
+  team2_score: 0,
+  title: "...",
+  subtitle: "..."
+});
+
+let subscription: any = null;
+
+onMounted(async () => {
+  // Fetch initial state
+  const { data } = await supabase.from("live_match").select("*").eq("id", 1).single();
+  if (data) {
+    match.value = data as any;
+  }
+
+  // Listen for admin changes
+  subscription = subscribeToTable("live_match", (payload) => {
+    if (payload.new) {
+      match.value = payload.new;
+    }
+  });
+});
+
+onUnmounted(() => {
+  if (subscription) {
+    subscription.unsubscribe();
+  }
+});
+</script>
 
 <style scoped>
 /* Ensure this view is exactly 1080p for OBS */

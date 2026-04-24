@@ -1,15 +1,30 @@
 @import "tailwindcss";
 
 @theme {
-  /* You can add custom theme variables here for Tailwind v4 */
+  --color-mcu-bg: #0B0F0C;
+  --color-mcu-primary: #22C55E;
+  --color-mcu-accent: #4ADE80;
+  --color-mcu-surface: #111111;
+  --color-mcu-surface-light: #1A1A1A;
+  --color-mcu-border: #2A2A2A;
+  --color-mcu-text: #F0FDF4;
+  --color-mcu-text-muted: #A1A1AA;
+  
+  --font-sans: "Inter", sans-serif;
+  --font-title: "Bebas Neue", sans-serif;
 }
 
 @layer base {
   body {
-    background-color: #000;
-    color: #fff;
+    background-color: var(--color-mcu-bg);
+    color: var(--color-mcu-text);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     margin: 0;
+  }
+  
+  h1, h2, h3, h4, h5, h6, .font-title {
+    font-family: var(--font-title);
+    letter-spacing: 0.05em;
   }
 }

@@ -10,19 +10,40 @@ const router = createRouter({
       component: Home,
     },
     {
+      path: "/register",
+      name: "register",
+      component: () => import("../views/Register.vue"),
+    },
+    {
       path: "/champions",
       name: "champions",
       component: () => import("../views/Champions.vue"),
     },
     {
-      path: "/admin",
-      name: "admin",
-      component: () => import("../views/Admin.vue"),
+      path: "/players",
+      name: "players",
+      component: () => import("../views/DraftablePlayers.vue"),
     },
     {
-      path: "/draft",
-      name: "draft",
-      component: () => import("../views/Draft.vue"),
+      path: "/future-matches",
+      name: "future-matches",
+      component: () => import("../views/FutureMatches.vue"),
+    },
+    {
+      path: "/playoffs",
+      name: "playoffs",
+      component: () => import("../views/Playoffs.vue"),
+    },
+    {
+      path: "/admin/login",
+      name: "admin-login",
+      component: () => import("../views/admin/Login.vue"),
+    },
+    {
+      path: "/admin",
+      name: "admin",
+      component: () => import("../views/admin/PlayoffsAdmin.vue"),
+      meta: { requiresAuth: true },
     },
     {
       path: "/overlay",
@@ -30,6 +51,23 @@ const router = createRouter({
       component: () => import("../views/Overlay.vue"),
     },
   ],
+});
+
+router.beforeEach((to, from, next) => {
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
+  const isAuthenticated = localStorage.getItem('admin_auth') === 'true';
+  const isRegistered = localStorage.getItem('mcu_user') !== null;
+  const isPublicRoute = ['/admin/login', '/overlay', '/register'].includes(to.path) || to.path.startsWith('/admin');
+
+  if (requiresAuth && !isAuthenticated) {
+    next('/admin/login');
+  } else if (!isRegistered && !isPublicRoute) {
+    next('/register');
+  } else if (isRegistered && to.path === '/register') {
+    next('/');
+  } else {
+    next();
+  }
 });
 
 export default router;
