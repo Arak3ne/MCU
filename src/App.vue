@@ -4,7 +4,10 @@ import { useRoute } from "vue-router";
 import Navbar from "./components/Navbar.vue";
 
 const route = useRoute();
-const showNavbar = computed(() => !route.path.startsWith("/admin"));
+const showNavbar = computed(() => {
+  const isPublicRoute = ["/admin/login", "/overlay", "/register"].includes(route.path) || route.path.startsWith("/admin");
+  return !isPublicRoute;
+});
 </script>
 
 <template>
