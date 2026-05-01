@@ -1,5 +1,5 @@
 -- Bypass RLS
-UPDATE fantasy_teams SET is_locked = true WHERE tournament_day = 1;
+UPDATE fantasy_teams SET locked = true WHERE tournament_day = 1;
 
 -- Give random scores (10 to 30 points) to players who are in teams
 INSERT INTO fantasy_player_scores (player_id, tournament_day, score, validated)

@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
 
     if (existingMatch) {
       // S'assurer que les équipes sont verrouillées même si le match existait déjà
-      const { error: lockError } = await supabase.from('fantasy_teams').update({ is_locked: true }).eq('tournament_day', 1)
+      const { error: lockError } = await supabase.from('fantasy_teams').update({ locked: true }).eq('tournament_day', 1)
       if (lockError) {
         console.error(`Failed to lock fantasy teams for existing match: ${lockError.message}`)
       }
@@ -207,11 +207,10 @@ Deno.serve(async (req) => {
       const vision = Number(s.visionScore) || 0
       const damage = Number(s.totalDamageDealtToChampions) || 0
       const gold = Number(s.goldEarned) || 0
-      const timeDead = readTotalTimeSpentDead(s as Record<string, unknown>, participantRow)
-
+      
       if (playerId) {
         console.log(`[POINTS_CALC] Found match for player. Riot ID: ${riotId}, Pseudo: ${gameName}, DB ID: ${playerId}`)
-        console.log(`[POINTS_CALC] Stats raw: Kills=${kills}, Deaths=${deaths}, Assists=${assists}, CS=${cs}, Win=${win}, FB=${firstBlood}, Vision=${vision}, Damage=${damage}, Gold=${gold}, TimeDead=${timeDead}`)
+        console.log(`[POINTS_CALC] Stats raw: Kills=${kills}, Deaths=${deaths}, Assists=${assists}, CS=${cs}, Win=${win}, FB=${firstBlood}, Vision=${vision}, Damage=${damage}, Gold=${gold}`)
       }
 
       let points = 
@@ -223,8 +222,7 @@ Deno.serve(async (req) => {
         (firstBlood ? 2 : 0) + 
         (vision * 0.1) + 
         (damage * 0.001) + 
-        (gold * 0.001) - 
-        (timeDead * 0.02)
+        (gold * 0.001)
 
       // Trash-talk / Punitive bonuses & penalties
       if (deaths >= 10) {
@@ -233,6 +231,8 @@ Deno.serve(async (req) => {
       
       if (kills === 0 && assists === 0 && deaths > 0) {
         points -= 5; // "Agent 007" or completely useless penalty
+      } else if ((kills + assists) < deaths) {
+        points -= 5; // "Le Boulet" (Dead Weight) penalty
       }
       
       if (kills >= 10) {
@@ -322,7 +322,7 @@ Deno.serve(async (req) => {
     // Verrouiller toutes les équipes pour ce jour (puisqu'un match a été joué)
     const { error: lockError } = await supabase
       .from('fantasy_teams')
-      .update({ is_locked: true })
+      .update({ locked: true })
       .eq('tournament_day', 1) // Defaulting to 1 for now
 
     if (lockError) {

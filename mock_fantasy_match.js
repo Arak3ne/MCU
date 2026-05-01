@@ -13,7 +13,7 @@ async function mockMatchData() {
   console.log('🔒 Locking all Day 1 fantasy teams...');
   const { error: lockError } = await supabase
     .from('fantasy_teams')
-    .update({ is_locked: true })
+    .update({ locked: true })
     .eq('tournament_day', 1);
 
   if (lockError) {

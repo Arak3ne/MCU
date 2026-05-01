@@ -143,6 +143,8 @@ export type Database = {
           is_completed: boolean | null;
           created_at: string | null;
           updated_at: string | null;
+          draft_url: string | null;
+          draft_id: string | null;
         };
         Insert: {
           id?: string;
@@ -157,6 +159,8 @@ export type Database = {
           is_completed?: boolean | null;
           created_at?: string | null;
           updated_at?: string | null;
+          draft_url?: string | null;
+          draft_id?: string | null;
         };
         Update: {
           id?: string;
@@ -171,6 +175,8 @@ export type Database = {
           is_completed?: boolean | null;
           created_at?: string | null;
           updated_at?: string | null;
+          draft_url?: string | null;
+          draft_id?: string | null;
         };
       };
     };

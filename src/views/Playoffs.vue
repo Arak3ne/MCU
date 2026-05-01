@@ -30,36 +30,94 @@
         <p class="text-[#A1A1AA] uppercase tracking-widest text-sm font-bold mb-4">Aucun match de playoff actif</p>
       </div>
 
-      <div v-else class="w-full overflow-x-auto custom-scrollbar pb-12">
+      <div v-else class="w-full overflow-x-auto custom-scrollbar pb-12 animate-fade-in-up">
         <div class="min-w-max mx-auto flex flex-col gap-24 px-8">
           
           <!-- GROUP STAGE -->
-          <div v-if="groupARounds.length > 0 || groupBRounds.length > 0" class="w-full max-w-6xl mx-auto">
-            <h3 class="text-3xl font-title mb-12 text-transparent bg-clip-text bg-gradient-to-b from-[#F0FDF4] to-[#A1A1AA] uppercase tracking-widest text-center">Group Stage</h3>
+          <div v-if="groupARounds.length > 0 || groupBRounds.length > 0" 
+               class="w-full max-w-7xl mx-auto animate-fade-in-up-delayed"
+               :class="isGroupStageCompleted ? 'order-2 mt-12' : 'order-1'">
+            <h3 class="text-4xl font-title mb-16 text-transparent bg-clip-text bg-gradient-to-b from-[#F0FDF4] to-[#22C55E] uppercase tracking-[0.2em] text-center drop-shadow-[0_0_20px_rgba(34,197,94,0.3)]">Group Stage</h3>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-16">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
               <!-- Group A -->
-              <div v-if="groupARounds.length > 0" class="bg-[#111111]/80 backdrop-blur border border-[#2A2A2A] rounded-sm p-6 shadow-xl relative overflow-hidden">
-                <div class="absolute top-0 right-0 w-32 h-32 bg-[#4ADE80] opacity-[0.05] blur-[50px] pointer-events-none"></div>
-                <h4 class="text-2xl font-title text-[#4ADE80] mb-8 text-center uppercase tracking-widest">Group A</h4>
-                
-                <div class="flex flex-col gap-6">
-                  <div v-for="(round, rIndex) in groupARounds" :key="'ga'+rIndex" class="flex flex-col gap-4">
-                    <div v-for="match in round.matches" :key="match.id" class="match-node relative z-10 w-full flex flex-col justify-center">
-                      <div @click="startDraftForMatch(match)" 
-                           class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-sm flex flex-col transition-all group cursor-pointer"
-                           :class="[match.is_completed ? 'border-[#22C55E]/30 cursor-default pointer-events-none' : 'hover:border-[#4ADE80]/50']">
-                        
-                        <div class="flex items-center justify-between p-3 border-b border-[#2A2A2A] bg-[#111111]/50 group-hover:bg-[#111111]"
-                             :class="getWinnerStatusClass(match, 1, 'A')">
-                          <span class="font-bold truncate text-sm" :class="match.team1 ? 'text-[#F0FDF4]' : 'text-[#A1A1AA] italic'">{{ match.team1?.name || 'TBD' }}</span>
-                          <span class="font-title text-lg ml-3" :class="getWinnerScoreClass(match, 1, 'A')">{{ match.team1_score }}</span>
-                        </div>
-                        
-                        <div class="flex items-center justify-between p-3 bg-[#111111]/50 group-hover:bg-[#111111]"
-                             :class="getWinnerStatusClass(match, 2, 'A')">
-                          <span class="font-bold truncate text-sm" :class="match.team2 ? 'text-[#F0FDF4]' : 'text-[#A1A1AA] italic'">{{ match.team2?.name || 'TBD' }}</span>
-                          <span class="font-title text-lg ml-3" :class="getWinnerScoreClass(match, 2, 'A')">{{ match.team2_score }}</span>
+              <div v-if="groupARounds.length > 0" class="flex flex-col gap-8">
+                <!-- Standings Card -->
+                <div class="bg-[#111111]/80 backdrop-blur-xl border border-[#22C55E]/20 rounded-xl overflow-hidden shadow-2xl relative">
+                  <div class="absolute top-0 right-0 w-48 h-48 bg-[#4ADE80] opacity-[0.03] blur-[60px] pointer-events-none"></div>
+                  <div class="p-5 border-b border-[#2A2A2A] bg-gradient-to-r from-[#22C55E]/10 to-transparent">
+                    <h4 class="text-xl font-title text-[#4ADE80] uppercase tracking-widest">Groupe Morue</h4>
+                  </div>
+                  <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                      <thead>
+                        <tr class="text-[10px] font-bold uppercase tracking-widest text-white/40 border-b border-[#2A2A2A]">
+                          <th class="px-6 py-4">Pos</th>
+                          <th class="px-6 py-4">Team</th>
+                          <th class="px-6 py-4 text-center">W</th>
+                          <th class="px-6 py-4 text-center">L</th>
+                          <th class="px-6 py-4 text-right">Pts</th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-[#2A2A2A]/30">
+                        <tr v-for="(team, index) in groupAStandings" :key="team.id" 
+                            class="group transition-colors">
+                          <td class="px-6 py-4">
+                            <span class="w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-bold"
+                                  :class="index < 2 ? 'bg-[#22C55E]/20 text-[#22C55E] border border-[#22C55E]/30' : 'text-white/30'">
+                              {{ index + 1 }}
+                            </span>
+                          </td>
+                          <td class="px-6 py-4">
+                            <span class="font-bold text-[#F0FDF4] group-hover:text-[#22C55E] transition-colors uppercase tracking-wide text-sm">{{ team.name }}</span>
+                          </td>
+                          <td class="px-6 py-4 text-center text-sm font-medium">{{ team.wins || 0 }}</td>
+                          <td class="px-6 py-4 text-center text-sm font-medium text-white/40">{{ team.losses || 0 }}</td>
+                          <td class="px-6 py-4 text-right">
+                            <span class="font-title text-[#22C55E] text-lg">{{ team.points || 0 }}</span>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <!-- Group A Matches -->
+                <div v-if="!isGroupStageCompleted" class="flex flex-col gap-6 mt-4">
+                  <div v-for="(round, rIndex) in groupARounds" :key="'ga'+rIndex" class="flex flex-col gap-3">
+                    <div class="text-[10px] font-bold text-[#4ADE80] uppercase tracking-[0.2em] px-4 py-1 bg-[#4ADE80]/10 rounded-full self-center border border-[#4ADE80]/20">
+                      Round {{ round.number }}
+                    </div>
+                    <div class="flex flex-wrap justify-center gap-3">
+                      <div v-for="match in round.matches" :key="match.id" class="match-node relative z-10 w-full sm:w-[calc(50%-0.375rem)] lg:w-full xl:w-[calc(50%-0.375rem)] flex flex-col justify-center">
+                        <div class="bg-[#111111]/60 border border-[#2A2A2A] rounded-lg flex flex-col transition-all overflow-hidden shadow hover:border-[#22C55E]/40"
+                             :class="[match.is_completed ? 'opacity-80' : '']">
+                          
+                          <div class="flex items-center justify-between p-2 border-b border-[#2A2A2A]/50"
+                               :class="[getWinnerStatusClass(match, 1, 'A')]">
+                            <div class="flex items-center gap-2">
+                              <div class="w-1.5 h-1.5 rounded-full bg-white/10" :class="match.team1 ? 'bg-[#22C55E]' : ''"></div>
+                              <span class="font-bold truncate text-sm" :class="match.team1 ? 'text-[#F0FDF4]' : 'text-[#A1A1AA] italic'">{{ match.team1?.name || 'TBD' }}</span>
+                            </div>
+                            <span class="font-title text-lg ml-2" :class="getWinnerScoreClass(match, 1, 'A')">{{ match.team1_score }}</span>
+                          </div>
+                          
+                          <div class="flex items-center justify-between p-2"
+                               :class="[getWinnerStatusClass(match, 2, 'A')]">
+                            <div class="flex items-center gap-2">
+                              <div class="w-1.5 h-1.5 rounded-full bg-white/10" :class="match.team2 ? 'bg-[#22C55E]' : ''"></div>
+                              <span class="font-bold truncate text-sm" :class="match.team2 ? 'text-[#F0FDF4]' : 'text-[#A1A1AA] italic'">{{ match.team2?.name || 'TBD' }}</span>
+                            </div>
+                            <span class="font-title text-lg ml-2" :class="getWinnerScoreClass(match, 2, 'A')">{{ match.team2_score }}</span>
+                          </div>
+
+                          <!-- Action Bar if not completed -->
+                          <div v-if="!match.is_completed" class="p-1.5 bg-black/40 flex justify-center border-t border-[#2A2A2A]/50">
+                            <button @click="startDraftForMatch(match)" 
+                                    class="text-[9px] font-bold uppercase tracking-widest text-[#22C55E] hover:text-[#4ADE80] transition-colors py-1 px-3 rounded-full border border-[#22C55E]/30 hover:border-[#22C55E]/60 bg-[#22C55E]/5 cursor-pointer">
+                              Draft
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -68,27 +126,83 @@
               </div>
 
               <!-- Group B -->
-              <div v-if="groupBRounds.length > 0" class="bg-[#111111]/80 backdrop-blur border border-[#2A2A2A] rounded-sm p-6 shadow-xl relative overflow-hidden">
-                <div class="absolute top-0 right-0 w-32 h-32 bg-[#3B82F6] opacity-[0.05] blur-[50px] pointer-events-none"></div>
-                <h4 class="text-2xl font-title text-[#3B82F6] mb-8 text-center uppercase tracking-widest">Group B</h4>
-                
-                <div class="flex flex-col gap-6">
-                  <div v-for="(round, rIndex) in groupBRounds" :key="'gb'+rIndex" class="flex flex-col gap-4">
-                    <div v-for="match in round.matches" :key="match.id" class="match-node relative z-10 w-full flex flex-col justify-center">
-                      <div @click="startDraftForMatch(match)" 
-                           class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-sm flex flex-col transition-all group cursor-pointer"
-                           :class="[match.is_completed ? 'border-[#3B82F6]/30 cursor-default pointer-events-none' : 'hover:border-[#3B82F6]/50']">
-                        
-                        <div class="flex items-center justify-between p-3 border-b border-[#2A2A2A] bg-[#111111]/50 group-hover:bg-[#111111]"
-                             :class="getWinnerStatusClass(match, 1, 'B')">
-                          <span class="font-bold truncate text-sm" :class="match.team1 ? 'text-[#F0FDF4]' : 'text-[#A1A1AA] italic'">{{ match.team1?.name || 'TBD' }}</span>
-                          <span class="font-title text-lg ml-3" :class="getWinnerScoreClass(match, 1, 'B')">{{ match.team1_score }}</span>
-                        </div>
-                        
-                        <div class="flex items-center justify-between p-3 bg-[#111111]/50 group-hover:bg-[#111111]"
-                             :class="getWinnerStatusClass(match, 2, 'B')">
-                          <span class="font-bold truncate text-sm" :class="match.team2 ? 'text-[#F0FDF4]' : 'text-[#A1A1AA] italic'">{{ match.team2?.name || 'TBD' }}</span>
-                          <span class="font-title text-lg ml-3" :class="getWinnerScoreClass(match, 2, 'B')">{{ match.team2_score }}</span>
+              <div v-if="groupBRounds.length > 0" class="flex flex-col gap-8">
+                <!-- Standings Card -->
+                <div class="bg-[#111111]/80 backdrop-blur-xl border border-[#A855F7]/20 rounded-xl overflow-hidden shadow-2xl relative">
+                  <div class="absolute top-0 right-0 w-48 h-48 bg-[#C084FC] opacity-[0.03] blur-[60px] pointer-events-none"></div>
+                  <div class="p-5 border-b border-[#2A2A2A] bg-gradient-to-r from-[#A855F7]/10 to-transparent">
+                    <h4 class="text-xl font-title text-[#C084FC] uppercase tracking-widest">Groupe Univers</h4>
+                  </div>
+                  <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                      <thead>
+                        <tr class="text-[10px] font-bold uppercase tracking-widest text-white/40 border-b border-[#2A2A2A]">
+                          <th class="px-6 py-4">Pos</th>
+                          <th class="px-6 py-4">Team</th>
+                          <th class="px-6 py-4 text-center">W</th>
+                          <th class="px-6 py-4 text-center">L</th>
+                          <th class="px-6 py-4 text-right">Pts</th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-[#2A2A2A]/30">
+                        <tr v-for="(team, index) in groupBStandings" :key="team.id" 
+                            class="group transition-colors">
+                          <td class="px-6 py-4">
+                            <span class="w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-bold"
+                                  :class="index < 2 ? 'bg-[#A855F7]/20 text-[#A855F7] border border-[#A855F7]/30' : 'text-white/30'">
+                              {{ index + 1 }}
+                            </span>
+                          </td>
+                          <td class="px-6 py-4">
+                            <span class="font-bold text-[#F0FDF4] group-hover:text-[#A855F7] transition-colors uppercase tracking-wide text-sm">{{ team.name }}</span>
+                          </td>
+                          <td class="px-6 py-4 text-center text-sm font-medium">{{ team.wins || 0 }}</td>
+                          <td class="px-6 py-4 text-center text-sm font-medium text-white/40">{{ team.losses || 0 }}</td>
+                          <td class="px-6 py-4 text-right">
+                            <span class="font-title text-[#A855F7] text-lg">{{ team.points || 0 }}</span>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <!-- Group B Matches -->
+                <div v-if="!isGroupStageCompleted" class="flex flex-col gap-6 mt-4">
+                  <div v-for="(round, rIndex) in groupBRounds" :key="'gb'+rIndex" class="flex flex-col gap-3">
+                    <div class="text-[10px] font-bold text-[#C084FC] uppercase tracking-[0.2em] px-4 py-1 bg-[#A855F7]/10 rounded-full self-center border border-[#A855F7]/20">
+                      Round {{ round.number }}
+                    </div>
+                    <div class="flex flex-wrap justify-center gap-3">
+                      <div v-for="match in round.matches" :key="match.id" class="match-node relative z-10 w-full sm:w-[calc(50%-0.375rem)] lg:w-full xl:w-[calc(50%-0.375rem)] flex flex-col justify-center">
+                        <div class="bg-[#111111]/60 border border-[#2A2A2A] rounded-lg flex flex-col transition-all overflow-hidden shadow hover:border-[#A855F7]/40"
+                             :class="[match.is_completed ? 'opacity-80' : '']">
+                          
+                          <div class="flex items-center justify-between p-2 border-b border-[#2A2A2A]/50"
+                               :class="[getWinnerStatusClass(match, 1, 'B')]">
+                            <div class="flex items-center gap-2">
+                              <div class="w-1.5 h-1.5 rounded-full bg-white/10" :class="match.team1 ? 'bg-[#A855F7]' : ''"></div>
+                              <span class="font-bold truncate text-sm" :class="match.team1 ? 'text-[#F0FDF4]' : 'text-[#A1A1AA] italic'">{{ match.team1?.name || 'TBD' }}</span>
+                            </div>
+                            <span class="font-title text-lg ml-2" :class="getWinnerScoreClass(match, 1, 'B')">{{ match.team1_score }}</span>
+                          </div>
+                          
+                          <div class="flex items-center justify-between p-2"
+                               :class="[getWinnerStatusClass(match, 2, 'B')]">
+                            <div class="flex items-center gap-2">
+                              <div class="w-1.5 h-1.5 rounded-full bg-white/10" :class="match.team2 ? 'bg-[#A855F7]' : ''"></div>
+                              <span class="font-bold truncate text-sm" :class="match.team2 ? 'text-[#F0FDF4]' : 'text-[#A1A1AA] italic'">{{ match.team2?.name || 'TBD' }}</span>
+                            </div>
+                            <span class="font-title text-lg ml-2" :class="getWinnerScoreClass(match, 2, 'B')">{{ match.team2_score }}</span>
+                          </div>
+
+                          <!-- Action Bar if not completed -->
+                          <div v-if="!match.is_completed" class="p-1.5 bg-black/40 flex justify-center border-t border-[#2A2A2A]/50">
+                            <button @click="startDraftForMatch(match)" 
+                                    class="text-[9px] font-bold uppercase tracking-widest text-[#A855F7] hover:text-[#C084FC] transition-colors py-1 px-3 rounded-full border border-[#A855F7]/30 hover:border-[#A855F7]/60 bg-[#A855F7]/5 cursor-pointer">
+                              Draft
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -99,53 +213,106 @@
           </div>
 
           <!-- KNOCKOUT STAGE -->
-          <div v-if="knockoutRounds.length > 0" class="bracket-section relative mt-12">
-            <h3 class="text-3xl font-title mb-12 text-transparent bg-clip-text bg-gradient-to-b from-[#F0FDF4] to-[#A1A1AA] uppercase tracking-widest text-center">Knockout Stage</h3>
+          <div v-if="knockoutRounds.length > 0 && isGroupStageCompleted" 
+               class="bracket-section relative animate-fade-in-up-delayed order-1 mb-24 mt-8"
+               style="animation-delay: 0.4s;">
+            <h3 class="text-4xl font-title mb-24 text-transparent bg-clip-text bg-gradient-to-b from-[#F0FDF4] to-[#22C55E] uppercase tracking-[0.2em] text-center drop-shadow-[0_0_20px_rgba(34,197,94,0.3)]">
+              Championship Bracket
+            </h3>
             
-            <div class="flex justify-center gap-24 relative">
-              <div v-for="(round, rIndex) in knockoutRounds" :key="'ko'+rIndex" class="flex flex-col justify-around min-w-[300px]">
+            <div class="flex justify-center items-stretch gap-0 relative max-w-7xl mx-auto">
+              <div v-for="(round, rIndex) in knockoutRounds" :key="'ko'+rIndex" 
+                   class="flex flex-col justify-around relative z-10"
+                   :style="{ width: '350px' }">
+                
                 <!-- Round Header -->
-                <div class="text-center mb-8 text-[#A1A1AA] text-xs font-bold uppercase tracking-[0.2em]">
-                  {{ round.number === 1 ? 'Semi-Finals' : round.number === 2 ? 'Final (BO3)' : `Round ${round.number}` }}
+                <div class="absolute -top-16 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                  <div class="px-6 py-2 bg-[#111111] border border-[#22C55E]/30 rounded-full shadow-lg">
+                    <span class="text-[#22C55E] text-xs font-bold uppercase tracking-[0.3em]">
+                      {{ round.number === 1 ? 'Semi-Finals' : round.number === 2 ? 'Grand Final' : `Round ${round.number}` }}
+                    </span>
+                  </div>
                 </div>
                 
-                <div class="flex flex-col justify-around flex-1 relative gap-16">
-                  <div v-for="match in round.matches" :key="match.id" class="match-node relative z-10 w-full flex flex-col justify-center" :class="{'scale-110 origin-center': round.number === 2}">
+                <div class="flex flex-col justify-around flex-1 relative py-8">
+                  <div v-for="match in round.matches" :key="match.id" 
+                       class="match-wrapper relative flex items-center w-full px-8">
                     
-                    <div @click="startDraftForMatch(match)" 
-                         class="bg-[#111111] border border-[#2A2A2A] rounded-sm flex flex-col shadow-xl transition-all group cursor-pointer"
-                         :class="[
-                           match.is_completed 
-                             ? 'border-[#22C55E]/50 shadow-[0_0_15px_rgba(34,197,94,0.15)] cursor-default pointer-events-none' 
-                             : 'hover:border-[#22C55E]/50',
-                           round.number === 2 ? 'border-2 border-[#22C55E] shadow-[0_0_30px_rgba(34,197,94,0.3)] hover:shadow-[0_0_40px_rgba(34,197,94,0.5)]' : ''
-                         ]">
-                      
-                      <!-- Top Team -->
-                      <div class="flex items-center justify-between p-4 border-b border-[#1A1A1A] bg-[#1A1A1A]/50 group-hover:bg-[#1A1A1A]"
-                           :class="getWinnerStatusClass(match, 1)">
-                        <span class="font-bold truncate" :class="[match.team1 ? 'text-[#F0FDF4]' : 'text-[#A1A1AA] italic', round.number === 2 ? 'text-base uppercase tracking-wider' : 'text-sm']">
-                          {{ match.team1?.name || 'TBD' }}
-                        </span>
-                        <span class="font-title ml-4" :class="[getWinnerScoreClass(match, 1), round.number === 2 ? 'text-2xl' : 'text-lg']">
-                          {{ match.team1_score }}
-                        </span>
+                    <!-- Match Card -->
+                    <div class="w-full relative group">
+                      <!-- Connector to next round (right side) -->
+                      <div v-if="Number(rIndex) < knockoutRounds.length - 1" 
+                           class="absolute top-1/2 -right-8 w-8 h-[2px] bg-gradient-to-r from-[#22C55E]/40 to-transparent z-0">
+                        <div class="absolute right-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[#22C55E]/40 blur-[2px]"></div>
                       </div>
                       
-                      <!-- Bottom Team -->
-                      <div class="flex items-center justify-between p-4 bg-[#1A1A1A]/50 group-hover:bg-[#1A1A1A]"
-                           :class="getWinnerStatusClass(match, 2)">
-                        <span class="font-bold truncate" :class="[match.team2 ? 'text-[#F0FDF4]' : 'text-[#A1A1AA] italic', round.number === 2 ? 'text-base uppercase tracking-wider' : 'text-sm']">
-                          {{ match.team2?.name || 'TBD' }}
-                        </span>
-                        <span class="font-title ml-4" :class="[getWinnerScoreClass(match, 2), round.number === 2 ? 'text-2xl' : 'text-lg']">
-                          {{ match.team2_score }}
-                        </span>
+                      <!-- Connector from previous round (left side) -->
+                      <div v-if="Number(rIndex) > 0" 
+                           class="absolute top-1/2 -left-8 w-8 h-[2px] bg-gradient-to-l from-[#22C55E]/40 to-transparent z-0">
+                        <div class="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[#22C55E]/40 blur-[2px]"></div>
                       </div>
 
-                      <!-- Crown for winner of the Final -->
-                      <div v-if="match.is_completed && round.number === 2" class="absolute -top-4 -right-4 text-4xl drop-shadow-[0_0_10px_rgba(34,197,94,1)] z-20 rotate-12">
-                        👑
+                      <div class="bg-[#111111]/80 backdrop-blur-xl border border-white/5 rounded-2xl flex flex-col shadow-2xl transition-all relative z-10 overflow-hidden"
+                           :class="[
+                             match.is_completed 
+                               ? 'border-[#22C55E]/30 shadow-[0_0_30px_rgba(34,197,94,0.1)]' 
+                               : 'hover:border-[#22C55E]/40 group-hover:shadow-[0_0_40px_rgba(34,197,94,0.15)] group-hover:-translate-y-1',
+                             round.number === 2 ? 'scale-110 border-[#22C55E]/50 shadow-[0_0_60px_rgba(34,197,94,0.25)]' : ''
+                           ]">
+                        
+                        <div class="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none"></div>
+                        
+                        <!-- Top Team -->
+                        <div class="flex items-center justify-between p-3 border-b border-white/5 bg-gradient-to-r from-transparent to-white/[0.01] transition-all relative z-10"
+                             :class="[getWinnerStatusClass(match, 1), !match.is_completed ? 'hover:bg-white/[0.03]' : '']">
+                          <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-xl bg-black/60 border border-white/10 flex items-center justify-center font-title text-sm transition-transform group-hover:scale-110"
+                                 :class="match.team1 ? 'text-[#22C55E] border-[#22C55E]/20 shadow-[0_0_15px_rgba(34,197,94,0.1)]' : 'text-white/5'">
+                              {{ match.team1?.name?.substring(0, 1) || '?' }}
+                            </div>
+                            <span class="font-bold truncate uppercase tracking-[0.1em]" :class="[match.team1 ? 'text-[#F0FDF4]' : 'text-white/10 italic', round.number === 2 ? 'text-lg' : 'text-sm']">
+                              {{ match.team1?.name || 'TBD' }}
+                            </span>
+                          </div>
+                          <div class="flex flex-col items-end">
+                            <span class="font-title leading-none" :class="[getWinnerScoreClass(match, 1), round.number === 2 ? 'text-4xl' : 'text-2xl']">
+                              {{ match.team1_score }}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <!-- Bottom Team -->
+                        <div class="flex items-center justify-between p-3 bg-gradient-to-r from-transparent to-white/[0.01] transition-all relative z-10"
+                             :class="[getWinnerStatusClass(match, 2), !match.is_completed ? 'hover:bg-white/[0.03]' : '']">
+                          <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-xl bg-black/60 border border-white/10 flex items-center justify-center font-title text-sm transition-transform group-hover:scale-110"
+                                 :class="match.team2 ? 'text-[#22C55E] border-[#22C55E]/20 shadow-[0_0_15px_rgba(34,197,94,0.1)]' : 'text-white/5'">
+                              {{ match.team2?.name?.substring(0, 1) || '?' }}
+                            </div>
+                            <span class="font-bold truncate uppercase tracking-[0.1em]" :class="[match.team2 ? 'text-[#F0FDF4]' : 'text-white/10 italic', round.number === 2 ? 'text-lg' : 'text-sm']">
+                              {{ match.team2?.name || 'TBD' }}
+                            </span>
+                          </div>
+                          <div class="flex flex-col items-end">
+                            <span class="font-title leading-none" :class="[getWinnerScoreClass(match, 2), round.number === 2 ? 'text-4xl' : 'text-2xl']">
+                              {{ match.team2_score }}
+                            </span>
+                          </div>
+                        </div>
+
+                        <!-- Initialize Draft Button -->
+                        <div v-if="!match.is_completed && match.team1 && match.team2" 
+                             class="p-3 bg-black/60 flex justify-center border-t border-white/5 relative z-10">
+                          <button @click="startDraftForMatch(match)" 
+                                  class="w-full text-[10px] font-black uppercase tracking-[0.25em] text-[#22C55E] hover:text-black hover:bg-[#22C55E] transition-all py-2 rounded-lg border border-[#22C55E]/40 cursor-pointer shadow-[0_0_15px_rgba(34,197,94,0.1)] hover:shadow-[0_0_20px_rgba(34,197,94,0.3)]">
+                            Enter Draft Phase
+                          </button>
+                        </div>
+
+                        <!-- Crown for winner of the Final -->
+                        <div v-if="match.is_completed && round.number === 2" class="absolute -top-6 -right-6 text-5xl drop-shadow-[0_0_15px_rgba(234,179,8,0.8)] z-20 rotate-12 animate-pulse">
+                          👑
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -158,7 +325,7 @@
       </div>
     </main>
 
-    <!-- Modal Popup for Draft (Same as before) -->
+    <!-- Modal Popup for Draft -->
     <Transition
       enter-active-class="transition duration-300 ease-out"
       enter-from-class="opacity-0 scale-95"
@@ -168,10 +335,12 @@
       leave-to-class="opacity-0 scale-95"
     >
       <div v-if="showDraftModal" class="fixed inset-0 flex items-center justify-center z-[60] p-4" @click.self="closeDraftModal">
+        <!-- Backdrop -->
         <div class="absolute inset-0 bg-[#0B0F0C]/90 backdrop-blur-md -z-10"></div>
 
         <div class="bg-[#111111] border border-[#22C55E]/30 rounded-sm p-1 max-w-md w-full shadow-[0_0_50px_rgba(0,0,0,1)] relative before:absolute before:-inset-[1px] before:bg-gradient-to-b before:from-[#22C55E]/50 before:to-[#22C55E]/10 before:-z-10 before:rounded-sm">
           <div class="bg-[#111111] p-8 h-full w-full rounded-sm relative">
+            <!-- Close Button -->
             <button @click="closeDraftModal" class="absolute top-4 right-4 text-[#A1A1AA] hover:text-[#22C55E] transition-colors p-2 z-20" cursor-pointer>
               <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -207,7 +376,7 @@
                   class="w-full py-4 bg-[#1A1A1A] hover:bg-[#282d33] border border-[#2A2A2A] hover:border-[#22C55E]/50 rounded-sm font-bold transition-all flex items-center justify-center gap-2 text-[#A1A1AA] hover:text-[#F0FDF4] uppercase tracking-widest text-xs"
                  cursor-pointer>
                   <svg v-if="!linkCopied" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   </svg>
                   <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
@@ -253,6 +422,32 @@
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #22C55E;
 }
+
+.vertical-text {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-fade-in-up-delayed {
+  animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
+  opacity: 0;
+}
 </style>
 
 <script setup lang="ts">
@@ -262,11 +457,13 @@ import { fetchPlayoffMatches } from '../lib/queries';
 import { subscribeToTable } from '../lib/realtime';
 
 const matches = ref<any[]>([]);
+const teams = ref<any[]>([]);
 const loading = ref(true);
 let subscription: any = null;
 
 // Draft related state
 const showDraftModal = ref(false);
+const currentMatchId = ref("");
 const blueName = ref("");
 const redName = ref("");
 const apiKey = ref("DRAFTER-59605981-E026-439E-BAFC-3C532CF18FB1");
@@ -279,8 +476,12 @@ const linkCopied = ref(false);
 let syncInterval: any = null;
 
 const loadMatches = async () => {
-  const { data } = await fetchPlayoffMatches();
-  if (data) matches.value = data;
+  const { data: matchesData } = await fetchPlayoffMatches();
+  if (matchesData) matches.value = matchesData;
+  
+  const { data: teamsData } = await supabase.from('teams').select('*');
+  if (teamsData) teams.value = teamsData;
+  
   loading.value = false;
 };
 
@@ -307,6 +508,7 @@ const startDraftForMatch = (match: any) => {
     alert("Ce match est déjà terminé. Impossible de lancer une nouvelle draft.");
     return;
   }
+  currentMatchId.value = match.id;
   blueName.value = match.team1.name;
   redName.value = match.team2.name;
   showDraftModal.value = true;
@@ -327,9 +529,27 @@ const generateDraft = async () => {
     draftUrl.value = "";
     draftId.value = "";
     linkCopied.value = false;
+
+    // Check if draft already exists in database
+    const match = matches.value.find((m: any) => m.id === currentMatchId.value);
+    if (match && match.draft_url) {
+      message.value = "Draft récupérée (base de données)...";
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      draftUrl.value = match.draft_url;
+      draftId.value = match.draft_id || "";
+      message.value = "Draft récupérée !";
+      
+      if (syncInterval) clearInterval(syncInterval);
+      syncInterval = setInterval(() => {
+        syncDraftPicks();
+      }, 5000);
+      return;
+    }
+
     message.value = "Récupération des bans globaux...";
 
-    const draftCacheKey = `draft_${blueName.value}_${redName.value}`;
+    const draftCacheKey = `draft_${currentMatchId.value}_${blueName.value}_${redName.value}`;
     const cachedDraft = localStorage.getItem(draftCacheKey);
 
     if (cachedDraft) {
@@ -340,6 +560,14 @@ const generateDraft = async () => {
       draftUrl.value = parsed.draftUrl;
       draftId.value = parsed.draftId || "";
       message.value = "Draft récupérée !";
+      
+      // Also update DB since we have it cached locally but maybe not in DB yet
+      if (currentMatchId.value) {
+        await supabase.from("playoff_matches").update({
+          draft_url: parsed.draftUrl,
+          draft_id: parsed.draftId || ""
+        }).eq("id", currentMatchId.value);
+      }
       
       if (syncInterval) clearInterval(syncInterval);
       syncInterval = setInterval(() => {
@@ -396,6 +624,13 @@ const generateDraft = async () => {
         draftUrl: data.draftUrl,
         draftId: data.draftId || ""
       }));
+
+      if (currentMatchId.value) {
+        await supabase.from("playoff_matches").update({
+          draft_url: data.draftUrl,
+          draft_id: data.draftId || ""
+        }).eq("id", currentMatchId.value);
+      }
       
       if (syncInterval) clearInterval(syncInterval);
       syncInterval = setInterval(() => {
@@ -487,21 +722,21 @@ const syncDraftPicks = async () => {
 const getWinnerStatusClass = (match: any, teamNum: 1 | 2, group: 'A' | 'B' | 'KO' = 'KO') => {
   if (!match.is_completed) return '';
   const isWinner = teamNum === 1 ? match.team1_score > match.team2_score : match.team2_score > match.team1_score;
-  if (!isWinner) return 'opacity-50 grayscale';
+  if (!isWinner) return 'opacity-30 grayscale';
   
-  if (group === 'A') return 'bg-[#4ADE80]/20 border-l-4 border-l-[#4ADE80]';
-  if (group === 'B') return 'bg-[#3B82F6]/20 border-l-4 border-l-[#3B82F6]';
-  return 'bg-[#22C55E]/20 border-l-4 border-l-[#22C55E]';
+  if (group === 'A') return 'bg-[#4ADE80]/10 border-r-4 border-r-[#4ADE80]';
+  if (group === 'B') return 'bg-[#A855F7]/10 border-r-4 border-r-[#A855F7]';
+  return 'bg-[#22C55E]/10 border-r-4 border-r-[#22C55E]';
 };
 
 const getWinnerScoreClass = (match: any, teamNum: 1 | 2, group: 'A' | 'B' | 'KO' = 'KO') => {
-  if (!match.is_completed) return 'text-[#A1A1AA]';
+  if (!match.is_completed) return 'text-white/20';
   const isWinner = teamNum === 1 ? match.team1_score > match.team2_score : match.team2_score > match.team1_score;
-  if (!isWinner) return 'text-[#2A2A2A]';
+  if (!isWinner) return 'text-white/10';
   
-  if (group === 'A') return 'text-[#4ADE80] drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]';
-  if (group === 'B') return 'text-[#3B82F6] drop-shadow-[0_0_5px_rgba(59,130,246,0.5)]';
-  return 'text-[#22C55E] drop-shadow-[0_0_5px_rgba(34,197,94,0.5)]';
+  if (group === 'A') return 'text-[#4ADE80] drop-shadow-[0_0_10px_rgba(74,222,128,0.4)]';
+  if (group === 'B') return 'text-[#A855F7] drop-shadow-[0_0_10px_rgba(168,85,247,0.4)]';
+  return 'text-[#22C55E] drop-shadow-[0_0_10px_rgba(34,197,94,0.4)]';
 };
 
 // Group matches by stage and round
@@ -542,6 +777,75 @@ const groupARounds = computed(() => {
 const groupBRounds = computed(() => {
   const group = groupedMatches.value.find((g: any) => g.name === 'group_b');
   return group ? group.rounds : [];
+});
+
+const groupAStandings = computed(() => {
+  const teamStats: Record<string, any> = {};
+  
+  groupARounds.value.forEach((r: any) => r.matches.forEach((m: any) => {
+    if (m.team1_id) {
+      if (!teamStats[m.team1_id]) teamStats[m.team1_id] = { id: m.team1_id, name: m.team1?.name || 'TBD', wins: 0, losses: 0, points: 0 };
+    }
+    if (m.team2_id) {
+      if (!teamStats[m.team2_id]) teamStats[m.team2_id] = { id: m.team2_id, name: m.team2?.name || 'TBD', wins: 0, losses: 0, points: 0 };
+    }
+
+    if (m.is_completed) {
+      const s1 = Number(m.team1_score) || 0;
+      const s2 = Number(m.team2_score) || 0;
+      if (s1 > s2) {
+        teamStats[m.team1_id].wins++;
+        teamStats[m.team1_id].points += 1;
+        teamStats[m.team2_id].losses++;
+      } else if (s2 > s1) {
+        teamStats[m.team2_id].wins++;
+        teamStats[m.team2_id].points += 1;
+        teamStats[m.team1_id].losses++;
+      }
+    }
+  }));
+  
+  return Object.values(teamStats)
+    .sort((a, b) => (b.points || 0) - (a.points || 0) || (b.wins || 0) - (a.wins || 0));
+});
+
+const groupBStandings = computed(() => {
+  const teamStats: Record<string, any> = {};
+  
+  groupBRounds.value.forEach((r: any) => r.matches.forEach((m: any) => {
+    if (m.team1_id) {
+      if (!teamStats[m.team1_id]) teamStats[m.team1_id] = { id: m.team1_id, name: m.team1?.name || 'TBD', wins: 0, losses: 0, points: 0 };
+    }
+    if (m.team2_id) {
+      if (!teamStats[m.team2_id]) teamStats[m.team2_id] = { id: m.team2_id, name: m.team2?.name || 'TBD', wins: 0, losses: 0, points: 0 };
+    }
+
+    if (m.is_completed) {
+      const s1 = Number(m.team1_score) || 0;
+      const s2 = Number(m.team2_score) || 0;
+      if (s1 > s2) {
+        teamStats[m.team1_id].wins++;
+        teamStats[m.team1_id].points += 1;
+        teamStats[m.team2_id].losses++;
+      } else if (s2 > s1) {
+        teamStats[m.team2_id].wins++;
+        teamStats[m.team2_id].points += 1;
+        teamStats[m.team1_id].losses++;
+      }
+    }
+  }));
+  
+  return Object.values(teamStats)
+    .sort((a, b) => (b.points || 0) - (a.points || 0) || (b.wins || 0) - (a.wins || 0));
+});
+
+const isGroupStageCompleted = computed(() => {
+  const allGroupMatches = [
+    ...groupARounds.value.flatMap((r: any) => r.matches),
+    ...groupBRounds.value.flatMap((r: any) => r.matches)
+  ];
+  if (allGroupMatches.length === 0) return true;
+  return allGroupMatches.every((m: any) => m.is_completed);
 });
 
 </script>

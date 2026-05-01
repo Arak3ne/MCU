@@ -373,7 +373,7 @@ onMounted(async () => {
   ]);
   
   if (playersRes.data) {
-    players.value = playersRes.data.filter((p: any) => p.participation_type === 'joueur') as Player[];
+    players.value = playersRes.data.filter((p: any) => p.participation_type && p.participation_type.toLowerCase() === 'joueur') as Player[];
   }
   
   if (championsRes.data) {

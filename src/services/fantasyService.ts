@@ -6,19 +6,21 @@ export const fantasyService = {
    * Fetch a user's fantasy team for a specific tournament day
    */
   async getTeam(userId: string, tournamentDay: 1 | 2): Promise<FantasyTeam | null> {
-    const { data: teamData, error: teamError } = await supabase
+    const { data: teamDataList, error: teamError } = await supabase
       .from('fantasy_teams')
       .select('*, fantasy_picks(*)')
       .eq('user_id', userId)
       .eq('tournament_day', tournamentDay)
-      .single()
+      .order('created_at', { ascending: false })
+      .limit(1)
 
-    if (teamError && teamError.code !== 'PGRST116') { // PGRST116 is "Row not found"
+    if (teamError) {
       console.error('Error fetching fantasy team:', teamError)
       throw teamError
     }
 
-    if (!teamData) return null
+    if (!teamDataList || teamDataList.length === 0) return null
+    const teamData = teamDataList[0]
 
     const picks = teamData.fantasy_picks || []
     const playerIds = picks.map((p: any) => p.player_id)

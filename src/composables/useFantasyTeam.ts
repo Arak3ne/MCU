@@ -58,9 +58,24 @@ export function useFantasyTeam(userId: Ref<string | null>, tournamentDay: Ref<1 
     return validationResult.value?.isValid ?? false
   })
 
+  const carriedOverBudget = computed(() => {
+    if (tournamentDay.value === 2) {
+      if (team.value) {
+        return team.value.carriedOverBudget ?? 0
+      } else if (previousTeam.value) {
+        const day1Cost = previousTeam.value.playerIds.reduce((sum, id) => {
+          const p = knownPlayers.value.find(player => player.id === id)
+          return sum + (p ? p.price : 0)
+        }, 0)
+        return 100 - day1Cost
+      }
+    }
+    return 0
+  })
+
   const validate = (allPlayers: FantasyPlayer[]) => {
     let previousRosterValue = 0
-    let carriedOverBudget = team.value?.carriedOverBudget ?? 0
+    let carriedOverBudgetVal = carriedOverBudget.value
     let previousTeamRoster: string[] = []
 
     if (tournamentDay.value === 2 && previousTeam.value) {
@@ -76,7 +91,7 @@ export function useFantasyTeam(userId: Ref<string | null>, tournamentDay: Ref<1 
       captainId.value,
       tournamentDay.value,
       previousTeamRoster,
-      carriedOverBudget,
+      carriedOverBudgetVal,
       previousRosterValue
     )
   }
@@ -106,6 +121,16 @@ export function useFantasyTeam(userId: Ref<string | null>, tournamentDay: Ref<1 
     
     validate(allPlayers)
   }
+
+  const previousRosterValue = computed(() => {
+    if (tournamentDay.value === 2 && previousTeam.value) {
+      return previousTeam.value.playerIds.reduce((sum, id) => {
+        const p = knownPlayers.value.find(player => player.id === id)
+        return sum + (p ? (p.priceDay2 ?? p.price) : 0)
+      }, 0)
+    }
+    return 0
+  })
 
   // Budget info
   const budgetUsed = computed(() => validationResult.value?.totalCost ?? 0)
@@ -180,7 +205,7 @@ export function useFantasyTeam(userId: Ref<string | null>, tournamentDay: Ref<1 
         captainId: captainId.value!,
         transfersMade: transfersMade.value,
         penaltyPoints: penaltyPoints.value,
-        carriedOverBudget: team.value?.carriedOverBudget ?? 0
+        carriedOverBudget: carriedOverBudget.value
       })
       team.value = saved
       return true
@@ -224,6 +249,7 @@ export function useFantasyTeam(userId: Ref<string | null>, tournamentDay: Ref<1 
 
   return {
     team,
+    previousTeam: readonly(previousTeam),
     selectedPlayers,
     captainId: readonly(captainId),
     teamName,
@@ -236,6 +262,8 @@ export function useFantasyTeam(userId: Ref<string | null>, tournamentDay: Ref<1 
     budgetUsed,
     budgetRemaining,
     maxBudget,
+    carriedOverBudget,
+    previousRosterValue,
     transfersMade,
     penaltyPoints,
     loadTeam,
