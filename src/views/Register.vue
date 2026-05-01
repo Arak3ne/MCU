@@ -14,7 +14,10 @@
           </svg>
         </div>
         <h2 class="text-4xl font-title text-white mb-4 uppercase tracking-widest drop-shadow-sm">Inscription validée</h2>
-        <p class="text-mcu-text-muted text-lg mb-10">Tu seras draft le jour J. Prépare-toi.</p>
+        <p class="text-mcu-text-muted text-lg mb-10">
+          <span v-if="form.participation_type === 'joueur'">Tu seras draft le jour J. Prépare-toi.</span>
+          <span v-else>Tu es maintenant inscrit en tant que spectateur. Prépare tes meilleurs pronostics pour la fantasy draft !</span>
+        </p>
         
         <div v-if="signatureChampion" class="mt-4 flex flex-col items-center animate-fade-in" style="animation-delay: 0.2s">
           <p class="text-sm text-mcu-text-muted uppercase tracking-widest mb-6 font-bold">Ton Avatar</p>
@@ -33,7 +36,7 @@
         <!-- Header & Progress -->
         <div class="p-8 pb-6 border-b border-mcu-border relative overflow-hidden">
           <div class="absolute top-0 left-0 w-full h-1 bg-mcu-surface">
-            <div class="h-full bg-mcu-primary transition-all duration-500 ease-out shadow-[0_0_10px_rgba(34,197,94,0.5)]" :style="{ width: `${(currentStep / 4) * 100}%` }"></div>
+            <div class="h-full bg-mcu-primary transition-all duration-500 ease-out shadow-[0_0_10px_rgba(34,197,94,0.5)]" :style="{ width: form.participation_type === 'drafter' ? '100%' : `${(currentStep / 4) * 100}%` }"></div>
           </div>
           <div class="flex flex-col items-center justify-center mb-8 mt-2 gap-4">
             <img src="../assets/mcu_logo.png" alt="MCU Logo" class="w-16 h-16 drop-shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
@@ -42,7 +45,7 @@
             </h1>
           </div>
           
-          <div class="flex items-center justify-between relative px-4">
+          <div v-if="form.participation_type === 'joueur'" class="flex items-center justify-between relative px-4">
             <div class="absolute left-8 right-8 top-1/2 -translate-y-1/2 h-0.5 bg-mcu-border -z-10"></div>
             <div v-for="step in 4" :key="step" class="flex flex-col items-center gap-2 bg-mcu-surface-light px-2">
               <div 
@@ -69,6 +72,28 @@
             </div>
             
             <div class="space-y-6">
+              <div class="space-y-4">
+                <label class="block text-xs font-medium text-mcu-text-muted uppercase tracking-widest text-center">Type de participation</label>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div 
+                    @click="form.participation_type = 'joueur'"
+                    class="cursor-pointer rounded-xl border-2 px-4 py-4 text-center transition-all duration-300"
+                    :class="form.participation_type === 'joueur' ? 'bg-mcu-primary/10 border-mcu-primary text-mcu-primary shadow-[0_0_10px_rgba(34,197,94,0.1)]' : 'bg-mcu-surface border-mcu-border text-mcu-text-muted hover:border-mcu-text-muted hover:text-white'"
+                  >
+                    <div class="font-bold tracking-wide mb-1">Joueur</div>
+                    <div class="text-xs opacity-80">Tournoi + Fantasy Draft</div>
+                  </div>
+                  <div 
+                    @click="form.participation_type = 'drafter'"
+                    class="cursor-pointer rounded-xl border-2 px-4 py-4 text-center transition-all duration-300"
+                    :class="form.participation_type === 'drafter' ? 'bg-mcu-primary/10 border-mcu-primary text-mcu-primary shadow-[0_0_10px_rgba(34,197,94,0.1)]' : 'bg-mcu-surface border-mcu-border text-mcu-text-muted hover:border-mcu-text-muted hover:text-white'"
+                  >
+                    <div class="font-bold tracking-wide mb-1">Spectateur</div>
+                    <div class="text-xs opacity-80">Fantasy Draft uniquement</div>
+                  </div>
+                </div>
+              </div>
+
               <div class="relative group">
                 <input 
                   v-model="form.pseudo" 
@@ -81,7 +106,7 @@
                 <label for="pseudo" class="absolute left-4 top-2 text-xs font-medium text-mcu-text-muted uppercase tracking-wider transition-all peer-placeholder-shown:text-base peer-placeholder-shown:top-4 peer-focus:top-2 peer-focus:text-xs peer-focus:text-mcu-primary cursor-text">Pseudo en jeu</label>
               </div>
 
-              <div class="relative group">
+              <div class="relative group" v-if="form.participation_type === 'joueur'">
                 <input 
                   v-model="form.riot_id" 
                   type="text" 
@@ -295,7 +320,7 @@
             <button 
               type="button" 
               @click="prevStep" 
-              :class="currentStep > 1 ? 'opacity-100 visible' : 'opacity-0 invisible'"
+              :class="currentStep > 1 && form.participation_type === 'joueur' ? 'opacity-100 visible' : 'opacity-0 invisible'"
               class="px-6 py-3 rounded-xl font-bold text-sm bg-mcu-surface text-mcu-text-muted hover:text-white border border-mcu-border hover:border-mcu-text-muted transition-all flex items-center gap-2"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -305,21 +330,25 @@
             </button>
             
             <button 
-              v-if="currentStep < 4"
+              v-if="(currentStep < 4 && form.participation_type === 'joueur') || (currentStep === 1 && form.participation_type === 'drafter')"
               type="button" 
               @click="nextStep"
               :disabled="!isStepValid || loading"
-              class="px-8 py-3 rounded-xl font-bold text-sm bg-white text-black hover:bg-gray-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider flex items-center gap-2 group shadow-lg"
+              :class="form.participation_type === 'drafter' ? 'bg-mcu-primary text-white hover:bg-mcu-accent shadow-[0_0_20px_rgba(34,197,94,0.4)]' : 'bg-white text-black hover:bg-gray-200'"
+              class="px-8 py-3 rounded-xl font-bold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider flex items-center gap-2 group shadow-lg"
             >
-              <span v-if="loading" class="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></span>
-              {{ loading ? 'Vérification...' : 'Suivant' }}
-              <svg v-if="!loading" class="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <span v-if="loading" class="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" :class="form.participation_type === 'drafter' ? 'border-white' : 'border-black'"></span>
+              {{ loading ? 'Vérification...' : (form.participation_type === 'drafter' ? 'Terminer' : 'Suivant') }}
+              <svg v-if="!loading && form.participation_type === 'joueur'" class="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+              <svg v-if="!loading && form.participation_type === 'drafter'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
               </svg>
             </button>
             
             <button 
-              v-if="currentStep === 4"
+              v-if="currentStep === 4 && form.participation_type === 'joueur'"
               type="submit"
               :disabled="!isStepValid || loading"
               class="px-8 py-3 rounded-xl font-bold text-sm bg-mcu-primary text-white hover:bg-mcu-accent transition-all shadow-[0_0_20px_rgba(34,197,94,0.4)] hover:shadow-[0_0_30px_rgba(34,197,94,0.6)] disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider flex items-center gap-2"
@@ -360,6 +389,7 @@ interface FormState {
   pseudo: string;
   discord: string;
   riot_id: string;
+  participation_type: 'joueur' | 'drafter';
   primary_role: string;
   secondary_role: string;
   rank: string;
@@ -390,6 +420,7 @@ const form = ref<FormState>({
   pseudo: '',
   discord: '',
   riot_id: '',
+  participation_type: 'joueur',
   primary_role: '',
   secondary_role: '',
   rank: '',
@@ -440,7 +471,7 @@ const signatureChampion = computed(() => {
 
 const isStepValid = computed(() => {
   if (currentStep.value === 1) {
-    const isRiotIdValid = /^.+#.+$/.test(form.value.riot_id.trim());
+    const isRiotIdValid = form.value.participation_type === 'drafter' || /^.+#.+$/.test(form.value.riot_id.trim());
     return form.value.pseudo.trim().length > 0 && form.value.discord.trim().length > 0 && isRiotIdValid;
   }
   if (currentStep.value === 2) {
@@ -485,6 +516,12 @@ const nextStep = async () => {
       loading.value = false;
       return;
     }
+    
+    if (form.value.participation_type === 'drafter') {
+      await submitForm();
+      return;
+    }
+    
     loading.value = false;
   }
 
@@ -506,17 +543,19 @@ const submitForm = async () => {
   loading.value = true;
   
   try {
+    const isJoueur = form.value.participation_type === 'joueur';
     const { data, error } = await supabase.from('players').insert({
       pseudo: form.value.pseudo,
       discord: form.value.discord,
-      riot_id: form.value.riot_id.trim(),
-      primary_role: form.value.primary_role,
-      secondary_role: form.value.secondary_role,
-      rank: form.value.rank,
-      playstyle: form.value.playstyle,
-      mindset: form.value.mindset,
-      champion_pool: form.value.champion_pool,
-      champion_signature: form.value.champion_signature
+      riot_id: isJoueur ? form.value.riot_id.trim() : null,
+      participation_type: form.value.participation_type,
+      primary_role: isJoueur ? form.value.primary_role : null,
+      secondary_role: isJoueur ? form.value.secondary_role : null,
+      rank: isJoueur ? form.value.rank : null,
+      playstyle: isJoueur ? form.value.playstyle : null,
+      mindset: isJoueur ? form.value.mindset : null,
+      champion_pool: isJoueur ? form.value.champion_pool : null,
+      champion_signature: isJoueur ? form.value.champion_signature : null
     }).select().single();
     
     if (error) {

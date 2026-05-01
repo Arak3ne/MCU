@@ -104,49 +104,49 @@
               <!-- Highlight background for user team - subtle glow instead of gradient -->
               <div v-if="entry.userId === currentUserId" class="absolute inset-0 bg-mcu-primary/[0.02] rounded-xl pointer-events-none"></div>
 
-              <div class="relative p-2.5 sm:px-4 sm:py-3 flex flex-col md:grid md:grid-cols-[60px_1fr_100px] gap-4 md:gap-4 items-center">
+              <div class="relative p-4 sm:px-6 sm:py-5 flex flex-col md:grid md:grid-cols-[80px_1fr_120px] gap-4 md:gap-6 items-center">
                 
                 <!-- Rank -->
                 <div class="flex md:justify-center w-full md:w-auto justify-between items-center md:block">
-                  <span class="text-[10px] font-bold uppercase tracking-widest text-white/30 md:hidden">Rang</span>
-                  <div class="relative flex items-center justify-center w-10 h-10 rounded-full"
+                  <span class="text-xs font-bold uppercase tracking-widest text-white/30 md:hidden">Rang</span>
+                  <div class="relative flex items-center justify-center w-12 h-12 rounded-full"
                        :class="[
                          index === 0 ? 'bg-yellow-500/10 border border-yellow-500/30 text-yellow-500/90' :
                          index === 1 ? 'bg-gray-400/10 border border-gray-400/30 text-gray-300/90' :
                          index === 2 ? 'bg-orange-600/10 border border-orange-600/30 text-orange-500/90' :
                          'bg-mcu-surface-light/50 border border-mcu-border/50 text-white/50'
                        ]">
-                    <span class="font-title text-lg mt-0.5">{{ index + 1 }}</span>
+                    <span class="font-title text-xl mt-0.5">{{ index + 1 }}</span>
                   </div>
                 </div>
 
                 <!-- Team Info & Picks -->
                 <div class="w-full">
-                  <div class="flex flex-wrap items-center gap-2.5 mb-2">
-                    <h3 class="font-title text-lg uppercase tracking-wider text-white/90 group-hover:text-mcu-primary transition-colors">
+                  <div class="flex flex-wrap items-center gap-3 mb-3">
+                    <h3 class="font-title text-xl uppercase tracking-wider text-white/90 group-hover:text-mcu-primary transition-colors">
                       {{ entry.teamName }}
                     </h3>
                     <div class="flex items-center gap-2">
-                      <span v-if="entry.userId === currentUserId" class="px-1.5 py-0.5 rounded bg-mcu-primary/10 text-mcu-primary border border-mcu-primary/20 text-[8px] tracking-widest font-bold">MOI</span>
-                      <span class="px-1.5 py-0.5 rounded bg-black/30 text-white/40 border border-mcu-border/50 text-[8px] tracking-widest font-bold flex items-center gap-1">
-                        <svg class="w-2.5 h-2.5 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                      <span v-if="entry.userId === currentUserId" class="px-2 py-1 rounded bg-mcu-primary/10 text-mcu-primary border border-mcu-primary/20 text-[10px] tracking-widest font-bold">MOI</span>
+                      <span class="px-2 py-1 rounded bg-black/30 text-white/40 border border-mcu-border/50 text-[10px] tracking-widest font-bold flex items-center gap-1.5">
+                        <svg class="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                         {{ entry.creatorPseudo }}
                       </span>
                     </div>
                   </div>
 
                   <!-- Picks -->
-                  <div v-if="entry.picks && entry.picks.length > 0" class="flex flex-wrap gap-1.5">
+                  <div v-if="entry.picks && entry.picks.length > 0" class="flex flex-wrap gap-2">
                     <div v-for="pick in entry.picks" :key="pick.playerId" 
-                         class="flex items-center gap-1.5 px-2 py-1 rounded-md bg-black/40 border border-mcu-border/30 text-[10px] group/pick hover:border-mcu-border/60 transition-all">
-                      <span class="text-white/70 font-bold group-hover/pick:text-white transition-colors flex items-center gap-1">
+                         class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/40 border border-mcu-border/30 text-xs group/pick hover:border-mcu-border/60 transition-all">
+                      <span class="text-white/70 font-bold group-hover/pick:text-white transition-colors flex items-center gap-1.5">
                         <span v-if="pick.isCaptain" class="text-yellow-500/80" title="Capitaine">
-                          <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 2a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 2zM5.5 3a.75.75 0 00-.75.75v1.5a.75.75 0 001.5 0v-1.5A.75.75 0 005.5 3zm9 0a.75.75 0 00-.75.75v1.5a.75.75 0 001.5 0v-1.5A.75.75 0 0014.5 3zM3 7.5A.75.75 0 013.75 7h12.5a.75.75 0 01.75.75v7.5a.75.75 0 01-.75.75H3.75a.75.75 0 01-.75-.75v-7.5zM4.5 8.5v6h11v-6h-11z" clip-rule="evenodd" /></svg>
+                          <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 2a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 2zM5.5 3a.75.75 0 00-.75.75v1.5a.75.75 0 001.5 0v-1.5A.75.75 0 005.5 3zm9 0a.75.75 0 00-.75.75v1.5a.75.75 0 001.5 0v-1.5A.75.75 0 0014.5 3zM3 7.5A.75.75 0 013.75 7h12.5a.75.75 0 01.75.75v7.5a.75.75 0 01-.75.75H3.75a.75.75 0 01-.75-.75v-7.5zM4.5 8.5v6h11v-6h-11z" clip-rule="evenodd" /></svg>
                         </span>
                         {{ pick.pseudo }}
                       </span>
-                      <div class="w-px h-2.5 bg-white/5"></div>
-                      <span class="font-title text-[11px] mt-0.5" 
+                      <div class="w-px h-3.5 bg-white/10"></div>
+                      <span class="font-title text-sm mt-0.5" 
                             :class="pick.score > 0 ? 'text-mcu-primary/80' : (pick.score < 0 ? 'text-red-400/80' : 'text-white/30')">
                         {{ pick.score > 0 ? '+' : '' }}{{ pick.score.toFixed(2) }}
                       </span>
@@ -155,9 +155,9 @@
                 </div>
 
                 <!-- Total Points -->
-                <div class="w-full md:w-auto flex justify-between items-center md:block border-t border-white/5 md:border-0 pt-2 md:pt-0 mt-1 md:mt-0 md:text-right">
-                  <span class="text-[10px] font-bold uppercase tracking-widest text-white/30 md:hidden">Points</span>
-                  <div class="font-title text-xl tracking-wide"
+                <div class="w-full md:w-auto flex justify-between items-center md:block border-t border-white/5 md:border-0 pt-3 md:pt-0 mt-2 md:mt-0 md:text-right">
+                  <span class="text-xs font-bold uppercase tracking-widest text-white/30 md:hidden">Points</span>
+                  <div class="font-title text-2xl tracking-wide"
                        :class="entry.totalPoints > 0 ? 'text-mcu-primary/90' : (entry.totalPoints < 0 ? 'text-red-400/90' : 'text-white/40')">
                     {{ entry.totalPoints.toFixed(2) }}
                   </div>

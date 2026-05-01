@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>MorueTracker</title>
+  <style>
+    :root {
+      /* Couleurs tirées du logo MCU (Vert/Émeraude et Doré/Jaune) */
+      --primary: #2b8a3e; /* Vert forêt / Émeraude */
+      --primary-hover: #37b24d;
+      --secondary: #f59f00; /* Jaune/Doré du logo */
+      --bg-dark: #141517; /* Fond très sombre */
+      --bg-card: #212529; /* Fond de carte légèrement plus clair */
+      --text-main: #f8f9fa;
+      --text-muted: #adb5bd;
+      --border: #343a40;
+      --error: #fa5252;
+      --success: #40c057;
+      --warning: #fcc419;
+      --info: #4dabf7;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-main);
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      overflow: hidden;
+      user-select: none; /* Empêche la sélection de texte */
+    }
+
+    .container {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      padding: 30px;
+      box-sizing: border-box;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    .logo {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      background: linear-gradient(to right, var(--text-main), var(--secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+
+    .card {
+      background: var(--bg-card);
+      padding: 24px;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid var(--border);
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #app-state {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 8px;
+      margin-bottom: 24px;
+      font-weight: 600;
+      font-size: 14px;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .indicator {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      box-shadow: 0 0 8px currentColor;
+    }
+    .indicator.red { color: var(--error); background: var(--error); }
+    .indicator.yellow { color: var(--warning); background: var(--warning); }
+    .indicator.green { color: var(--success); background: var(--success); }
+    .indicator.blue { color: var(--info); background: var(--info); }
+
+    .section {
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+    }
+
+    p {
+      margin: 0 0 16px 0;
+      color: var(--text-muted);
+      font-size: 14px;
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    .input-group {
+      position: relative;
+      margin-bottom: 20px;
+    }
+
+    input {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,0.2);
+      color: white;
+      font-size: 15px;
+      box-sizing: border-box;
+      transition: all 0.2s ease;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(43, 138, 62, 0.2);
+    }
+
+    input::placeholder {
+      color: #475569;
+    }
+
+    button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 14px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 15px;
+      width: 100%;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    }
+
+    button:hover:not(:disabled) {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+    }
+
+    button:active:not(:disabled) {
+      transform: translateY(1px);
+    }
+
+    button:disabled {
+      background: var(--border);
+      color: var(--text-muted);
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .user-profile {
+      background: rgba(0,0,0,0.2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .user-profile span {
+      display: block;
+      color: var(--text-muted);
+      font-size: 12px;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .user-profile strong {
+      font-size: 18px;
+      color: var(--text-main);
+    }
+
+    .status {
+      margin-top: auto;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      text-align: center;
+      font-weight: 500;
+      animation: fadeIn 0.3s ease;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .status.error { background: rgba(239, 68, 68, 0.1); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.2); }
+    .status.success { background: rgba(16, 185, 129, 0.1); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.2); }
+    .status.info { background: rgba(59, 130, 246, 0.1); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.2); }
+
+    #debug-logs {
+      margin-top: 16px;
+      background: #020617;
+      padding: 12px;
+      border-radius: 8px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 11px;
+      height: 120px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      color: #cbd5e1;
+    }
+
+    #debug-logs div {
+      margin-bottom: 4px;
+      word-break: break-all;
+    }
+
+    #debug-logs .log-header {
+      color: #64748b;
+      margin-bottom: 8px;
+      font-weight: bold;
+      text-transform: uppercase;
+      font-size: 10px;
+      letter-spacing: 1px;
+      border-bottom: 1px solid #1e293b;
+      padding-bottom: 4px;
+    }
+
+    /* Scrollbar personnalisée */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <img src="icon.png" alt="MCU Logo" class="logo" onerror="this.style.display='none'">
+      <h2>MorueTracker</h2>
+    </div>
+
+    <div class="card">
+      <div id="app-state">
+        <span id="state-indicator" class="indicator red"></span>
+        <span id="state-text">Non connecté</span>
+      </div>
+
+      <div id="login-section" class="section">
+        <p>Entrez votre Riot ID pour lier vos matchs et activer la synchronisation automatique.</p>
+        <div class="input-group">
+          <input type="text" id="riot-id" placeholder="Ex: Faker#EUW" spellcheck="false">
+        </div>
+        <button id="login-btn">Se connecter</button>
+      </div>
+
+      <div id="sync-section" class="section" style="display: none;">
+        <div class="user-profile">
+          <span>Connecté en tant que</span>
+          <strong id="user-riot-id"></strong>
+        </div>
+        <p>L'application tourne en arrière-plan et synchronisera automatiquement vos Custom Games 5v5.</p>
+        <button id="sync-btn" disabled>Forcer la synchronisation</button>
+      </div>
+
+      <div id="status-message" class="status" style="display: none;"></div>
+    </div>
+
+    <div id="debug-logs" style="display: none;">
+      <div class="log-header">Console de Débogage</div>
+    </div>
+  </div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+
+    const loginSection = document.getElementById('login-section');
+    const syncSection = document.getElementById('sync-section');
+    const riotIdInput = document.getElementById('riot-id');
+    const loginBtn = document.getElementById('login-btn');
+    const syncBtn = document.getElementById('sync-btn');
+    const statusMsg = document.getElementById('status-message');
+    const userRiotIdDisplay = document.getElementById('user-riot-id');
+    const debugLogs = document.getElementById('debug-logs');
+    
+    const stateIndicator = document.getElementById('state-indicator');
+    const stateText = document.getElementById('state-text');
+
+    let isAuthenticated = false;
+    let isLcuConnected = false;
+
+    function addLog(msg) {
+      debugLogs.style.display = 'block';
+      const logEntry = document.createElement('div');
+      
+      // Coloration syntaxique basique pour les logs
+      let color = '#cbd5e1';
+      if (msg.includes('Erreur') || msg.includes('Ignoré')) color = '#fca5a5';
+      if (msg.includes('NOUVEAU MATCH') || msg.includes('succès')) color = '#6ee7b7';
+      if (msg.includes('[WS]')) color = '#93c5fd';
+      
+      logEntry.style.color = color;
+      logEntry.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      debugLogs.appendChild(logEntry);
+      debugLogs.scrollTop = debugLogs.scrollHeight;
+    }
+
+    function updateState() {
+      if (!isAuthenticated) {
+        stateIndicator.className = 'indicator red';
+        stateText.innerText = 'Non connecté';
+        syncBtn.disabled = true;
+      } else if (!isLcuConnected) {
+        stateIndicator.className = 'indicator yellow';
+        stateText.innerText = 'En attente de League of Legends...';
+        syncBtn.disabled = true;
+      } else {
+        stateIndicator.className = 'indicator green';
+        stateText.innerText = 'Prêt & En écoute';
+        syncBtn.disabled = false;
+      }
+    }
+
+    function showStatus(msg, type) {
+      statusMsg.style.display = 'block';
+      statusMsg.className = `status ${type}`;
+      statusMsg.innerText = msg;
+      
+      // Cacher les messages de succès/info après 5 secondes
+      if (type !== 'error') {
+        setTimeout(() => {
+          if (statusMsg.innerText === msg) {
+            statusMsg.style.display = 'none';
+          }
+        }, 5000);
+      }
+    }
+
+    // Permettre de valider avec la touche Entrée
+    riotIdInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') loginBtn.click();
+    });
+
+    loginBtn.addEventListener('click', () => {
+      const riotId = riotIdInput.value.trim();
+      if (!riotId || !riotId.includes('#')) return showStatus('Veuillez entrer un Riot ID valide (ex: Pseudo#Tag)', 'error');
+      
+      loginBtn.disabled = true;
+      loginBtn.innerText = 'Vérification...';
+      ipcRenderer.send('login-riot-id', riotId);
+    });
+
+    syncBtn.addEventListener('click', () => {
+      syncBtn.disabled = true;
+      stateIndicator.className = 'indicator blue';
+      stateText.innerText = 'Synchronisation en cours...';
+      ipcRenderer.send('sync-matches');
+    });
+
+    ipcRenderer.on('login-error', (event, err) => {
+      showStatus(err, 'error');
+      loginBtn.disabled = false;
+      loginBtn.innerText = 'Se connecter';
+    });
+
+    ipcRenderer.on('auth-success', (event, player) => {
+      isAuthenticated = true;
+      loginSection.style.display = 'none';
+      syncSection.style.display = 'flex';
+      userRiotIdDisplay.innerText = player.displayId;
+      showStatus('Joueur trouvé !', 'success');
+      updateState();
+    });
+
+    ipcRenderer.on('lcu-status', (event, status) => {
+      isLcuConnected = status.connected;
+      if (status.message) addLog(status.message);
+      updateState();
+    });
+
+    ipcRenderer.on('debug-log', (event, msg) => {
+      addLog(msg);
+    });
+
+    ipcRenderer.on('sync-status', (event, msg) => {
+      showStatus(msg, 'info');
+    });
+
+    ipcRenderer.on('sync-success', (event, msg) => {
+      showStatus(msg, 'success');
+      updateState(); // reset to green
+    });
+
+    ipcRenderer.on('sync-error', (event, err) => {
+      showStatus(err, 'error');
+      updateState(); // reset to green/yellow
+    });
+
+    ipcRenderer.on('trigger-auto-sync', () => {
+      if (!syncBtn.disabled) {
+        addLog('Déclenchement automatique de la synchronisation...');
+        syncBtn.click();
+      } else {
+        addLog('Impossible de lancer la sync auto (bouton désactivé)');
+      }
+    });
+  </script>
+</body>
+</html>

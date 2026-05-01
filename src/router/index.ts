@@ -35,6 +35,10 @@ const router = createRouter({
       component: () => import("../views/FutureMatches.vue"),
     },
     {
+      path: "/matches",
+      redirect: { name: "future-matches" },
+    },
+    {
       path: "/stats",
       name: "stats",
       component: () => import("../views/Stats.vue"),

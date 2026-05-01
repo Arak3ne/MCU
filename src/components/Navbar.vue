@@ -1,7 +1,7 @@
 <template>
   <nav class="relative z-[100] border-b border-[#2A2A2A] bg-[#0B0F0C]/90 backdrop-blur-md">
     <div class="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
-      <router-link to="/" class="flex items-center gap-4 group cursor-pointer hover:opacity-80 transition-opacity">
+      <router-link to="/" class="flex items-center gap-4 group cursor-pointer hover:opacity-80 transition-opacity -ml-18">
         <img src="../assets/mcu_logo.png" alt="MCU Logo" class="w-16 h-16 object-contain drop-shadow-[0_0_15px_rgba(34,197,94,0.3)]" />
         <span class="font-title tracking-widest uppercase text-3xl text-[#22C55E] drop-shadow-[0_2px_10px_rgba(34,197,94,0.2)]">Party</span>
       </router-link>

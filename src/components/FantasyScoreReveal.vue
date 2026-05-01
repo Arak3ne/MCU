@@ -107,13 +107,13 @@
                       
                       <div class="flex items-baseline gap-0.5 sm:gap-1">
                         <span class="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-title drop-shadow-[0_0_20px_currentColor] transition-colors duration-500"
-                              :class="getTextColorClass(displayScores[playerId] ?? playerScores[playerId] ?? 0)">
+                              :class="getTextColorClass(displayScores[playerId] ?? 0)">
                           {{ displayScores[playerId] !== undefined ? displayScores[playerId].toFixed(1) : '0.0' }}
                         </span>
                         <span class="text-[8px] sm:text-[10px] md:text-sm text-white/40 font-bold uppercase tracking-widest">pts</span>
                       </div>
 
-                      <!-- Cap multiplier tag -->
+                      <!-- Cap multiplier tag - Restored visual only to explain total score -->
                       <Transition name="bounce">
                         <div v-if="team.captainId === playerId && step > index + 0.5" 
                              class="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 md:top-2 md:right-2 text-yellow-500 font-title text-[10px] sm:text-xs md:text-sm drop-shadow-[0_0_10px_rgba(234,179,8,0.8)] rotate-[15deg]">
@@ -138,12 +138,12 @@
                   <div class="text-center border-b border-[#2A2A2A] pb-1 sm:pb-1.5 md:pb-2 mb-1 md:mb-2">
                     <h4 class="font-title text-white uppercase tracking-widest text-[10px] sm:text-xs md:text-sm">Stats</h4>
                     <div class="text-[7px] sm:text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] mt-0.5 md:mt-1"
-                         :class="playerStats[playerId]?.wins > 0 ? 'text-mcu-primary' : 'text-red-400'">
-                      {{ playerStats[playerId]?.wins > 0 ? 'Victoire' : 'Défaite' }}
+                         :class="playerStats[playerId]?.wins > 0 ? 'text-mcu-primary' : playerStats[playerId]?.deaths !== undefined ? 'text-red-400' : 'text-white/30'">
+                      {{ playerStats[playerId]?.wins > 0 ? 'Victoire' : playerStats[playerId]?.deaths !== undefined ? 'Défaite' : '—' }}
                     </div>
                   </div>
 
-                  <div v-if="playerStats[playerId] && (playerStats[playerId].wins > 0 || playerStats[playerId].losses > 0)" class="flex-1 flex flex-col justify-between space-y-1 md:space-y-2">
+                  <div v-if="playerStats[playerId] && (playerStats[playerId].kills !== undefined || playerStats[playerId].deaths !== undefined)" class="flex-1 flex flex-col justify-between space-y-1 md:space-y-2">
                     
                     <!-- KDA Focus -->
                     <div class="bg-white/5 rounded-lg md:rounded-xl p-1 md:p-2 border border-white/5 flex flex-col items-center">
@@ -172,17 +172,34 @@
                       </div>
                     </div>
 
+                    <!-- Dégâts champions (+ DPM : même axe que le barème fantasy) -->
+                    <div
+                      v-if="(playerStats[playerId].damage_dealt ?? 0) > 0 || damagePerMinute(playerId) > 0"
+                      class="bg-white/5 rounded-md md:rounded-lg p-1 md:p-1.5 border border-white/5 text-center"
+                    >
+                      <div class="text-[5px] sm:text-[6px] md:text-[7px] text-white/50 uppercase tracking-[0.2em] mb-0.5">Dégâts infligés</div>
+                      <div class="font-bold text-[10px] sm:text-xs md:text-sm text-mcu-primary tracking-tight">
+                        {{ formatDamageToChamps(playerStats[playerId].damage_dealt) }}
+                      </div>
+                      <div
+                        v-if="damagePerMinute(playerId) > 0"
+                        class="text-[6px] sm:text-[7px] md:text-[8px] text-white/45 font-bold uppercase tracking-[0.15em] mt-0.5"
+                      >
+                        {{ damagePerMinute(playerId) }} DPM
+                      </div>
+                    </div>
+
                     <!-- Champions Played -->
-                    <div v-if="playerStats[playerId].championIds?.length > 0" class="mt-auto pt-0.5 md:pt-1">
-                      <div class="text-[5px] sm:text-[6px] md:text-[7px] text-white/50 uppercase tracking-[0.2em] text-center mb-0.5 md:mb-1">Champion</div>
-                      <div class="flex justify-center flex-wrap gap-1 md:gap-2">
+                    <div v-if="playerStats[playerId]?.championIds?.length > 0" class="mt-auto pt-1 md:pt-2">
+                      <div class="text-[6px] sm:text-[7px] md:text-[8px] text-white/50 uppercase tracking-[0.2em] text-center mb-1 md:mb-1.5">Champion</div>
+                      <div class="flex justify-center">
                         <div 
                           v-for="champId in playerStats[playerId].championIds" 
                           :key="champId"
-                          class="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 rounded-full overflow-hidden border border-mcu-primary/30 shadow-[0_0_10px_rgba(34,197,94,0.2)] shrink-0"
+                          class="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full overflow-hidden border-2 border-mcu-primary/40 shadow-[0_0_15px_rgba(34,197,94,0.3)] shrink-0"
                         >
                           <img v-if="getChampionSquareById(champId)" :src="getChampionSquareById(champId)" class="w-full h-full object-cover" />
-                          <div v-else class="w-full h-full bg-[#111] flex items-center justify-center text-[6px] sm:text-[8px] text-white/50">?</div>
+                          <div v-else class="w-full h-full bg-[#111] flex items-center justify-center text-[8px] sm:text-[10px] text-white/50">?</div>
                         </div>
                       </div>
                     </div>
@@ -332,17 +349,41 @@ const getTextColorClass = (score: number) => {
   return 'text-white/75';
 };
 
+/** Affichage lisible des dégâts champions (aligné avec le barème fantasy). */
+const formatDamageToChamps = (dmg: number | undefined) => {
+  const n = dmg ?? 0;
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
+  return String(Math.round(n));
+};
+
+const damagePerMinute = (playerId: string) => {
+  const s = playerStats.value[playerId];
+  if (!s) return 0;
+  const dmg = s.damage_dealt ?? 0;
+  const sec = s.game_duration_sec ?? 0;
+  const mins = sec / 60;
+  if (mins <= 0 || dmg <= 0) return 0;
+  return Math.round(dmg / mins);
+};
+
 const splashSrcFor = (playerId: string) => {
+  const player = props.getFullPlayer(playerId);
+  const sig = player?.champion_signature;
+  if (sig) {
+    const fromSig = props.getChampionSplash(sig);
+    if (fromSig) return fromSig;
+  }
+  const poolFirst = player?.champion_pool?.[0];
+  if (poolFirst) {
+    const fromPool = props.getChampionSplash(poolFirst);
+    if (fromPool) return fromPool;
+  }
   const stats = playerStats.value[playerId];
   const playedId = stats?.championIds?.[0];
   if (playedId != null && props.getChampionSplashById) {
-    const url = props.getChampionSplashById(playedId);
-    if (url) return url;
+    const fromMatch = props.getChampionSplashById(playedId);
+    if (fromMatch) return fromMatch;
   }
-  const sig = props.getFullPlayer(playerId)?.champion_signature;
-  if (sig) return props.getChampionSplash(sig) || '';
-  const poolFirst = props.getFullPlayer(playerId)?.champion_pool?.[0];
-  if (poolFirst) return props.getChampionSplash(poolFirst) || '';
   return '';
 };
 
@@ -410,9 +451,8 @@ const startAnimationSequence = async () => {
       step.value = index + 1;
       
       let finalScore = props.playerScores[playerId] || 0;
-      if (props.team.captainId === playerId) {
-        finalScore *= 1.5;
-      }
+      // Note: We show the raw match score here as requested, 
+      // the captain multiplier is only applied to the total team score.
       
       animateValue(0, finalScore, 1200, (val) => {
         displayScores.value[playerId] = val;

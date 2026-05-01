@@ -38,6 +38,42 @@ async function lcuRequest(endpoint, port, token) {
   return await response.json();
 }
 
+function normalizeStatKey(key) {
+  return String(key).replace(/_/g, '').toLowerCase();
+}
+
+/** LCU peut exposer totalTimeSpentDead dans stats ou à plat sur le participant (variants camel/snake). */
+function readTotalTimeSpentDead(stats, participant) {
+  const explicitKeys = [
+    'totalTimeSpentDead',
+    'total_time_spent_dead',
+    'TotalTimeSpentDead',
+    'totalTimeDead',
+    'total_time_dead',
+  ];
+  const objs = [stats || {}, participant || {}];
+  for (const key of explicitKeys) {
+    for (const obj of objs) {
+      const v = obj[key];
+      if (v !== undefined && v !== null && v !== '') {
+        const n = Number(v);
+        if (!Number.isNaN(n) && Number.isFinite(n)) return Math.max(0, Math.round(n));
+      }
+    }
+  }
+  const target = 'totaltimespentdead';
+  for (const obj of objs) {
+    if (!obj || typeof obj !== 'object') continue;
+    for (const [k, v] of Object.entries(obj)) {
+      if (normalizeStatKey(k) === target) {
+        const n = Number(v);
+        if (!Number.isNaN(n) && Number.isFinite(n)) return Math.max(0, Math.round(n));
+      }
+    }
+  }
+  return 0;
+}
+
 /**
  * Main script logic
  */
@@ -85,6 +121,15 @@ async function run() {
     }
     
     console.log(`Found ${games.length} games. Processing...`);
+
+    // 3.5 Get champions map
+    const { data: championsData } = await supabase.from('champions').select('id, ddragon_key');
+    const championsMap = new Map();
+    if (championsData) {
+      championsData.forEach(c => {
+        if (c.ddragon_key) championsMap.set(Number(c.ddragon_key), c.id);
+      });
+    }
 
     // 4. Process each game
     for (const game of games) {
@@ -178,14 +223,14 @@ async function run() {
           .insert({
             match_id: dbMatchId,
             player_id: dbPlayer.id,
-            champion_id: p.championId,
+            champion_id: championsMap.get(Number(p.championId)) || null,
             kills: stats.kills,
             deaths: stats.deaths,
             assists: stats.assists,
             total_damage_dealt_to_champions: stats.totalDamageDealtToChampions,
             win: stats.win,
             first_blood_kill: stats.firstBloodKill,
-            total_time_spent_dead: stats.totalTimeSpentDead,
+            total_time_spent_dead: readTotalTimeSpentDead(stats, p),
             total_damage_dealt: stats.totalDamageDealt,
             total_damage_taken: stats.totalDamageTaken,
             damage_self_mitigated: stats.damageSelfMitigated,

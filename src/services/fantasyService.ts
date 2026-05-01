@@ -32,7 +32,7 @@ export const fantasyService = {
       tournamentDay: teamData.tournament_day as 1 | 2,
       playerIds,
       captainId,
-      isLocked: teamData.is_locked || false,
+      isLocked: teamData.locked || teamData.is_locked || false,
       totalPoints: teamData.total_points || 0,
       transfersMade: teamData.transfers_made || 0,
       penaltyPoints: teamData.penalty_points || 0,
@@ -105,7 +105,7 @@ export const fantasyService = {
       tournamentDay: teamData.tournament_day as 1 | 2,
       playerIds: team.playerIds || [],
       captainId: team.captainId || '',
-      isLocked: teamData.is_locked || false,
+      isLocked: teamData.locked || teamData.is_locked || false,
       totalPoints: teamData.total_points || 0,
       transfersMade: teamData.transfers_made || 0,
       penaltyPoints: teamData.penalty_points || 0,
@@ -136,12 +136,16 @@ export const fantasyService = {
   /**
    * Get all validated scores for a specific tournament day
    */
-  async getPlayerScores(tournamentDay: 1 | 2): Promise<Record<string, number>> {
-    const { data, error } = await supabase
+  async getPlayerScores(tournamentDay: 1 | 2 | 'all'): Promise<Record<string, number>> {
+    let query = supabase
       .from('fantasy_player_scores')
       .select('player_id, score')
-      .eq('tournament_day', tournamentDay)
-      .eq('validated', true) // Only validated scores
+    
+    if (tournamentDay !== 'all') {
+      query = query.eq('tournament_day', tournamentDay)
+    }
+      
+    const { data, error } = await query
       
     if (error) {
       console.error('Error fetching player scores:', error)
@@ -151,7 +155,8 @@ export const fantasyService = {
     const scoresMap: Record<string, number> = {}
     if (data) {
       data.forEach(row => {
-        scoresMap[row.player_id] = row.score
+        const pid = row.player_id
+        scoresMap[pid] = (scoresMap[pid] || 0) + (row.score || 0)
       })
     }
     
@@ -191,7 +196,6 @@ export const fantasyService = {
     
     if (data) {
       // Sort data in JavaScript by game_creation descending to ensure we process the newest matches first
-      // Note: match_history is an object because of the foreign key relationship
       const sortedData = [...data].sort((a, b) => {
         const dateA = new Date((a as any).match_history?.game_creation || 0).getTime();
         const dateB = new Date((b as any).match_history?.game_creation || 0).getTime();
@@ -203,6 +207,10 @@ export const fantasyService = {
         
         // We only want the most recent game (the first one we encounter since we ordered desc)
         if (!statsMap[pid]) {
+          const gameDurationSec =
+            typeof (row as any).match_history?.game_duration === 'number'
+              ? (row as any).match_history.game_duration
+              : 0
           statsMap[pid] = {
             kills: row.kills || 0,
             deaths: row.deaths || 0,
@@ -213,23 +221,15 @@ export const fantasyService = {
             total_minions_killed: row.total_minions_killed || 0,
             vision_score: row.vision_score || 0,
             damage_dealt: row.total_damage_dealt_to_champions || 0,
-            championIds: row.champion_id ? new Set<number>([row.champion_id]) : new Set<number>()
+            game_duration_sec: gameDurationSec,
+            championIds: row.champion_id ? [row.champion_id] : [],
+            kda: row.deaths === 0 ? (row.kills + row.assists) : ((row.kills + row.assists) / row.deaths).toFixed(2)
           }
         }
       })
     }
 
-    // Convert Sets to Arrays for easier usage
-    const finalStats: Record<string, any> = {}
-    for (const [pid, s] of Object.entries(statsMap)) {
-      finalStats[pid] = {
-        ...s,
-        championIds: Array.from(s.championIds),
-        kda: s.deaths === 0 ? (s.kills + s.assists) : ((s.kills + s.assists) / s.deaths).toFixed(2)
-      }
-    }
-
-    return finalStats
+    return statsMap
   },
 
   /**

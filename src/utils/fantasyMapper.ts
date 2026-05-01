@@ -9,11 +9,11 @@ type DbPlayer = Database['public']['Tables']['players']['Row'] & {
 
 // Default prices if not provided in DB
 const TIER_PRICES: Record<string, number> = {
-  'S': 30,
-  'A': 25,
-  'B': 20,
-  'C': 15,
-  'D': 10
+  'S': 28,
+  'A': 22,
+  'B': 18,
+  'C': 12,
+  'D': 8
 }
 
 export function mapDbPlayerToFantasy(dbPlayer: DbPlayer): FantasyPlayer {
@@ -25,7 +25,7 @@ export function mapDbPlayerToFantasy(dbPlayer: DbPlayer): FantasyPlayer {
     id: dbPlayer.id,
     pseudo: dbPlayer.pseudo,
     rank,
-    roles: [dbPlayer.primary_role, dbPlayer.secondary_role].filter(Boolean),
+    roles: [dbPlayer.primary_role, dbPlayer.secondary_role].filter((r): r is string => Boolean(r)),
     price,
     priceDay2: dbPlayer.fantasy_price_day2 ?? undefined,
     fantasyEnabled: isEnabled

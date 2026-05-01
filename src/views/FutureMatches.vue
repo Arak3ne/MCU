@@ -1,154 +1,230 @@
 <template>
-  <div class="min-h-screen bg-[#0B0F0C] text-[#F0FDF4] font-sans selection:bg-[#22C55E] selection:text-[#0B0F0C]">
+  <div class="relative min-h-[calc(100vh-3.5rem)] text-[#F0FDF4]">
     <!-- Background accents -->
-    <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
-      <div class="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-[#4ADE80] opacity-[0.03] blur-[120px] rounded-full"></div>
-      <div class="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-[#22C55E] opacity-[0.03] blur-[120px] rounded-full"></div>
-      <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5 mix-blend-overlay"></div>
+    <div class="fixed inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+      <div class="absolute top-[-18%] left-[-10%] w-[46%] h-[46%] bg-[#4ADE80] opacity-[0.04] blur-[100px] rounded-full"></div>
+      <div class="absolute bottom-[-18%] right-[-10%] w-[46%] h-[46%] bg-[#22C55E] opacity-[0.04] blur-[100px] rounded-full"></div>
+      <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.07] mix-blend-overlay"></div>
     </div>
 
     <!-- Main Content -->
-    <main class="relative z-10 max-w-5xl mx-auto px-6 py-12 space-y-8">
+    <main class="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-8 animate-fade-in-up">
       <!-- Header -->
       <div class="text-center mb-12 relative">
         <div class="inline-block relative">
-          <h1 class="text-4xl md:text-5xl font-title uppercase tracking-wider mb-4 text-transparent bg-clip-text bg-gradient-to-b from-[#F0FDF4] to-[#22C55E] drop-shadow-2xl">
-            Matchs
+          <h1 class="text-4xl md:text-5xl font-title uppercase tracking-widest mb-4 flex items-center justify-center gap-3 drop-shadow-[0_0_20px_rgba(34,197,94,0.2)]">
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-mcu-primary via-emerald-300 to-teal-200 drop-shadow-[0_0_15px_rgba(34,197,94,0.4)] animate-pulse normal-case">MATCHES</span>
           </h1>
-          <div class="absolute -inset-x-16 top-1/2 -translate-y-1/2 h-[1px] bg-gradient-to-r from-transparent via-[#22C55E]/30 to-transparent -z-10"></div>
+          <div class="absolute -inset-x-16 top-1/2 -translate-y-1/2 h-[1px] bg-gradient-to-r from-transparent via-mcu-primary/30 to-transparent -z-10"></div>
         </div>
-        <p class="text-[#A1A1AA] font-medium tracking-widest uppercase text-sm mt-2">Sélectionnez un match pour démarrer la draft</p>
+        <p class="text-white/50 text-sm tracking-wide uppercase">Sélectionnez un match pour démarrer la draft</p>
       </div>
 
       <!-- Match List -->
-      <div class="flex flex-col gap-4">
-        <button
-          v-for="(match, index) in matches"
-          :key="index"
-          @click="startDraftForMatch(match)"
-          class="group relative bg-gradient-to-r from-[#111111] to-[#1A1A1A] hover:from-[#1A1A1A] hover:to-[#282d33] rounded-sm border border-[#2A2A2A] hover:border-[#22C55E] transition-all duration-300 flex items-center justify-between p-6 overflow-hidden w-full shadow-[0_0_20px_rgba(0,0,0,0.5)] hover:shadow-[0_0_30px_rgba(34,197,94,0.3)] cursor-pointer"
-        >
-          <!-- Hover Effects -->
-          <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/diagmonds-light.png')] opacity-5 mix-blend-overlay"></div>
-          <div class="absolute inset-0 bg-gradient-to-r from-[#22C55E]/0 via-[#22C55E]/10 to-[#22C55E]/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-pulse"></div>
-          <div class="absolute left-0 top-0 w-1.5 h-full bg-[#22C55E] opacity-0 group-hover:opacity-100 transition-opacity shadow-[0_0_20px_rgba(34,197,94,1)]"></div>
-          <div class="absolute right-0 top-0 w-1.5 h-full bg-[#22C55E] opacity-0 group-hover:opacity-100 transition-opacity shadow-[0_0_20px_rgba(34,197,94,1)]"></div>
-
-          <!-- Blue Side -->
-          <div class="flex-1 flex items-center justify-end gap-6 relative z-10">
-            <span class="text-2xl md:text-3xl font-title text-[#4ADE80] drop-shadow-[0_0_8px_rgba(11,198,227,0.4)] transition-all uppercase tracking-wide truncate text-right">
-              {{ match.team1.name }}
-            </span>
-            <div class="w-16 h-16 rounded-sm bg-[#0B0F0C] border border-[#4ADE80]/50 flex items-center justify-center shadow-[inset_0_0_10px_rgba(11,198,227,0.2)] transition-all">
-              <span class="font-title text-[#4ADE80] text-xl uppercase tracking-wider transition-colors">{{ match.team1.name.substring(0, 2) }}</span>
-            </div>
+      <div v-if="rounds.length > 0" class="flex flex-col gap-12">
+        <div v-for="round in rounds" :key="round.number" class="space-y-6">
+          <!-- Round Header -->
+          <div class="flex items-center gap-4">
+            <h2 class="text-2xl md:text-3xl font-title uppercase tracking-widest text-white drop-shadow-md flex items-center gap-3">
+              <span class="w-3 h-3 rounded-full bg-mcu-primary shadow-[0_0_10px_rgba(34,197,94,0.6)]"></span>
+              Ronde {{ round.number }}
+            </h2>
+            <div class="flex-1 h-[1px] bg-gradient-to-r from-white/10 to-transparent"></div>
           </div>
 
-          <!-- VS -->
-          <div class="mx-8 md:mx-12 relative flex flex-col items-center justify-center z-10">
-            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200px] h-[1px] bg-gradient-to-r from-transparent via-[#2A2A2A] group-hover:via-[#22C55E] to-transparent transition-colors -z-10"></div>
-            <div class="text-sm text-[#A1A1AA] group-hover:text-[#0B0F0C] font-title italic bg-[#0B0F0C] group-hover:bg-[#22C55E] px-5 py-2 rounded-sm border border-[#2A2A2A] group-hover:border-[#22C55E] shadow-[0_0_20px_rgba(0,0,0,1)] group-hover:shadow-[0_0_25px_rgba(34,197,94,0.6)] uppercase tracking-[0.3em] transition-all group-hover:scale-110">
-              VS
-            </div>
-          </div>
+          <!-- Matches for this round -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <button
+              v-for="(match, index) in round.matches"
+              :key="index"
+              @click="startDraftForMatch(match)"
+              class="group relative bg-gradient-to-br from-[#1A1A1A] to-[#111111] backdrop-blur-xl rounded-[2rem] border border-[#2A2A2A] hover:border-mcu-primary/45 transition-all duration-500 flex items-center justify-between p-5 md:p-6 overflow-hidden w-full shadow-[0_10px_32px_rgba(0,0,0,0.55)] hover:shadow-[0_16px_44px_rgba(34,197,94,0.12)] hover:-translate-y-1 cursor-pointer"
+            >
+              <!-- Hover Effects -->
+              <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/diagmonds-light.png')] opacity-5 mix-blend-overlay"></div>
+              <div class="absolute inset-0 bg-gradient-to-r from-mcu-primary/0 via-mcu-primary/10 to-mcu-primary/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              
+              <div class="absolute left-0 top-0 w-1.5 h-full bg-mcu-primary opacity-0 group-hover:opacity-100 transition-opacity shadow-[0_0_20px_rgba(34,197,94,1)]"></div>
+              <div class="absolute right-0 top-0 w-1.5 h-full bg-mcu-primary opacity-0 group-hover:opacity-100 transition-opacity shadow-[0_0_20px_rgba(34,197,94,1)]"></div>
 
-          <!-- Red Side -->
-          <div class="flex-1 flex items-center justify-start gap-6 relative z-10">
-            <div class="w-16 h-16 rounded-sm bg-[#0B0F0C] border border-[#EF4444]/50 flex items-center justify-center shadow-[inset_0_0_10px_rgba(255,78,80,0.2)] transition-all">
-              <span class="font-title text-[#EF4444] text-xl uppercase tracking-wider transition-colors">{{ match.team2.name.substring(0, 2) }}</span>
-            </div>
-            <span class="text-2xl md:text-3xl font-title text-[#EF4444] drop-shadow-[0_0_8px_rgba(255,78,80,0.4)] transition-all uppercase tracking-wide truncate text-left">
-              {{ match.team2.name }}
-            </span>
+              <!-- Blue Side -->
+              <div class="flex-1 flex items-center justify-end gap-2 sm:gap-4 relative z-10 min-w-0">
+                <span 
+                  class="font-title text-white group-hover:text-mcu-accent drop-shadow-[0_0_8px_rgba(11,198,227,0.4)] transition-all uppercase tracking-wider text-right leading-none"
+                  :class="match.team1.name.length > 20 ? 'text-xs sm:text-sm md:text-base' : match.team1.name.length > 12 ? 'text-sm sm:text-base md:text-lg' : 'text-base sm:text-xl md:text-2xl'"
+                >
+                  {{ match.team1.name }}
+                </span>
+                <div class="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full bg-black/60 border border-white/10 group-hover:border-mcu-accent/50 flex items-center justify-center shadow-lg backdrop-blur-md transition-all duration-300 shrink-0">
+                  <span class="font-title text-white group-hover:text-mcu-accent text-lg sm:text-xl uppercase tracking-wider transition-colors">{{ match.team1.name.substring(0, 2) }}</span>
+                </div>
+              </div>
+
+              <!-- VS -->
+              <div class="mx-2 sm:mx-4 md:mx-6 relative flex flex-col items-center justify-center z-10 shrink-0">
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60px] sm:w-[100px] h-[1px] bg-gradient-to-r from-transparent via-[#2A2A2A] group-hover:via-mcu-primary to-transparent transition-colors duration-500 -z-10"></div>
+                <div class="text-[10px] sm:text-xs text-white/50 group-hover:text-black font-title italic bg-black/80 group-hover:bg-mcu-primary px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-white/10 group-hover:border-mcu-primary shadow-[0_0_20px_rgba(0,0,0,1)] group-hover:shadow-[0_0_25px_rgba(34,197,94,0.6)] uppercase tracking-[0.2em] sm:tracking-[0.3em] transition-all duration-500 group-hover:scale-110 backdrop-blur-sm">
+                  VS
+                </div>
+              </div>
+
+              <!-- Red Side -->
+              <div class="flex-1 flex items-center justify-start gap-2 sm:gap-4 relative z-10 min-w-0">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full bg-black/60 border border-white/10 group-hover:border-red-400/50 flex items-center justify-center shadow-lg backdrop-blur-md transition-all duration-300 shrink-0">
+                  <span class="font-title text-white group-hover:text-red-400 text-lg sm:text-xl uppercase tracking-wider transition-colors">{{ match.team2.name.substring(0, 2) }}</span>
+                </div>
+                <span 
+                  class="font-title text-white group-hover:text-red-400 drop-shadow-[0_0_8px_rgba(255,78,80,0.4)] transition-all uppercase tracking-wider text-left leading-none"
+                  :class="match.team2.name.length > 20 ? 'text-xs sm:text-sm md:text-base' : match.team2.name.length > 12 ? 'text-sm sm:text-base md:text-lg' : 'text-base sm:text-xl md:text-2xl'"
+                >
+                  {{ match.team2.name }}
+                </span>
+              </div>
+            </button>
           </div>
-        </button>
+        </div>
+      </div>
+      
+      <!-- Empty State -->
+      <div v-else class="text-center py-32 bg-[#111111]/40 backdrop-blur-xl rounded-[2rem] border border-dashed border-[#2A2A2A]/70 transition-all hover:border-mcu-primary/35 hover:bg-[#1A1A1A]/50 group shadow-[0_10px_40px_rgba(0,0,0,0.35)]">
+        <div class="relative w-24 h-24 mx-auto mb-8">
+          <div class="absolute inset-0 bg-mcu-primary/10 rounded-full blur-2xl group-hover:bg-mcu-primary/20 transition-colors duration-500"></div>
+          <svg class="relative z-10 w-24 h-24 text-white/20 group-hover:text-mcu-primary/70 transition-colors duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        </div>
+        <h3 class="text-3xl font-title tracking-wider text-white mb-3 group-hover:text-mcu-primary transition-colors duration-500 drop-shadow-md">Aucun match prévu</h3>
+        <p class="text-white/50 text-base tracking-wide">Les matchs seront bientôt annoncés.</p>
       </div>
     </main>
 
     <!-- Modal Popup for Draft -->
-    <div v-if="showModal" class="fixed inset-0 flex items-center justify-center z-50 bg-[#0B0F0C]/90 backdrop-blur-md p-4">
-      <div class="bg-[#111111] border border-[#22C55E]/30 rounded-sm p-1 max-w-md w-full shadow-[0_0_50px_rgba(0,0,0,1)] relative before:absolute before:-inset-[1px] before:bg-gradient-to-b before:from-[#22C55E]/50 before:to-[#22C55E]/10 before:-z-10 before:rounded-sm">
-        <div class="bg-[#111111] p-8 h-full w-full rounded-sm relative">
+    <Transition name="fade">
+      <div v-if="showModal" class="fixed inset-0 flex items-center justify-center z-50 p-4">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-md" @click="closeModal"></div>
+        <div class="relative bg-gradient-to-b from-[#1A1A1A] to-[#0B0F0C] backdrop-blur-2xl border border-mcu-primary/25 rounded-[2rem] w-full max-w-lg shadow-[0_24px_70px_rgba(0,0,0,0.75)] overflow-hidden animate-scale-in">
+          
           <!-- Close Button -->
-          <button @click="closeModal" class="absolute top-4 right-4 text-[#A1A1AA] hover:text-[#22C55E] transition-colors p-2" cursor-pointer>
+          <button @click="closeModal" class="absolute top-6 right-6 text-white/40 hover:text-white hover:bg-white/10 transition-all p-2 rounded-full cursor-pointer z-10">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
           
-          <h2 class="text-3xl font-title mb-2 text-center text-transparent bg-clip-text bg-gradient-to-b from-[#F0FDF4] to-[#22C55E] tracking-wider uppercase">Initialiser la Draft</h2>
-          
-          <div class="flex justify-center items-center gap-4 mb-8 text-sm font-bold uppercase tracking-widest">
-            <span class="text-[#4ADE80]">{{ blueName }}</span>
-            <span class="text-[#A1A1AA] text-xs italic">vs</span>
-            <span class="text-[#EF4444]">{{ redName }}</span>
-          </div>
-
-          <div v-if="drafting" class="text-center py-10">
-            <div class="w-16 h-16 border-4 border-[#2A2A2A] border-t-[#22C55E] rounded-full animate-spin mx-auto mb-6"></div>
-            <p class="text-[#22C55E] uppercase tracking-widest text-sm font-bold animate-pulse">{{ message || 'Génération de la draft...' }}</p>
-          </div>
-
-          <div v-else-if="draftUrl" class="space-y-6">
-            <p class="text-green-400 text-center font-bold tracking-widest uppercase text-sm drop-shadow-[0_0_5px_rgba(34,197,94,0.5)]">Draft Générée !</p>
+          <div class="p-8 relative">
+            <h2 class="text-3xl font-title mb-2 text-center text-transparent bg-clip-text bg-gradient-to-r from-mcu-primary via-emerald-300 to-teal-200 tracking-wider uppercase drop-shadow-lg">Initialiser la Draft</h2>
             
-            <div class="flex flex-col gap-4">
-              <a
-                :href="draftUrl"
-                target="_blank"
-                class="w-full py-4 bg-gradient-to-r from-[#22C55E] to-[#14532D] hover:from-[#d9b876] hover:to-[#8a6831] text-[#0B0F0C] rounded-sm font-title text-center transition-all shadow-[0_0_15px_rgba(200,170,110,0.3)] uppercase tracking-widest text-sm border border-[#22C55E]"
-              >
-                Ouvrir l'outil de Draft
-              </a>
-              <button
-                @click="copyDraftLink"
-                class="w-full py-4 bg-[#1A1A1A] hover:bg-[#282d33] border border-[#2A2A2A] hover:border-[#22C55E]/50 rounded-sm font-bold transition-all flex items-center justify-center gap-2 text-[#A1A1AA] hover:text-[#F0FDF4] uppercase tracking-widest text-xs"
-               cursor-pointer>
-                <svg v-if="!linkCopied" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-                <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                </svg>
-                <span :class="linkCopied ? 'text-green-400' : ''">{{ linkCopied ? 'Copié !' : 'Copier le lien' }}</span>
+            <div class="flex justify-center items-center gap-4 mb-8 text-sm font-bold uppercase tracking-widest">
+              <span class="text-mcu-accent">{{ blueName }}</span>
+              <span class="text-white/40 text-xs italic">vs</span>
+              <span class="text-red-400">{{ redName }}</span>
+            </div>
+
+            <div v-if="drafting" class="text-center py-10">
+              <div class="relative w-16 h-16 mx-auto mb-6">
+                <div class="absolute inset-0 border-4 border-white/5 rounded-full"></div>
+                <div class="absolute inset-0 border-4 border-mcu-primary rounded-full border-t-transparent animate-spin shadow-[0_0_20px_rgba(34,197,94,0.5)]"></div>
+              </div>
+              <p class="text-mcu-primary uppercase tracking-widest text-sm font-bold animate-pulse">{{ message || 'Génération de la draft...' }}</p>
+            </div>
+
+            <div v-else-if="draftUrl" class="space-y-6">
+              <p class="text-mcu-primary text-center font-bold tracking-widest uppercase text-sm drop-shadow-[0_0_5px_rgba(34,197,94,0.5)]">Draft Générée !</p>
+              
+              <div class="flex flex-col gap-4">
+                <a
+                  :href="draftUrl"
+                  target="_blank"
+                  class="w-full py-4 bg-mcu-primary hover:bg-mcu-accent text-white rounded-xl font-bold text-center transition-all shadow-[0_0_20px_rgba(34,197,94,0.4)] hover:shadow-[0_0_30px_rgba(34,197,94,0.6)] uppercase tracking-widest text-sm hover:scale-[1.02]"
+                >
+                  Ouvrir l'outil de Draft
+                </a>
+                <button
+                  @click="copyDraftLink"
+                  class="w-full py-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-mcu-primary/50 rounded-xl font-bold transition-all flex items-center justify-center gap-2 text-white/60 hover:text-white uppercase tracking-widest text-xs cursor-pointer"
+                >
+                  <svg v-if="!linkCopied" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-mcu-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span :class="linkCopied ? 'text-mcu-primary' : ''">{{ linkCopied ? 'Copié !' : 'Copier le lien' }}</span>
+                </button>
+              </div>
+              
+              <div v-if="draftId" class="flex items-center justify-center gap-2 mt-6 p-3 bg-black/40 border border-white/10 rounded-xl shadow-inner">
+                <span class="inline-block w-2 h-2 rounded-full bg-mcu-primary animate-pulse shadow-[0_0_5px_#22c55e]"></span>
+                <p class="text-[10px] text-white/50 uppercase tracking-widest font-bold">
+                  Synchronisation automatique des picks en arrière-plan...
+                </p>
+              </div>
+            </div>
+            
+            <div v-else class="text-center py-8">
+              <p class="text-red-400 font-bold uppercase tracking-widest text-xs mb-6">{{ message || 'Erreur lors de la génération de la draft' }}</p>
+              <button @click="generateDraft" class="px-8 py-3 bg-white/5 border border-white/10 hover:border-mcu-primary/50 hover:bg-white/10 rounded-xl text-white font-bold uppercase tracking-widest text-xs transition-all cursor-pointer hover:scale-105">
+                Réessayer
               </button>
             </div>
-            
-            <div v-if="draftId" class="flex items-center justify-center gap-2 mt-6 p-3 bg-[#1A1A1A] border border-[#2A2A2A] rounded-sm">
-              <span class="inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_5px_#22c55e]"></span>
-              <p class="text-[10px] text-[#A1A1AA] uppercase tracking-widest font-bold">
-                Synchronisation automatique des picks en arrière-plan...
-              </p>
-            </div>
-          </div>
-          
-          <div v-else class="text-center py-8">
-            <p class="text-red-400 font-bold uppercase tracking-widest text-xs mb-6">{{ message || 'Erreur lors de la génération de la draft' }}</p>
-            <button @click="generateDraft" class="px-8 py-3 bg-[#1A1A1A] border border-[#2A2A2A] hover:border-[#22C55E]/50 hover:bg-[#282d33] rounded-sm text-[#F0FDF4] font-bold uppercase tracking-widest text-xs transition-all" cursor-pointer>
-              Réessayer
-            </button>
           </div>
         </div>
       </div>
-    </div>
+    </Transition>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref, onMounted, onUnmounted, computed } from "vue";
 import { supabase } from "../lib/supabase";
+import { fetchChampionshipMatchesHydrated } from "../lib/queries";
+import { subscribeToTable } from "../lib/realtime";
 import type { Database } from "../types/supabase";
-
 
 type Team = Database["public"]["Tables"]["teams"]["Row"];
 
 interface Match {
+  id?: string;
   team1: Team;
   team2: Team;
+  is_completed?: boolean;
 }
 
-const teams = ref<Team[]>([]);
-const matches = ref<Match[]>([]);
+interface Round {
+  number: number;
+  matches: Match[];
+}
+
+const matches = ref<any[]>([]);
+
+// Computed property to group matches into rounds
+const rounds = computed<Round[]>(() => {
+  if (matches.value.length === 0) return [];
+  
+  const roundsMap: Record<number, Match[]> = {};
+  
+  for (const m of matches.value) {
+    if (!m.team1 || !m.team2) continue;
+    
+    if (!roundsMap[m.round]) {
+      roundsMap[m.round] = [];
+    }
+    roundsMap[m.round].push({
+      id: m.id,
+      team1: m.team1,
+      team2: m.team2,
+      is_completed: m.is_completed
+    });
+  }
+  
+  return Object.keys(roundsMap)
+    .map(Number)
+    .sort((a, b) => a - b)
+    .map(roundNum => ({
+      number: roundNum,
+      matches: roundsMap[roundNum]
+    }));
+});
 
 const showModal = ref(false);
 const blueName = ref("");
@@ -163,43 +239,32 @@ const message = ref("");
 const linkCopied = ref(false);
 let syncInterval: any = null;
 
+const loadChampionshipMatches = async () => {
+  const { data, error } = await fetchChampionshipMatchesHydrated();
+  if (error) {
+    console.error("Error fetching matches:", error);
+    matches.value = [];
+    return;
+  }
+  matches.value = data ?? [];
+};
+
+let playoffSub: { unsubscribe: () => void } | null = null;
+
 onMounted(() => {
-  fetchTeams();
+  loadChampionshipMatches();
+  playoffSub = subscribeToTable("playoff_matches", () => {
+    void loadChampionshipMatches();
+  });
 });
 
 onUnmounted(() => {
   if (syncInterval) clearInterval(syncInterval);
+  playoffSub?.unsubscribe();
+  playoffSub = null;
 });
 
-const fetchTeams = async () => {
-  const { data, error } = await supabase
-    .from("teams")
-    .select("*")
-    .order("name");
-    
-  if (error) {
-    console.error("Error fetching teams:", error);
-    return;
-  }
-  
-  if (data) {
-    teams.value = data;
-    generateRoundRobinMatches();
-  }
-};
 
-const generateRoundRobinMatches = () => {
-  const newMatches: Match[] = [];
-  for (let i = 0; i < teams.value.length; i++) {
-    for (let j = i + 1; j < teams.value.length; j++) {
-      newMatches.push({
-        team1: teams.value[i],
-        team2: teams.value[j]
-      });
-    }
-  }
-  matches.value = newMatches;
-};
 
 const startDraftForMatch = (match: Match) => {
   blueName.value = match.team1.name;
@@ -219,6 +284,25 @@ const generateDraft = async () => {
     draftId.value = "";
     linkCopied.value = false;
     message.value = "Récupération des bans globaux...";
+
+    const draftCacheKey = `draft_${blueName.value}_${redName.value}`;
+    const cachedDraft = localStorage.getItem(draftCacheKey);
+
+    if (cachedDraft) {
+      message.value = "Initialisation de l'interface...";
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      const parsed = JSON.parse(cachedDraft);
+      draftUrl.value = parsed.draftUrl;
+      draftId.value = parsed.draftId || "";
+      message.value = "Draft récupérée !";
+      
+      if (syncInterval) clearInterval(syncInterval);
+      syncInterval = setInterval(() => {
+        syncDraftPicks();
+      }, 5000);
+      return;
+    }
 
     // Fetch champions that are marked as NOT available
     const { data: champions, error: fetchError } = await supabase
@@ -265,6 +349,11 @@ const generateDraft = async () => {
       draftUrl.value = data.draftUrl;
       draftId.value = data.draftId || "";
       message.value = "Draft générée !";
+      
+      localStorage.setItem(draftCacheKey, JSON.stringify({
+        draftUrl: data.draftUrl,
+        draftId: data.draftId || ""
+      }));
       
       if (syncInterval) clearInterval(syncInterval);
       syncInterval = setInterval(() => {
@@ -353,3 +442,46 @@ const syncDraftPicks = async () => {
   }
 };
 </script>
+
+<style scoped>
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+</style>

@@ -14,6 +14,7 @@ INSERT INTO teams (name, wins, losses, points) VALUES
   ('Team Beta', 0, 0, 0),
   ('Team Gamma', 0, 0, 0),
   ('Team Delta', 0, 0, 0),
+  ('Team Epsilon', 0, 0, 0),
   ('Team Omega', 0, 0, 0);
 
 DROP TABLE IF EXISTS live_match CASCADE;

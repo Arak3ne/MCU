@@ -24,7 +24,21 @@
         <p class="text-white/50 text-sm tracking-wide" v-else>Suis les performances de ton équipe en direct.</p>
       </div>
       
-      <div class="flex items-center gap-3 w-full xl:w-auto">
+      <div class="flex flex-col sm:flex-row items-center gap-4 w-full xl:w-auto">
+        <!-- Day Transition Banner (Mercato Alert) -->
+        <div v-if="tournamentDay === 2 && !team?.isLocked" class="flex items-center gap-3 px-4 py-2 bg-blue-500/10 border border-blue-500/30 rounded-2xl animate-pulse shadow-[0_0_15px_rgba(59,130,246,0.1)]">
+          <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+            </svg>
+          </div>
+          <div class="flex flex-col">
+            <span class="text-[10px] font-bold text-blue-400 uppercase tracking-widest leading-none">Mercato Ouvert</span>
+            <span class="text-[11px] text-white/80 leading-tight">Prix mis à jour & 2 transferts offerts !</span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3 w-full sm:w-auto">
         <!-- Day Toggle -->
         <div class="flex bg-black/40 backdrop-blur-xl border border-white/10 rounded-full p-1 shrink-0 shadow-inner relative">
           <div 
@@ -40,32 +54,38 @@
           </button>
           <button
             @click="setDay(2)"
-            class="px-5 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all relative z-10 w-20 sm:w-24 cursor-pointer"
+            :disabled="!hasPlayoffs"
+            class="px-5 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all relative z-10 w-20 sm:w-24 cursor-pointer disabled:cursor-not-allowed group/day2"
             :class="tournamentDay === 2 ? 'text-white drop-shadow-md' : 'text-white/50 hover:text-white'"
           >
-            Jour 2
+            <span :class="!hasPlayoffs ? 'opacity-50' : ''">Jour 2</span>
+            <!-- Tooltip if locked -->
+            <div v-if="!hasPlayoffs" class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-black/80 text-[8px] text-white rounded opacity-0 group-hover/day2:opacity-100 transition-opacity whitespace-nowrap pointer-events-none border border-white/10">
+              Bientôt disponible
+            </div>
           </button>
         </div>
 
-        <div v-if="!team?.isLocked" class="relative w-full sm:w-56 group">
-          <div class="absolute inset-0 bg-mcu-primary/20 rounded-full blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-500"></div>
-          <div class="relative flex items-center">
-            <svg class="absolute left-3 w-4 h-4 text-white/40 group-focus-within:text-mcu-primary transition-colors pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input 
-              v-model="searchQuery" 
-              type="text" 
-              placeholder="Rechercher..."
-              class="w-full bg-black/40 backdrop-blur-xl border border-white/10 rounded-full pl-9 pr-4 py-2 text-xs text-white focus:outline-none focus:border-mcu-primary/50 focus:ring-1 focus:ring-mcu-primary/50 transition-all shadow-inner placeholder:text-white/30"
-            />
+          <div v-if="!team?.isLocked" class="relative w-full sm:w-56 group">
+            <div class="absolute inset-0 bg-mcu-primary/20 rounded-full blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-500"></div>
+            <div class="relative flex items-center">
+              <svg class="absolute left-3 w-4 h-4 text-white/40 group-focus-within:text-mcu-primary transition-colors pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input 
+                v-model="searchQuery" 
+                type="text" 
+                placeholder="Rechercher..."
+                class="w-full bg-black/40 backdrop-blur-xl border border-white/10 rounded-full pl-9 pr-4 py-2 text-xs text-white focus:outline-none focus:border-mcu-primary/50 focus:ring-1 focus:ring-mcu-primary/50 transition-all shadow-inner placeholder:text-white/30"
+              />
+            </div>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Loading State -->
-    <div v-if="loading" class="flex flex-col items-center justify-center py-40 opacity-90">
+    <div v-if="loading || isCheckingReveal" class="flex flex-col items-center justify-center py-40 opacity-90">
       <div class="relative w-24 h-24 mb-10">
         <div class="absolute inset-0 border-4 border-white/5 rounded-full"></div>
         <div class="absolute inset-0 border-4 border-mcu-primary rounded-full border-t-transparent animate-spin shadow-[0_0_20px_rgba(34,197,94,0.5)]"></div>
@@ -76,7 +96,7 @@
     </div>
 
     <!-- Main Layout (Draft Mode) -->
-    <div v-else-if="!team?.isLocked" class="flex flex-col lg:flex-row gap-8 items-start">
+    <div v-else-if="!team?.isLocked && !showScoreReveal" class="flex flex-col lg:flex-row gap-8 items-start">
       
       <!-- Left Column: Players Board (Flex 1) -->
       <div class="flex-1 w-full order-2 lg:order-1 space-y-6">
@@ -164,7 +184,7 @@
           name="list" 
           tag="div" 
           v-if="filteredPlayers.length > 0 && playerView === 'cards'" 
-          class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4"
+          class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4"
         >
           <div 
             v-for="player in filteredPlayers" 
@@ -186,7 +206,7 @@
             <div class="absolute inset-0 bg-gradient-to-t from-[#0B0F0C] via-transparent to-transparent opacity-90"></div>
 
             <!-- Card Header (Avatar + Info) -->
-            <div class="relative h-24 overflow-hidden">
+            <div class="relative h-28 overflow-hidden">
               <div class="absolute bottom-3 left-4 right-4 z-20 flex justify-between items-end">
                 <div>
                   <h3 class="text-xl font-title tracking-wider text-white drop-shadow-lg">{{ player.pseudo }}</h3>
@@ -211,8 +231,17 @@
               <div class="absolute top-3 right-3 z-20 bg-black/60 backdrop-blur-xl px-2.5 py-1 rounded-full border border-white/10 font-title text-mcu-primary drop-shadow-[0_0_10px_rgba(34,197,94,0.4)] flex items-center gap-1 group-hover:scale-105 transition-transform duration-300 shadow-lg text-sm">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 {{ getDisplayPrice(player.fantasy) }}
-                <span v-if="getPriceChange(player.fantasy) > 0" class="text-[9px] text-red-400 ml-0.5 font-sans">(+{{ getPriceChange(player.fantasy) }})</span>
-                <span v-else-if="getPriceChange(player.fantasy) < 0" class="text-[9px] text-mcu-primary ml-0.5 font-sans">({{ getPriceChange(player.fantasy) }})</span>
+                <div v-if="tournamentDay === 2 && getPriceChange(player.fantasy) !== 0" 
+                     class="flex items-center text-[9px] font-sans ml-1 px-1 rounded bg-black/40 border border-white/5"
+                     :class="getPriceChange(player.fantasy) > 0 ? 'text-red-400' : 'text-mcu-primary'">
+                  <svg v-if="getPriceChange(player.fantasy) > 0" class="w-2 h-2 mr-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                  </svg>
+                  <svg v-else class="w-2 h-2 mr-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 112 0v7.586l2.293-2.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                  </svg>
+                  {{ Math.abs(getPriceChange(player.fantasy)) }}
+                </div>
               </div>
             </div>
 
@@ -288,9 +317,10 @@
                     {{ player.pseudo }}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="text-xs font-bold px-3 py-1 rounded-md bg-black/60 border shadow-inner" :class="getTierColor(player.fantasy.rank)">
-                      {{ player.rank }}
-                    </span>
+                    <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-black/50 border shadow-inner" :class="getTierColor(player.fantasy.rank)" :title="'Tier Fantasy: ' + player.fantasy.rank">
+                      <img :src="getRankIconUrl(player.rank)" class="w-5 h-5 drop-shadow-[0_0_5px_rgba(255,255,255,0.2)]" :alt="player.rank" />
+                      <span class="text-xs font-bold uppercase tracking-wider">{{ player.rank }}</span>
+                    </div>
                   </td>
                   <td class="px-6 py-4 text-white/90 whitespace-nowrap uppercase text-xs font-bold flex items-center gap-2">
                     <img :src="getRoleIcon(player.primary_role)" class="w-4 h-4 invert-[.5] sepia-[1] hue-rotate-[90deg] saturate-[5]" />
@@ -313,9 +343,20 @@
                     </div>
                   </td>
                   <td class="px-6 py-4 font-title text-mcu-primary text-lg drop-shadow-md">
-                    {{ getDisplayPrice(player.fantasy) }}
-                    <span v-if="getPriceChange(player.fantasy) > 0" class="text-xs text-red-400 ml-1 font-sans">(+{{ getPriceChange(player.fantasy) }})</span>
-                    <span v-else-if="getPriceChange(player.fantasy) < 0" class="text-xs text-mcu-primary ml-1 font-sans">({{ getPriceChange(player.fantasy) }})</span>
+                    <div class="flex items-center gap-2">
+                      {{ getDisplayPrice(player.fantasy) }}
+                      <div v-if="tournamentDay === 2 && getPriceChange(player.fantasy) !== 0" 
+                           class="flex items-center text-[10px] font-sans px-1.5 py-0.5 rounded bg-black/40 border border-white/5"
+                           :class="getPriceChange(player.fantasy) > 0 ? 'text-red-400' : 'text-mcu-primary'">
+                        <svg v-if="getPriceChange(player.fantasy) > 0" class="w-2.5 h-2.5 mr-0.5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                        </svg>
+                        <svg v-else class="w-2.5 h-2.5 mr-0.5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fill-rule="evenodd" d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 112 0v7.586l2.293-2.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                        </svg>
+                        {{ Math.abs(getPriceChange(player.fantasy)) }}
+                      </div>
+                    </div>
                   </td>
                   <td class="px-6 py-4 text-right">
                     <button
@@ -371,7 +412,7 @@
                   type="text"
                   maxlength="64"
                   autocomplete="off"
-                  placeholder="Mon équipe"
+                  placeholder="MON ÉQUIPE"
                   aria-label="Nom de l'équipe"
                   class="w-full min-w-0 bg-transparent border-0 border-b-2 border-white/15 pb-1.5 text-lg sm:text-xl font-title uppercase tracking-widest text-white placeholder:text-white/25 focus:border-mcu-primary/80 focus:outline-none focus:ring-0 transition-colors drop-shadow-[0_0_12px_rgba(0,0,0,0.4)]"
                 />
@@ -395,22 +436,30 @@
               </div>
             </div>
 
-            <div v-if="tournamentDay === 2 && !team?.isLocked" class="bg-white/5 border border-white/10 rounded-xl p-3 mb-5 flex flex-col gap-2">
-              <div class="flex items-start justify-between gap-2">
-                <div class="flex items-center gap-2">
-                  <svg class="w-4 h-4 text-mcu-primary mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div v-if="tournamentDay === 2 && !team?.isLocked" class="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3 mb-5 flex flex-col gap-3 shadow-[0_0_20px_rgba(59,130,246,0.1)]">
+              <div class="flex items-center gap-2">
+                <div class="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center">
+                  <svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                   </svg>
-                  <p class="text-[11px] text-white/65">
-                    Transferts gratuits: <strong class="text-white">{{ Math.max(0, 2 - transfersMade) }} / 2</strong>
-                  </p>
                 </div>
-                <div v-if="penaltyPoints > 0" class="px-2 py-0.5 bg-red-500/20 text-red-400 border border-red-500/30 rounded text-[10px] font-bold shadow-[0_0_10px_rgba(239,68,68,0.2)]">
-                  -{{ penaltyPoints }} pts
-                </div>
+                <h4 class="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Fenêtre de Transferts</h4>
               </div>
-              <p v-if="penaltyPoints > 0" class="text-[10px] text-red-400/80 italic">
-                Pénalité pour transferts supplémentaires (-20 pts par transfert).
+              
+              <div class="flex items-center justify-between bg-black/40 rounded-lg p-2 border border-white/5">
+                <span class="text-[10px] text-white/60">Transferts gratuits</span>
+                <span class="text-xs font-bold" :class="transfersMade <= 2 ? 'text-mcu-primary' : 'text-red-400'">
+                  {{ Math.max(0, 2 - transfersMade) }} / 2
+                </span>
+              </div>
+
+              <div v-if="penaltyPoints > 0" class="flex items-center justify-between bg-red-500/10 rounded-lg p-2 border border-red-500/20">
+                <span class="text-[10px] text-red-400 font-bold uppercase">Pénalité</span>
+                <span class="text-xs font-bold text-red-400">-{{ penaltyPoints }} pts</span>
+              </div>
+              
+              <p v-if="transfersMade > 2" class="text-[9px] text-red-400/80 italic leading-tight">
+                Attention : chaque transfert au-delà des 2 gratuits coûte 20 points de pénalité.
               </p>
             </div>
 
@@ -456,15 +505,31 @@
                       <span v-if="captainId === getPlayerByRole(roleObj.value)!.id" class="shrink-0 px-1 py-0.5 bg-yellow-500/20 text-yellow-500 border border-yellow-500/30 rounded text-[8px] font-bold uppercase tracking-wider shadow-[0_0_10px_rgba(234,179,8,0.2)]">CAP</span>
                     </div>
                     <div class="flex items-center gap-1.5 mt-0.5">
-                      <span class="text-[9px] font-title px-1.5 py-0.5 rounded bg-black/60 border backdrop-blur-sm" :class="getTierColor(getPlayerByRole(roleObj.value)!.rank)">{{ getPlayerByRole(roleObj.value)!.rank }}</span>
+                      <div class="flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/50 border backdrop-blur-sm" :class="getTierColor(getPlayerByRole(roleObj.value)!.rank)" :title="'Tier Fantasy: ' + getPlayerByRole(roleObj.value)!.rank">
+                        <img :src="getRankIconUrl(getPlayerByRole(roleObj.value)!.rank)" class="w-3.5 h-3.5 drop-shadow-[0_0_5px_rgba(255,255,255,0.2)]" :alt="getPlayerByRole(roleObj.value)!.rank" />
+                        <span class="text-[9px] font-title uppercase tracking-wider">{{ getPlayerByRole(roleObj.value)!.rank }}</span>
+                      </div>
                       <span class="text-[9px] text-white/50 uppercase tracking-wider truncate">{{ getPlayerByRole(roleObj.value)!.roles.join('/') }}</span>
                     </div>
                   </div>
 
-                  <!-- Price (Default view) -->
-                  <div class="px-3 font-title text-mcu-primary text-base drop-shadow-[0_0_10px_rgba(34,197,94,0.5)] group-hover/slot:opacity-0 transition-opacity duration-200 relative z-10">
-                    {{ getDisplayPrice(getPlayerByRole(roleObj.value)!) }}
-                  </div>
+              <!-- Price (Default view) -->
+              <div class="px-3 flex flex-col items-end group-hover/slot:opacity-0 transition-opacity duration-200 relative z-10">
+                <div class="font-title text-mcu-primary text-base drop-shadow-[0_0_10px_rgba(34,197,94,0.5)]">
+                  {{ getDisplayPrice(getPlayerByRole(roleObj.value)!) }}
+                </div>
+                <div v-if="tournamentDay === 2 && getPriceChange(getPlayerByRole(roleObj.value)!) !== 0" 
+                     class="text-[9px] font-bold flex items-center gap-0.5"
+                     :class="getPriceChange(getPlayerByRole(roleObj.value)!) > 0 ? 'text-red-400' : 'text-mcu-primary'">
+                  <svg v-if="getPriceChange(getPlayerByRole(roleObj.value)!) > 0" class="w-2 h-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                  </svg>
+                  <svg v-else class="w-2 h-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 112 0v7.586l2.293-2.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                  </svg>
+                  {{ Math.abs(getPriceChange(getPlayerByRole(roleObj.value)!)) }}
+                </div>
+              </div>
 
                   <!-- Actions (Hover view) -->
                   <div class="flex items-center gap-1.5 px-2 opacity-0 group-hover/slot:opacity-100 transition-opacity duration-200 bg-gradient-to-l from-[#111111] via-[#111111]/92 to-transparent h-full absolute right-0 z-20">
@@ -517,18 +582,18 @@
                 :class="isValid ? 'bg-mcu-primary text-white hover:bg-mcu-accent hover:scale-[1.02] shadow-[0_0_20px_rgba(34,197,94,0.5)] hover:shadow-[0_0_30px_rgba(34,197,94,0.7)]' : 'bg-white/5 text-white/30 cursor-not-allowed border border-white/10'"
               >
                 <span v-if="isSaving" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                <svg v-if="!isSaving && isValid" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                <svg v-if="!isSaving" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
                 </svg>
-                {{ isSaving ? 'Sauvegarde...' : 'Valider l\'équipe' }}
+                {{ isSaving ? 'Sauvegarde...' : 'Sauvegarder' }}
               </button>
               
               <!-- Success Message Animation -->
               <Transition name="fade">
-                <div v-if="saveSuccess" class="absolute -top-10 left-0 right-0 flex justify-center">
+                <div v-if="saveSuccess" class="absolute -bottom-10 left-0 right-0 flex justify-center">
                   <div class="bg-mcu-primary/20 border border-mcu-primary text-mcu-primary px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest backdrop-blur-md shadow-[0_0_20px_rgba(34,197,94,0.4)] flex items-center gap-1.5">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                    Équipe validée
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
+                    Équipe sauvegardée
                   </div>
                 </div>
               </Transition>
@@ -543,7 +608,7 @@
     </div>
 
     <!-- Locked Dashboard Layout -->
-    <div v-else class="flex flex-col gap-6 animate-fade-in-up w-full max-w-6xl mx-auto">
+    <div v-else-if="!showScoreReveal" class="flex flex-col gap-6 animate-fade-in-up w-full max-w-6xl mx-auto">
       <!-- Header / Total Points -->
       <div class="bg-gradient-to-br from-[#1A1A1A] to-[#0B0F0C] backdrop-blur-xl border border-[#22C55E]/25 rounded-3xl p-6 shadow-[0_20px_56px_rgba(0,0,0,0.65)] relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
         <div class="absolute -top-40 -right-40 w-96 h-96 bg-mcu-primary/10 rounded-full blur-3xl pointer-events-none"></div>
@@ -623,7 +688,7 @@
       </div>
 
       <!-- Players Grid -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
         <div 
           v-for="roleObj in roles" 
           :key="roleObj.value"
@@ -657,10 +722,11 @@
                          : (playerScores[getPlayerByRole(roleObj.value)!.id] || 0) < 0
                            ? 'text-red-400 drop-shadow-[0_0_12px_rgba(248,113,113,0.3)]'
                            : 'text-white/70'">
-                    {{ (playerScores[getPlayerByRole(roleObj.value)!.id] || 0).toFixed(2) }} pts
+                    {{ ((playerScores[getPlayerByRole(roleObj.value)!.id] || 0) * (captainId === getPlayerByRole(roleObj.value)!.id ? 1.5 : 1)).toFixed(2) }} pts
                     <svg v-if="(playerScores[getPlayerByRole(roleObj.value)!.id] || 0) > 0" class="w-4 h-4 text-mcu-primary animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
                     <svg v-else-if="(playerScores[getPlayerByRole(roleObj.value)!.id] || 0) < 0" class="w-4 h-4 text-red-400 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>
                   </div>
+                  <div class="text-[10px] uppercase font-bold text-white/30 tracking-widest -mt-1 mb-1">Total Rapporté</div>
                   <div v-if="captainId === getPlayerByRole(roleObj.value)!.id" class="px-2 py-0.5 mt-1 bg-yellow-500/20 text-yellow-500 border border-yellow-500/30 rounded text-[9px] font-bold uppercase tracking-wider shadow-[0_0_15px_rgba(234,179,8,0.2)] flex items-center gap-1">
                     <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
                     Capitaine (x1.5)
@@ -684,43 +750,35 @@
                   </div>
                 </div>
                 <div class="flex items-center gap-2 mb-3">
-                  <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-black/60 border backdrop-blur-sm shadow-inner" :class="getTierColor(getPlayerByRole(roleObj.value)!.rank)">
-                    {{ getPlayerByRole(roleObj.value)!.rank }}
-                  </span>
+                  <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-black/50 border backdrop-blur-sm shadow-inner" :class="getTierColor(getPlayerByRole(roleObj.value)!.rank)" :title="'Tier Fantasy: ' + getPlayerByRole(roleObj.value)!.rank">
+                    <img :src="getRankIconUrl(getPlayerByRole(roleObj.value)!.rank)" class="w-4 h-4 drop-shadow-[0_0_5px_rgba(255,255,255,0.2)]" :alt="getPlayerByRole(roleObj.value)!.rank" />
+                    <span class="text-[10px] font-bold uppercase tracking-wider">{{ getPlayerByRole(roleObj.value)!.rank }}</span>
+                  </div>
                   <span class="text-[10px] text-white/50 font-bold">Prix: {{ getDisplayPrice(getPlayerByRole(roleObj.value)!) }} pts</span>
                 </div>
 
                   <!-- Match Stats if available -->
-                <div v-if="playerStats[getPlayerByRole(roleObj.value)!.id]" class="bg-[#111111]/55 border border-[#2A2A2A] rounded-xl p-2.5 grid grid-cols-2 sm:grid-cols-4 gap-2 shadow-inner">
-                  <div class="flex flex-col items-center justify-center p-1.5 rounded-lg bg-white/5 group/stat hover:bg-white/10 transition-colors" title="Kills / Deaths / Assists">
-                    <span class="text-[8px] uppercase text-white/40 font-bold mb-0.5">K/D/A</span>
-                    <span class="text-xs text-white font-title group-hover/stat:text-mcu-primary transition-colors">
-                      {{ playerStats[getPlayerByRole(roleObj.value)!.id].kills }}/{{ playerStats[getPlayerByRole(roleObj.value)!.id].deaths }}/{{ playerStats[getPlayerByRole(roleObj.value)!.id].assists }}
-                    </span>
-                  </div>
-                  <div class="flex flex-col items-center justify-center p-1.5 rounded-lg bg-white/5 group/stat hover:bg-white/10 transition-colors" title="Ratio KDA">
-                    <span class="text-[8px] uppercase text-white/40 font-bold mb-0.5">Ratio</span>
-                    <span class="text-xs font-title transition-colors" :class="parseFloat(playerStats[getPlayerByRole(roleObj.value)!.id].kda) >= 3 ? 'text-mcu-primary group-hover/stat:text-emerald-300' : 'text-white group-hover/stat:text-gray-300'">
-                      {{ playerStats[getPlayerByRole(roleObj.value)!.id].kda }}
-                    </span>
-                  </div>
-                  <div class="flex flex-col items-center justify-center p-1.5 rounded-lg bg-white/5 group/stat hover:bg-white/10 transition-colors" title="Score de Vision">
-                    <span class="text-[8px] uppercase text-white/40 font-bold mb-0.5">Vision</span>
-                    <span class="text-xs text-white font-title group-hover/stat:text-mcu-primary transition-colors">
-                      {{ playerStats[getPlayerByRole(roleObj.value)!.id].vision_score }}
-                    </span>
-                  </div>
-                  <div class="flex flex-col items-center justify-center p-1.5 rounded-lg bg-white/5 relative overflow-hidden group/renta transition-all hover:scale-105" title="Points gagnés par rapport au prix d'achat">
-                    <div class="absolute inset-0 opacity-10 transition-opacity group-hover/renta:opacity-20"
+                <div v-if="playerStats[getPlayerByRole(roleObj.value)!.id]" class="bg-[#111111]/70 border border-[#2A2A2A] rounded-xl p-2.5 flex flex-col gap-2.5 shadow-inner backdrop-blur-sm">
+                  <div class="flex items-center justify-between p-2.5 rounded-lg bg-black/40 border border-white/5 relative overflow-hidden group/renta transition-all hover:scale-[1.02] hover:bg-black/60 hover:border-white/10" title="Points gagnés par rapport au prix d'achat">
+                    <div class="absolute inset-0 opacity-10 transition-opacity duration-300 group-hover/renta:opacity-20"
                          :class="((playerScores[getPlayerByRole(roleObj.value)!.id] || 0) / getDisplayPrice(getPlayerByRole(roleObj.value)!)) >= 1 ? 'bg-mcu-primary' : 'bg-red-500'"></div>
-                    <span class="text-[8px] uppercase text-white/40 font-bold mb-0.5 relative z-10">Rentabilité</span>
-                    <div class="flex items-center gap-0.5 relative z-10">
-                      <span class="text-xs font-title transition-colors" :class="((playerScores[getPlayerByRole(roleObj.value)!.id] || 0) / getDisplayPrice(getPlayerByRole(roleObj.value)!)) >= 1 ? 'text-mcu-primary group-hover/renta:text-emerald-300' : 'text-red-400 group-hover/renta:text-red-300'">
+                    <div class="flex flex-col relative z-10">
+                      <span class="text-[8px] uppercase text-white/40 font-bold tracking-widest">Rentabilité</span>
+                    </div>
+                    <div class="flex items-center gap-1.5 relative z-10">
+                      <span class="text-lg font-title transition-colors" :class="((playerScores[getPlayerByRole(roleObj.value)!.id] || 0) / getDisplayPrice(getPlayerByRole(roleObj.value)!)) >= 1 ? 'text-mcu-primary drop-shadow-[0_0_10px_rgba(34,197,94,0.4)] group-hover/renta:text-emerald-300' : 'text-red-400 drop-shadow-[0_0_10px_rgba(248,113,113,0.4)] group-hover/renta:text-red-300'">
                         {{ ((playerScores[getPlayerByRole(roleObj.value)!.id] || 0) / getDisplayPrice(getPlayerByRole(roleObj.value)!)).toFixed(2) }}x
                       </span>
-                      <svg v-if="((playerScores[getPlayerByRole(roleObj.value)!.id] || 0) / getDisplayPrice(getPlayerByRole(roleObj.value)!)) >= 1" class="w-2.5 h-2.5 text-mcu-primary group-hover/renta:text-emerald-300 transition-colors group-hover/renta:-translate-y-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
-                      <svg v-else class="w-2.5 h-2.5 text-red-400 group-hover/renta:text-red-300 transition-colors group-hover/renta:translate-y-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>
+                      <svg v-if="((playerScores[getPlayerByRole(roleObj.value)!.id] || 0) / getDisplayPrice(getPlayerByRole(roleObj.value)!)) >= 1" class="w-4 h-4 text-mcu-primary group-hover/renta:text-emerald-300 transition-transform duration-300 group-hover/renta:-translate-y-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+                      <svg v-else class="w-4 h-4 text-red-400 group-hover/renta:text-red-300 transition-transform duration-300 group-hover/renta:translate-y-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>
                     </div>
+                  </div>
+                  
+                  <div class="flex items-center justify-between p-2.5 rounded-lg bg-black/40 border border-white/5 group/stat hover:bg-black/60 hover:border-white/10 transition-all hover:scale-[1.02]" title="Kills / Deaths / Assists">
+                    <span class="text-[8px] uppercase text-white/40 font-bold tracking-widest"><span class="text-emerald-400/70">K</span><span class="text-white/20">/</span><span class="text-red-400/70">D</span><span class="text-white/20">/</span><span class="text-yellow-400/70">A</span></span>
+                    <span class="text-sm font-title group-hover/stat:brightness-125 transition-all drop-shadow-md">
+                      <span class="text-emerald-400">{{ playerStats[getPlayerByRole(roleObj.value)!.id].kills }}</span><span class="text-white/20 mx-0.5">/</span><span class="text-red-400">{{ playerStats[getPlayerByRole(roleObj.value)!.id].deaths }}</span><span class="text-white/20 mx-0.5">/</span><span class="text-yellow-400">{{ playerStats[getPlayerByRole(roleObj.value)!.id].assists }}</span>
+                    </span>
                   </div>
                 </div>
                 <div v-else class="bg-[#111111]/40 border border-[#2A2A2A] rounded-xl p-3 text-center flex flex-col items-center justify-center gap-2 shadow-inner">
@@ -887,13 +945,15 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, onUnmounted } from 'vue';
-import { getPlayers, getChampions } from '../lib/queries';
+import { getPlayers, getChampions, fetchPlayoffMatches } from '../lib/queries';
 import { useFantasyTeam } from '../composables/useFantasyTeam';
 import { mapDbPlayerToFantasy } from '../utils/fantasyMapper';
 import type { Database } from '../types/supabase';
 import type { FantasyPlayer } from '../types/fantasy';
 import FantasyScoreReveal from '../components/FantasyScoreReveal.vue';
 import { fantasyService } from '../services/fantasyService';
+import { supabase } from '../lib/supabase';
+import { getRankIconUrl } from '../utils/rankIcon';
 
 import topIcon from '../assets/top.png';
 import jglIcon from '../assets/jgl.png';
@@ -902,11 +962,24 @@ import adcIcon from '../assets/adc.png';
 import supIcon from '../assets/support.png';
 
 type DbPlayer = Database['public']['Tables']['players']['Row'];
-type EnrichedPlayer = DbPlayer & { fantasy: FantasyPlayer };
+type EnrichedPlayer = DbPlayer & { 
+  fantasy: FantasyPlayer;
+  primary_role: string;
+  secondary_role: string;
+  rank: string;
+  playstyle: string;
+  mindset: string;
+  champion_pool: string[];
+  champion_signature: string;
+};
 
 const players = ref<EnrichedPlayer[]>([]);
 const champions = ref<any[]>([]);
 const loading = ref(true);
+const isCheckingReveal = ref(false);
+const hasPlayoffs = ref(false);
+
+let realtimeChannel: any = null;
 
 // Fantasy State
 const currentUserId = ref<string | null>(null);
@@ -1052,16 +1125,21 @@ onMounted(async () => {
     } catch (e) {}
   }
   
-  const [playersRes, championsRes] = await Promise.all([
+  const [playersRes, championsRes, playoffsRes] = await Promise.all([
     getPlayers(),
-    getChampions()
+    getChampions(),
+    fetchPlayoffMatches()
   ]);
   
+  hasPlayoffs.value = (playoffsRes.data && playoffsRes.data.length > 0) || false;
+  
   if (playersRes.data) {
-    players.value = playersRes.data.map(p => ({
+    players.value = playersRes.data
+      .filter((p: any) => p.participation_type === 'joueur')
+      .map((p: any) => ({
       ...p,
       fantasy: mapDbPlayerToFantasy(p)
-    }));
+    })) as EnrichedPlayer[];
   }
   
   if (championsRes.data) {
@@ -1070,9 +1148,38 @@ onMounted(async () => {
   
   if (currentUserId.value) {
     await initDay();
+    
+    // S'abonner aux changements de points de l'équipe
+    if (realtimeChannel) {
+      supabase.removeChannel(realtimeChannel);
+    }
+    
+    realtimeChannel = supabase
+      .channel(`fantasy_teams_changes_${Date.now()}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'fantasy_teams',
+          filter: `user_id=eq.${currentUserId.value}`
+        },
+        (payload) => {
+          console.log('[Realtime] Team updated!', payload);
+          // Relancer l'initDay rafraîchira les données et lancera l'animation si le score a changé
+          initDay();
+        }
+      )
+      .subscribe();
   }
   
   loading.value = false;
+});
+
+onUnmounted(() => {
+  if (realtimeChannel) {
+    supabase.removeChannel(realtimeChannel);
+  }
 });
 
 const setDay = async (day: 1 | 2) => {
@@ -1082,6 +1189,7 @@ const setDay = async (day: 1 | 2) => {
 };
 
 const initDay = async () => {
+  isCheckingReveal.value = true;
   await loadTeam();
   if (players.value.length > 0) {
     hydratePlayers(players.value.map(p => p.fantasy));
@@ -1090,7 +1198,7 @@ const initDay = async () => {
   if (team.value && team.value.isLocked) {
     try {
       const [scores, stats, leaderboard] = await Promise.all([
-        fantasyService.getPlayerScores(tournamentDay.value),
+        fantasyService.getPlayerScores('all'),
         fantasyService.getPlayerMatchStats(team.value.playerIds),
         fantasyService.getLeaderboard(tournamentDay.value)
       ]);
@@ -1105,7 +1213,7 @@ const initDay = async () => {
       const lastSeenScore = parseFloat(localStorage.getItem(storageKey) || '0');
       const currentTotal = team.value.totalPoints || 0;
       
-      if (currentTotal > lastSeenScore) {
+      if (currentTotal !== lastSeenScore) {
         oldTotalScore.value = lastSeenScore;
         newTotalScore.value = currentTotal;
         showScoreReveal.value = true;
@@ -1115,13 +1223,14 @@ const initDay = async () => {
       console.error('Failed to load player scores for animation', err);
     }
   }
+  isCheckingReveal.value = false;
 };
 
 const replayAnimation = async () => {
   if (!team.value) return;
   try {
     const [scores, stats] = await Promise.all([
-      fantasyService.getPlayerScores(tournamentDay.value),
+      fantasyService.getPlayerScores('all'),
       fantasyService.getPlayerMatchStats(team.value.playerIds)
     ]);
     playerScores.value = scores;
@@ -1188,12 +1297,6 @@ const getChampionSplashById = (id: number | string) => {
 };
 
 const getRosterCardSplashUrl = (playerId: string) => {
-  const stats = playerStats.value[playerId];
-  const playedId = stats?.championIds?.[0];
-  if (playedId != null) {
-    const byMatch = getChampionSplashById(playedId);
-    if (byMatch) return byMatch;
-  }
   const p = players.value.find(pl => pl.id === playerId);
   if (p?.champion_signature) {
     const u = getChampionSplash(p.champion_signature);
@@ -1201,6 +1304,13 @@ const getRosterCardSplashUrl = (playerId: string) => {
   }
   const poolFirst = p?.champion_pool?.[0];
   if (poolFirst) return getChampionSplash(poolFirst) || '';
+
+  const stats = playerStats.value[playerId];
+  const playedId = stats?.championIds?.[0];
+  if (playedId != null) {
+    const byMatch = getChampionSplashById(playedId);
+    if (byMatch) return byMatch;
+  }
   return '';
 };
 

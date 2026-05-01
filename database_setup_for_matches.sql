@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS match_participants (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     match_id UUID REFERENCES match_history(id) ON DELETE CASCADE,
     player_id UUID REFERENCES players(id) ON DELETE CASCADE,
-    champion_id INT,
+    champion_id UUID REFERENCES champions(id) ON DELETE SET NULL,
     kills INT,
     deaths INT,
     assists INT,

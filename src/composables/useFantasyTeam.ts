@@ -10,7 +10,7 @@ export function useFantasyTeam(userId: Ref<string | null>, tournamentDay: Ref<1 
   const previousTeam = ref<FantasyTeam | null>(null)
   const selectedPlayers = ref<FantasyPlayer[]>([])
   const captainId = ref<string | null>(null)
-  const teamName = ref<string>('Mon équipe')
+  const teamName = ref<string>('MON ÉQUIPE')
   
   const isLoading = ref(false)
   const isSaving = ref(false)
@@ -26,22 +26,21 @@ export function useFantasyTeam(userId: Ref<string | null>, tournamentDay: Ref<1 
     isLoading.value = true
     error.value = null
     try {
-      if (tournamentDay.value === 2) {
-        previousTeam.value = await fantasyService.getTeam(userId.value, 1)
-      }
+      // Always try to load Day 1 team to have it as reference for Day 2 transfers/budget
+      previousTeam.value = await fantasyService.getTeam(userId.value, 1)
 
       const fetchedTeam = await fantasyService.getTeam(userId.value, tournamentDay.value)
       if (fetchedTeam) {
         team.value = fetchedTeam
         captainId.value = fetchedTeam.captainId
         teamName.value = fetchedTeam.name
-        // selectedPlayers should be hydrated by the component using the returned playerIds
-        // and mapping them to available FantasyPlayer objects.
       } else {
+        // If Day 2 team doesn't exist but Day 1 does, we might want to initialize it or just show empty
+        // The initialize_day2_teams() SQL function handles the migration, but we can also handle the fallback here
         team.value = null
         selectedPlayers.value = []
         captainId.value = null
-        teamName.value = `Mon équipe — Jour ${tournamentDay.value}`
+        teamName.value = previousTeam.value?.name || 'MON ÉQUIPE'
       }
     } catch (err: any) {
       error.value = err.message || 'Failed to load team'
@@ -87,7 +86,20 @@ export function useFantasyTeam(userId: Ref<string | null>, tournamentDay: Ref<1 
   // Hydrate selected players (called by component after fetching players list)
   const hydratePlayers = (allPlayers: FantasyPlayer[]) => {
     knownPlayers.value = allPlayers
-    if (!team.value) return
+    if (!team.value) {
+      // If we are on Day 2 and have no Day 2 team yet, initialize selectedPlayers with Day 1 roster
+      if (tournamentDay.value === 2 && previousTeam.value) {
+        selectedPlayers.value = previousTeam.value.playerIds
+          .map(id => allPlayers.find(p => p.id === id))
+          .filter((p): p is FantasyPlayer => p !== undefined)
+        captainId.value = previousTeam.value.captainId
+      } else {
+        selectedPlayers.value = []
+      }
+      validate(allPlayers)
+      return
+    }
+    
     selectedPlayers.value = team.value.playerIds
       .map(id => allPlayers.find(p => p.id === id))
       .filter((p): p is FantasyPlayer => p !== undefined)

@@ -5,7 +5,7 @@
       <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-1/2 h-[2px] bg-gradient-to-r from-transparent via-[#22C55E] to-transparent shadow-[0_0_15px_#22C55E]"></div>
       
       <div class="flex items-center gap-6 w-[250px] justify-end">
-        <span class="text-3xl font-title uppercase tracking-wider text-[#4ADE80] drop-shadow-[0_0_8px_rgba(74,222,128,0.4)] truncate">{{ match.team1_name }}</span>
+        <span class="text-3xl font-title uppercase tracking-wider text-[#4ADE80] drop-shadow-[0_0_8px_rgba(74,222,128,0.4)] truncate">{{ match.team1?.name }}</span>
         <span class="text-5xl font-title text-[#22C55E] drop-shadow-[0_0_15px_rgba(34,197,94,0.4)]">{{ match.team1_score }}</span>
       </div>
       
@@ -22,7 +22,7 @@
       
       <div class="flex items-center gap-6 w-[250px] justify-start">
         <span class="text-5xl font-title text-[#22C55E] drop-shadow-[0_0_15px_rgba(34,197,94,0.4)]">{{ match.team2_score }}</span>
-        <span class="text-3xl font-title uppercase tracking-wider text-[#EF4444] drop-shadow-[0_0_8px_rgba(239,68,68,0.4)] truncate">{{ match.team2_name }}</span>
+        <span class="text-3xl font-title uppercase tracking-wider text-[#EF4444] drop-shadow-[0_0_8px_rgba(239,68,68,0.4)] truncate">{{ match.team2?.name }}</span>
       </div>
     </div>
 
@@ -53,27 +53,32 @@ import { supabase } from "../lib/supabase";
 import { subscribeToTable } from "../lib/realtime";
 
 const match = ref({
-  team1_name: "Loading...",
-  team2_name: "Loading...",
   team1_score: 0,
   team2_score: 0,
   title: "...",
-  subtitle: "..."
+  subtitle: "...",
+  team1: { name: "Loading..." },
+  team2: { name: "Loading..." }
 });
 
 let subscription: any = null;
 
 onMounted(async () => {
   // Fetch initial state
-  const { data } = await supabase.from("live_match").select("*").eq("id", 1).single();
+  const { data } = await supabase.from("live_match").select("*, team1:teams!team1_id(*), team2:teams!team2_id(*)").eq("id", 1).single();
   if (data) {
     match.value = data as any;
   }
 
   // Listen for admin changes
-  subscription = subscribeToTable("live_match", (payload) => {
+  subscription = subscribeToTable("live_match", async (payload) => {
     if (payload.new) {
-      match.value = payload.new;
+      const { data } = await supabase.from("live_match").select("*, team1:teams!team1_id(*), team2:teams!team2_id(*)").eq("id", 1).single();
+      if (data) {
+        match.value = data as any;
+      } else {
+        match.value = payload.new;
+      }
     }
   });
 });

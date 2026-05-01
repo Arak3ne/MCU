@@ -13,154 +13,138 @@
       <div class="text-center mb-16 relative">
         <div class="inline-block relative">
           <h1 class="text-5xl md:text-7xl font-title uppercase tracking-wider mb-4 text-transparent bg-clip-text bg-gradient-to-b from-[#F0FDF4] to-[#22C55E] drop-shadow-2xl">
-            Playoffs Bracket
+            Playoffs
           </h1>
           <div class="absolute -inset-x-16 top-1/2 -translate-y-1/2 h-[1px] bg-gradient-to-r from-transparent via-[#22C55E]/30 to-transparent -z-10"></div>
         </div>
-        <p class="text-[#A1A1AA] font-medium tracking-widest uppercase text-sm mt-2">Arbre à double élimination en direct</p>
+        <p class="text-[#A1A1AA] font-medium tracking-widest uppercase text-sm mt-2">Phase de Groupes & Arbre Final</p>
       </div>
 
       <!-- Loading State -->
       <div v-if="loading" class="flex flex-col items-center justify-center py-24 opacity-50">
         <div class="w-12 h-12 border-4 border-[#2A2A2A] border-t-[#22C55E] rounded-full animate-spin mb-6"></div>
-        <p class="text-[#22C55E] uppercase tracking-widest text-sm font-bold animate-pulse">Chargement de l'arbre...</p>
+        <p class="text-[#22C55E] uppercase tracking-widest text-sm font-bold animate-pulse">Chargement...</p>
       </div>
 
-      <div v-else-if="groupedMatches.length === 0" class="text-center py-20">
-        <p class="text-[#A1A1AA] uppercase tracking-widest text-sm font-bold mb-4">Aucun arbre de playoffs actif</p>
+      <div v-else-if="matches.length === 0" class="text-center py-20">
+        <p class="text-[#A1A1AA] uppercase tracking-widest text-sm font-bold mb-4">Aucun match de playoff actif</p>
       </div>
 
-      <!-- Bracket Container -->
       <div v-else class="w-full overflow-x-auto custom-scrollbar pb-12">
         <div class="min-w-max mx-auto flex flex-col gap-24 px-8">
           
-          <!-- Upper Bracket -->
-          <div v-if="upperRounds.length > 0" class="bracket-section relative">
-            <h3 class="text-2xl font-title mb-8 text-transparent bg-clip-text bg-gradient-to-b from-[#4ADE80] to-[#4ADE80]/50 uppercase tracking-widest">Upper Bracket</h3>
-            <div class="flex gap-16 relative">
-              <div v-for="(round, rIndex) in upperRounds" :key="'ur'+rIndex" class="flex flex-col justify-around min-w-[280px]">
+          <!-- GROUP STAGE -->
+          <div v-if="groupARounds.length > 0 || groupBRounds.length > 0" class="w-full max-w-6xl mx-auto">
+            <h3 class="text-3xl font-title mb-12 text-transparent bg-clip-text bg-gradient-to-b from-[#F0FDF4] to-[#A1A1AA] uppercase tracking-widest text-center">Group Stage</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-16">
+              <!-- Group A -->
+              <div v-if="groupARounds.length > 0" class="bg-[#111111]/80 backdrop-blur border border-[#2A2A2A] rounded-sm p-6 shadow-xl relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-[#4ADE80] opacity-[0.05] blur-[50px] pointer-events-none"></div>
+                <h4 class="text-2xl font-title text-[#4ADE80] mb-8 text-center uppercase tracking-widest">Group A</h4>
+                
+                <div class="flex flex-col gap-6">
+                  <div v-for="(round, rIndex) in groupARounds" :key="'ga'+rIndex" class="flex flex-col gap-4">
+                    <div v-for="match in round.matches" :key="match.id" class="match-node relative z-10 w-full flex flex-col justify-center">
+                      <div @click="startDraftForMatch(match)" 
+                           class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-sm flex flex-col transition-all group cursor-pointer"
+                           :class="[match.is_completed ? 'border-[#22C55E]/30 cursor-default pointer-events-none' : 'hover:border-[#4ADE80]/50']">
+                        
+                        <div class="flex items-center justify-between p-3 border-b border-[#2A2A2A] bg-[#111111]/50 group-hover:bg-[#111111]"
+                             :class="getWinnerStatusClass(match, 1, 'A')">
+                          <span class="font-bold truncate text-sm" :class="match.team1 ? 'text-[#F0FDF4]' : 'text-[#A1A1AA] italic'">{{ match.team1?.name || 'TBD' }}</span>
+                          <span class="font-title text-lg ml-3" :class="getWinnerScoreClass(match, 1, 'A')">{{ match.team1_score }}</span>
+                        </div>
+                        
+                        <div class="flex items-center justify-between p-3 bg-[#111111]/50 group-hover:bg-[#111111]"
+                             :class="getWinnerStatusClass(match, 2, 'A')">
+                          <span class="font-bold truncate text-sm" :class="match.team2 ? 'text-[#F0FDF4]' : 'text-[#A1A1AA] italic'">{{ match.team2?.name || 'TBD' }}</span>
+                          <span class="font-title text-lg ml-3" :class="getWinnerScoreClass(match, 2, 'A')">{{ match.team2_score }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Group B -->
+              <div v-if="groupBRounds.length > 0" class="bg-[#111111]/80 backdrop-blur border border-[#2A2A2A] rounded-sm p-6 shadow-xl relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-[#3B82F6] opacity-[0.05] blur-[50px] pointer-events-none"></div>
+                <h4 class="text-2xl font-title text-[#3B82F6] mb-8 text-center uppercase tracking-widest">Group B</h4>
+                
+                <div class="flex flex-col gap-6">
+                  <div v-for="(round, rIndex) in groupBRounds" :key="'gb'+rIndex" class="flex flex-col gap-4">
+                    <div v-for="match in round.matches" :key="match.id" class="match-node relative z-10 w-full flex flex-col justify-center">
+                      <div @click="startDraftForMatch(match)" 
+                           class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-sm flex flex-col transition-all group cursor-pointer"
+                           :class="[match.is_completed ? 'border-[#3B82F6]/30 cursor-default pointer-events-none' : 'hover:border-[#3B82F6]/50']">
+                        
+                        <div class="flex items-center justify-between p-3 border-b border-[#2A2A2A] bg-[#111111]/50 group-hover:bg-[#111111]"
+                             :class="getWinnerStatusClass(match, 1, 'B')">
+                          <span class="font-bold truncate text-sm" :class="match.team1 ? 'text-[#F0FDF4]' : 'text-[#A1A1AA] italic'">{{ match.team1?.name || 'TBD' }}</span>
+                          <span class="font-title text-lg ml-3" :class="getWinnerScoreClass(match, 1, 'B')">{{ match.team1_score }}</span>
+                        </div>
+                        
+                        <div class="flex items-center justify-between p-3 bg-[#111111]/50 group-hover:bg-[#111111]"
+                             :class="getWinnerStatusClass(match, 2, 'B')">
+                          <span class="font-bold truncate text-sm" :class="match.team2 ? 'text-[#F0FDF4]' : 'text-[#A1A1AA] italic'">{{ match.team2?.name || 'TBD' }}</span>
+                          <span class="font-title text-lg ml-3" :class="getWinnerScoreClass(match, 2, 'B')">{{ match.team2_score }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- KNOCKOUT STAGE -->
+          <div v-if="knockoutRounds.length > 0" class="bracket-section relative mt-12">
+            <h3 class="text-3xl font-title mb-12 text-transparent bg-clip-text bg-gradient-to-b from-[#F0FDF4] to-[#A1A1AA] uppercase tracking-widest text-center">Knockout Stage</h3>
+            
+            <div class="flex justify-center gap-24 relative">
+              <div v-for="(round, rIndex) in knockoutRounds" :key="'ko'+rIndex" class="flex flex-col justify-around min-w-[300px]">
                 <!-- Round Header -->
                 <div class="text-center mb-8 text-[#A1A1AA] text-xs font-bold uppercase tracking-[0.2em]">
-                  Round {{ round.number }}
+                  {{ round.number === 1 ? 'Semi-Finals' : round.number === 2 ? 'Final (BO3)' : `Round ${round.number}` }}
                 </div>
                 
-                <div class="flex flex-col justify-around flex-1 relative gap-8">
-                  <div v-for="match in round.matches" :key="match.id" class="match-node relative z-10 w-full flex flex-col justify-center">
+                <div class="flex flex-col justify-around flex-1 relative gap-16">
+                  <div v-for="match in round.matches" :key="match.id" class="match-node relative z-10 w-full flex flex-col justify-center" :class="{'scale-110 origin-center': round.number === 2}">
                     
                     <div @click="startDraftForMatch(match)" 
                          class="bg-[#111111] border border-[#2A2A2A] rounded-sm flex flex-col shadow-xl transition-all group cursor-pointer"
                          :class="[
                            match.is_completed 
                              ? 'border-[#22C55E]/50 shadow-[0_0_15px_rgba(34,197,94,0.15)] cursor-default pointer-events-none' 
-                             : 'hover:border-[#22C55E]/50'
+                             : 'hover:border-[#22C55E]/50',
+                           round.number === 2 ? 'border-2 border-[#22C55E] shadow-[0_0_30px_rgba(34,197,94,0.3)] hover:shadow-[0_0_40px_rgba(34,197,94,0.5)]' : ''
                          ]">
                       
                       <!-- Top Team -->
-                      <div class="flex items-center justify-between p-3 border-b border-[#1A1A1A] bg-[#1A1A1A]/50 group-hover:bg-[#1A1A1A]"
+                      <div class="flex items-center justify-between p-4 border-b border-[#1A1A1A] bg-[#1A1A1A]/50 group-hover:bg-[#1A1A1A]"
                            :class="getWinnerStatusClass(match, 1)">
-                        <span class="font-bold truncate text-sm" :class="match.team1 ? 'text-[#F0FDF4]' : 'text-[#A1A1AA] italic'">
+                        <span class="font-bold truncate" :class="[match.team1 ? 'text-[#F0FDF4]' : 'text-[#A1A1AA] italic', round.number === 2 ? 'text-base uppercase tracking-wider' : 'text-sm']">
                           {{ match.team1?.name || 'TBD' }}
                         </span>
-                        <span class="font-title text-lg ml-3" :class="getWinnerScoreClass(match, 1)">
+                        <span class="font-title ml-4" :class="[getWinnerScoreClass(match, 1), round.number === 2 ? 'text-2xl' : 'text-lg']">
                           {{ match.team1_score }}
                         </span>
                       </div>
                       
                       <!-- Bottom Team -->
-                      <div class="flex items-center justify-between p-3 bg-[#1A1A1A]/50 group-hover:bg-[#1A1A1A]"
+                      <div class="flex items-center justify-between p-4 bg-[#1A1A1A]/50 group-hover:bg-[#1A1A1A]"
                            :class="getWinnerStatusClass(match, 2)">
-                        <span class="font-bold truncate text-sm" :class="match.team2 ? 'text-[#F0FDF4]' : 'text-[#A1A1AA] italic'">
+                        <span class="font-bold truncate" :class="[match.team2 ? 'text-[#F0FDF4]' : 'text-[#A1A1AA] italic', round.number === 2 ? 'text-base uppercase tracking-wider' : 'text-sm']">
                           {{ match.team2?.name || 'TBD' }}
                         </span>
-                        <span class="font-title text-lg ml-3" :class="getWinnerScoreClass(match, 2)">
+                        <span class="font-title ml-4" :class="[getWinnerScoreClass(match, 2), round.number === 2 ? 'text-2xl' : 'text-lg']">
                           {{ match.team2_score }}
                         </span>
                       </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
 
-          <!-- Lower Bracket -->
-          <div v-if="lowerRounds.length > 0" class="bracket-section relative">
-            <h3 class="text-2xl font-title mb-8 text-transparent bg-clip-text bg-gradient-to-b from-[#EF4444] to-[#EF4444]/50 uppercase tracking-widest">Lower Bracket</h3>
-            <div class="flex gap-16 relative">
-              <div v-for="(round, rIndex) in lowerRounds" :key="'lr'+rIndex" class="flex flex-col justify-around min-w-[280px]">
-                <div class="text-center mb-8 text-[#A1A1AA] text-xs font-bold uppercase tracking-[0.2em]">
-                  Lower Round {{ round.number }}
-                </div>
-                
-                <div class="flex flex-col justify-around flex-1 relative gap-8">
-                  <div v-for="match in round.matches" :key="match.id" class="match-node relative z-10 w-full flex flex-col justify-center">
-                    
-                    <div @click="startDraftForMatch(match)"
-                         class="bg-[#111111] border border-[#2A2A2A] rounded-sm flex flex-col shadow-xl transition-all cursor-pointer group hover:border-[#22C55E]/50"
-                         :class="{'border-[#22C55E]/50 shadow-[0_0_15px_rgba(34,197,94,0.15)] pointer-events-none cursor-default': match.is_completed}">
-                      
-                      <div class="flex items-center justify-between p-3 border-b border-[#1A1A1A] bg-[#1A1A1A]/50 group-hover:bg-[#1A1A1A]"
-                           :class="getWinnerStatusClass(match, 1)">
-                        <span class="font-bold truncate text-sm" :class="match.team1 ? 'text-[#F0FDF4]' : 'text-[#A1A1AA] italic'">
-                          {{ match.team1?.name || 'TBD' }}
-                        </span>
-                        <span class="font-title text-lg ml-3" :class="getWinnerScoreClass(match, 1)">
-                          {{ match.team1_score }}
-                        </span>
-                      </div>
-                      
-                      <div class="flex items-center justify-between p-3 bg-[#1A1A1A]/50 group-hover:bg-[#1A1A1A]"
-                           :class="getWinnerStatusClass(match, 2)">
-                        <span class="font-bold truncate text-sm" :class="match.team2 ? 'text-[#F0FDF4]' : 'text-[#A1A1AA] italic'">
-                          {{ match.team2?.name || 'TBD' }}
-                        </span>
-                        <span class="font-title text-lg ml-3" :class="getWinnerScoreClass(match, 2)">
-                          {{ match.team2_score }}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Grand Finals -->
-          <div v-if="grandFinalsRounds.length > 0" class="bracket-section relative mt-8">
-            <h3 class="text-2xl font-title mb-8 text-transparent bg-clip-text bg-gradient-to-b from-[#22C55E] to-[#14532D] uppercase tracking-widest text-center">Grand Finals</h3>
-            <div class="flex justify-center relative">
-              <div v-for="(round, rIndex) in grandFinalsRounds" :key="'gf'+rIndex" class="flex flex-col justify-center min-w-[320px]">
-                
-                <div class="flex flex-col justify-center flex-1 relative gap-8">
-                  <div v-for="match in round.matches" :key="match.id" class="match-node relative z-10 w-full flex flex-col justify-center scale-110 origin-center">
-                    
-                    <div @click="startDraftForMatch(match)"
-                         class="bg-[#111111] border-2 border-[#22C55E] rounded-sm flex flex-col shadow-[0_0_30px_rgba(34,197,94,0.3)] relative overflow-hidden cursor-pointer group hover:shadow-[0_0_40px_rgba(34,197,94,0.5)] transition-all"
-                         :class="{'pointer-events-none cursor-default': match.is_completed}">
-                      <div class="absolute inset-0 bg-gradient-to-r from-[#22C55E]/10 to-transparent pointer-events-none"></div>
-                      
-                      <div class="flex items-center justify-between p-4 border-b border-[#2A2A2A] bg-[#1A1A1A]/80 relative z-10 group-hover:bg-[#1A1A1A]"
-                           :class="getWinnerStatusClass(match, 1)">
-                        <span class="font-title uppercase tracking-wider truncate text-base" :class="match.team1 ? 'text-[#F0FDF4]' : 'text-[#A1A1AA] italic'">
-                          {{ match.team1?.name || 'TBD' }}
-                        </span>
-                        <span class="font-title text-2xl ml-4" :class="getWinnerScoreClass(match, 1)">
-                          {{ match.team1_score }}
-                        </span>
-                      </div>
-                      
-                      <div class="flex items-center justify-between p-4 bg-[#1A1A1A]/80 relative z-10 group-hover:bg-[#1A1A1A]"
-                           :class="getWinnerStatusClass(match, 2)">
-                        <span class="font-title uppercase tracking-wider truncate text-base" :class="match.team2 ? 'text-[#F0FDF4]' : 'text-[#A1A1AA] italic'">
-                          {{ match.team2?.name || 'TBD' }}
-                        </span>
-                        <span class="font-title text-2xl ml-4" :class="getWinnerScoreClass(match, 2)">
-                          {{ match.team2_score }}
-                        </span>
-                      </div>
-                      
-                      <!-- Crown for winner -->
-                      <div v-if="match.is_completed" class="absolute -top-4 -right-4 text-4xl drop-shadow-[0_0_10px_rgba(34,197,94,1)] z-20 rotate-12">
+                      <!-- Crown for winner of the Final -->
+                      <div v-if="match.is_completed && round.number === 2" class="absolute -top-4 -right-4 text-4xl drop-shadow-[0_0_10px_rgba(34,197,94,1)] z-20 rotate-12">
                         👑
                       </div>
                     </div>
@@ -169,12 +153,12 @@
               </div>
             </div>
           </div>
-          
+
         </div>
       </div>
     </main>
 
-    <!-- Modal Popup for Draft -->
+    <!-- Modal Popup for Draft (Same as before) -->
     <Transition
       enter-active-class="transition duration-300 ease-out"
       enter-from-class="opacity-0 scale-95"
@@ -184,12 +168,10 @@
       leave-to-class="opacity-0 scale-95"
     >
       <div v-if="showDraftModal" class="fixed inset-0 flex items-center justify-center z-[60] p-4" @click.self="closeDraftModal">
-        <!-- Backdrop -->
         <div class="absolute inset-0 bg-[#0B0F0C]/90 backdrop-blur-md -z-10"></div>
 
         <div class="bg-[#111111] border border-[#22C55E]/30 rounded-sm p-1 max-w-md w-full shadow-[0_0_50px_rgba(0,0,0,1)] relative before:absolute before:-inset-[1px] before:bg-gradient-to-b before:from-[#22C55E]/50 before:to-[#22C55E]/10 before:-z-10 before:rounded-sm">
           <div class="bg-[#111111] p-8 h-full w-full rounded-sm relative">
-            <!-- Close Button -->
             <button @click="closeDraftModal" class="absolute top-4 right-4 text-[#A1A1AA] hover:text-[#22C55E] transition-colors p-2 z-20" cursor-pointer>
               <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -225,7 +207,7 @@
                   class="w-full py-4 bg-[#1A1A1A] hover:bg-[#282d33] border border-[#2A2A2A] hover:border-[#22C55E]/50 rounded-sm font-bold transition-all flex items-center justify-center gap-2 text-[#A1A1AA] hover:text-[#F0FDF4] uppercase tracking-widest text-xs"
                  cursor-pointer>
                   <svg v-if="!linkCopied" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   </svg>
                   <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
@@ -347,7 +329,25 @@ const generateDraft = async () => {
     linkCopied.value = false;
     message.value = "Récupération des bans globaux...";
 
-    // Fetch champions that are marked as NOT available
+    const draftCacheKey = `draft_${blueName.value}_${redName.value}`;
+    const cachedDraft = localStorage.getItem(draftCacheKey);
+
+    if (cachedDraft) {
+      message.value = "Initialisation de l'interface...";
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      const parsed = JSON.parse(cachedDraft);
+      draftUrl.value = parsed.draftUrl;
+      draftId.value = parsed.draftId || "";
+      message.value = "Draft récupérée !";
+      
+      if (syncInterval) clearInterval(syncInterval);
+      syncInterval = setInterval(() => {
+        syncDraftPicks();
+      }, 5000);
+      return;
+    }
+
     const { data: champions, error: fetchError } = await supabase
       .from("champions")
       .select("name, image_url")
@@ -391,6 +391,11 @@ const generateDraft = async () => {
       draftUrl.value = data.draftUrl;
       draftId.value = data.draftId || "";
       message.value = "Draft générée !";
+      
+      localStorage.setItem(draftCacheKey, JSON.stringify({
+        draftUrl: data.draftUrl,
+        draftId: data.draftId || ""
+      }));
       
       if (syncInterval) clearInterval(syncInterval);
       syncInterval = setInterval(() => {
@@ -479,54 +484,64 @@ const syncDraftPicks = async () => {
   }
 };
 
-const getWinnerStatusClass = (match: any, teamNum: 1 | 2) => {
+const getWinnerStatusClass = (match: any, teamNum: 1 | 2, group: 'A' | 'B' | 'KO' = 'KO') => {
   if (!match.is_completed) return '';
   const isWinner = teamNum === 1 ? match.team1_score > match.team2_score : match.team2_score > match.team1_score;
-  return isWinner ? 'bg-[#22C55E]/20 border-l-4 border-l-[#22C55E]' : 'opacity-50 grayscale';
+  if (!isWinner) return 'opacity-50 grayscale';
+  
+  if (group === 'A') return 'bg-[#4ADE80]/20 border-l-4 border-l-[#4ADE80]';
+  if (group === 'B') return 'bg-[#3B82F6]/20 border-l-4 border-l-[#3B82F6]';
+  return 'bg-[#22C55E]/20 border-l-4 border-l-[#22C55E]';
 };
 
-const getWinnerScoreClass = (match: any, teamNum: 1 | 2) => {
+const getWinnerScoreClass = (match: any, teamNum: 1 | 2, group: 'A' | 'B' | 'KO' = 'KO') => {
   if (!match.is_completed) return 'text-[#A1A1AA]';
   const isWinner = teamNum === 1 ? match.team1_score > match.team2_score : match.team2_score > match.team1_score;
-  return isWinner ? 'text-[#22C55E] drop-shadow-[0_0_5px_rgba(34,197,94,0.5)]' : 'text-[#2A2A2A]';
+  if (!isWinner) return 'text-[#2A2A2A]';
+  
+  if (group === 'A') return 'text-[#4ADE80] drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]';
+  if (group === 'B') return 'text-[#3B82F6] drop-shadow-[0_0_5px_rgba(59,130,246,0.5)]';
+  return 'text-[#22C55E] drop-shadow-[0_0_5px_rgba(34,197,94,0.5)]';
 };
 
-// Group matches by bracket and round
+// Group matches by stage and round
 const groupedMatches = computed(() => {
   const groups: Record<string, any> = {
-    upper: { name: 'upper', rounds: {} },
-    lower: { name: 'lower', rounds: {} },
-    grand_finals: { name: 'grand_finals', rounds: {} }
+    group_a: { name: 'group_a', rounds: {} },
+    group_b: { name: 'group_b', rounds: {} },
+    knockout: { name: 'knockout', rounds: {} }
   };
 
   for (const m of matches.value) {
-    const b = m.bracket;
-    if (!groups[b]) continue;
+    const b = m.stage;
+    if (!groups[b]) groups[b] = { name: b, rounds: {} };
     if (!groups[b].rounds[m.round]) {
       groups[b].rounds[m.round] = { number: m.round, matches: [] };
     }
     groups[b].rounds[m.round].matches.push(m);
   }
 
-  return [
-    { ...groups.upper, rounds: Object.values(groups.upper.rounds).sort((a: any, b: any) => a.number - b.number) },
-    { ...groups.lower, rounds: Object.values(groups.lower.rounds).sort((a: any, b: any) => a.number - b.number) },
-    { ...groups.grand_finals, rounds: Object.values(groups.grand_finals.rounds).sort((a: any, b: any) => a.number - b.number) }
-  ].filter(g => g.rounds.length > 0);
+  return Object.values(groups)
+    .filter(g => Object.keys(g.rounds).length > 0)
+    .map(g => ({
+      ...g,
+      rounds: Object.values(g.rounds).sort((a: any, b: any) => a.number - b.number)
+    }));
 });
 
-const upperRounds = computed(() => {
-  const group = groupedMatches.value.find((g: any) => g.name === 'upper');
+const knockoutRounds = computed(() => {
+  const group = groupedMatches.value.find((g: any) => g.name === 'knockout');
   return group ? group.rounds : [];
 });
 
-const lowerRounds = computed(() => {
-  const group = groupedMatches.value.find((g: any) => g.name === 'lower');
+const groupARounds = computed(() => {
+  const group = groupedMatches.value.find((g: any) => g.name === 'group_a');
   return group ? group.rounds : [];
 });
 
-const grandFinalsRounds = computed(() => {
-  const group = groupedMatches.value.find((g: any) => g.name === 'grand_finals');
+const groupBRounds = computed(() => {
+  const group = groupedMatches.value.find((g: any) => g.name === 'group_b');
   return group ? group.rounds : [];
 });
+
 </script>

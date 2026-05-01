@@ -7,6 +7,48 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+/** Clef normalisée pour tolérer camelCase / snake_case / PascalCase. */
+function normalizeStatKey(key: string): string {
+  return key.replace(/_/g, '').toLowerCase()
+}
+
+/**
+ * Temps mort total (secondes) : selon les versions / endpoints la valeur est dans
+ * participant.stats (LCU classique), en snake_case, ou à plat sur le participant (style match-v5).
+ */
+function readTotalTimeSpentDead(
+  stats: Record<string, unknown>,
+  participant: Record<string, unknown>,
+): number {
+  const explicitKeys = [
+    'totalTimeSpentDead',
+    'total_time_spent_dead',
+    'TotalTimeSpentDead',
+    'totalTimeDead',
+    'total_time_dead',
+  ]
+  for (const key of explicitKeys) {
+    for (const obj of [stats, participant]) {
+      const v = obj[key]
+      if (v !== undefined && v !== null && v !== '') {
+        const n = Number(v)
+        if (!Number.isNaN(n) && Number.isFinite(n)) return Math.max(0, Math.round(n))
+      }
+    }
+  }
+  const target = 'totaltimespentdead'
+  for (const obj of [stats, participant]) {
+    if (!obj || typeof obj !== 'object') continue
+    for (const [k, v] of Object.entries(obj)) {
+      if (normalizeStatKey(k) === target) {
+        const n = Number(v)
+        if (!Number.isNaN(n) && Number.isFinite(n)) return Math.max(0, Math.round(n))
+      }
+    }
+  }
+  return 0
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -61,22 +103,46 @@ Deno.serve(async (req) => {
       .maybeSingle()
 
     if (existingMatch) {
+      // S'assurer que les équipes sont verrouillées même si le match existait déjà
+      const { error: lockError } = await supabase.from('fantasy_teams').update({ is_locked: true }).eq('tournament_day', 1)
+      if (lockError) {
+        console.error(`Failed to lock fantasy teams for existing match: ${lockError.message}`)
+      }
+
       return new Response(
         JSON.stringify({ success: true, message: `Match ${gameId} already processed.` }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       )
     }
 
-    // Récupération des joueurs de la DB pour matcher les Riot IDs
+    // Récupération des joueurs de la DB pour matcher les Riot IDs ou Pseudo
     const { data: playersDb } = await supabase
       .from('players')
-      .select('id, riot_id')
+      .select('id, riot_id, pseudo')
 
     const playersMap = new Map()
+    const pseudoMap = new Map()
     if (playersDb) {
       for (const p of playersDb) {
         if (p.riot_id) {
           playersMap.set(p.riot_id.toLowerCase(), p.id)
+        }
+        if (p.pseudo) {
+          pseudoMap.set(p.pseudo.toLowerCase(), p.id)
+        }
+      }
+    }
+
+    // Récupération des champions pour matcher champion_id LCU -> UUID
+    const { data: championsDb } = await supabase
+      .from('champions')
+      .select('id, ddragon_key')
+
+    const championsMap = new Map()
+    if (championsDb) {
+      for (const c of championsDb) {
+        if (c.ddragon_key) {
+          championsMap.set(Number(c.ddragon_key), c.id)
         }
       }
     }
@@ -118,12 +184,18 @@ Deno.serve(async (req) => {
 
       const identity = identities.find((id: any) => id.participantId === p.participantId)
       const s = p.stats
+      const participantRow = participants[i] as Record<string, unknown>
 
       const gameName = identity?.player?.gameName || identity?.player?.summonerName
       const tagLine = identity?.player?.tagLine || 'EUW'
       const riotId = `${gameName}#${tagLine}`
       
-      const playerId = playersMap.get(riotId.toLowerCase())
+      let playerId = playersMap.get(riotId.toLowerCase())
+      
+      // Fallback au pseudo si le Riot ID ne matche pas
+      if (!playerId && gameName) {
+        playerId = pseudoMap.get(gameName.toLowerCase())
+      }
 
       // Points calcul
       const kills = Number(s.kills) || 0
@@ -135,7 +207,12 @@ Deno.serve(async (req) => {
       const vision = Number(s.visionScore) || 0
       const damage = Number(s.totalDamageDealtToChampions) || 0
       const gold = Number(s.goldEarned) || 0
-      const timeDead = Number(s.totalTimeSpentDead) || 0
+      const timeDead = readTotalTimeSpentDead(s as Record<string, unknown>, participantRow)
+
+      if (playerId) {
+        console.log(`[POINTS_CALC] Found match for player. Riot ID: ${riotId}, Pseudo: ${gameName}, DB ID: ${playerId}`)
+        console.log(`[POINTS_CALC] Stats raw: Kills=${kills}, Deaths=${deaths}, Assists=${assists}, CS=${cs}, Win=${win}, FB=${firstBlood}, Vision=${vision}, Damage=${damage}, Gold=${gold}, TimeDead=${timeDead}`)
+      }
 
       let points = 
         (kills * 3) + 
@@ -162,10 +239,14 @@ Deno.serve(async (req) => {
         points += 3; // "Carry" bonus
       }
 
+      if (playerId) {
+        console.log(`[POINTS_CALC] Final computed points for ${playerId}: ${points}`)
+      }
+
       const participantRecord = {
         match_id: matchId,
         player_id: playerId || null, // null if player is not in our database
-        champion_id: p.championId,
+        champion_id: championsMap.get(Number(p.championId)) || null,
         kills: kills,
         deaths: deaths,
         assists: assists,
@@ -226,15 +307,26 @@ Deno.serve(async (req) => {
           .update({ score: newScore })
           .eq('id', existingScore.id)
       } else {
+        // Si le joueur n'a pas encore de score pour ce jour, on l'initialise
         await supabase
           .from('fantasy_player_scores')
           .insert({
             player_id: update.playerId,
             tournament_day: update.tournamentDay,
             score: update.points,
-            validated: false // Let admins validate at the end if needed, or keep false to let the trigger work anyway
+            validated: true // On fait confiance au client LCU
           })
       }
+    }
+
+    // Verrouiller toutes les équipes pour ce jour (puisqu'un match a été joué)
+    const { error: lockError } = await supabase
+      .from('fantasy_teams')
+      .update({ is_locked: true })
+      .eq('tournament_day', 1) // Defaulting to 1 for now
+
+    if (lockError) {
+      console.error(`Failed to lock fantasy teams: ${lockError.message}`)
     }
 
     return new Response(

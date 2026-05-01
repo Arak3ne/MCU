@@ -312,6 +312,7 @@
 import { ref, onMounted, onUnmounted, computed } from "vue";
 import { supabase } from "../lib/supabase";
 import { subscribeToTable } from "../lib/realtime";
+import { fetchChampionshipMatchesHydrated } from "../lib/queries";
 import type { Database } from "../types/supabase";
 
 const loading = ref(true);
@@ -326,6 +327,7 @@ interface Match {
 const teams = ref<Team[]>([]);
 const selectedTeam = ref<Team | null>(null);
 let subscription: any = null;
+let playoffSubscription: any = null;
 
 // Draft related state
 const showDraftModal = ref(false);
@@ -340,22 +342,19 @@ const message = ref("");
 const linkCopied = ref(false);
 let syncInterval: any = null;
 
+const matches = ref<any[]>([]);
+
+const loadChampionshipMatches = async () => {
+  const { data } = await fetchChampionshipMatchesHydrated();
+  matches.value = data ?? [];
+};
+
 const filteredMatches = computed(() => {
   if (!selectedTeam.value) return [];
-  
-  const matches = [];
-  // Round robin logic like in FutureMatches.vue
-  for (let i = 0; i < teams.value.length; i++) {
-    for (let j = i + 1; j < teams.value.length; j++) {
-      const t1 = teams.value[i];
-      const t2 = teams.value[j];
-      
-      if (t1.id === selectedTeam.value.id || t2.id === selectedTeam.value.id) {
-        matches.push({ team1: t1, team2: t2 });
-      }
-    }
-  }
-  return matches;
+  return matches.value.filter((m: any) => 
+    (m.team1 && m.team1.id === selectedTeam.value!.id) || 
+    (m.team2 && m.team2.id === selectedTeam.value!.id)
+  );
 });
 
 const selectTeam = (team: Team) => {
@@ -388,6 +387,25 @@ const generateDraft = async () => {
     draftId.value = "";
     linkCopied.value = false;
     message.value = "Récupération des bans globaux...";
+
+    const draftCacheKey = `draft_${blueName.value}_${redName.value}`;
+    const cachedDraft = localStorage.getItem(draftCacheKey);
+
+    if (cachedDraft) {
+      message.value = "Initialisation de l'interface...";
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      const parsed = JSON.parse(cachedDraft);
+      draftUrl.value = parsed.draftUrl;
+      draftId.value = parsed.draftId || "";
+      message.value = "Draft récupérée !";
+      
+      if (syncInterval) clearInterval(syncInterval);
+      syncInterval = setInterval(() => {
+        syncDraftPicks();
+      }, 5000);
+      return;
+    }
 
     // Fetch champions that are marked as NOT available
     const { data: champions, error: fetchError } = await supabase
@@ -434,6 +452,11 @@ const generateDraft = async () => {
       draftUrl.value = data.draftUrl;
       draftId.value = data.draftId || "";
       message.value = "Draft générée !";
+      
+      localStorage.setItem(draftCacheKey, JSON.stringify({
+        draftUrl: data.draftUrl,
+        draftId: data.draftId || ""
+      }));
       
       if (syncInterval) clearInterval(syncInterval);
       syncInterval = setInterval(() => {
@@ -538,16 +561,23 @@ const fetchTeams = async () => {
 
 onMounted(() => {
   fetchTeams();
-  
+  loadChampionshipMatches();
+
   subscription = subscribeToTable("teams", () => {
-    // Re-fetch to guarantee correct sort order after any update/insert/delete
     fetchTeams();
+  });
+
+  playoffSubscription = subscribeToTable("playoff_matches", () => {
+    void loadChampionshipMatches();
   });
 });
 
 onUnmounted(() => {
   if (subscription) {
     subscription.unsubscribe();
+  }
+  if (playoffSubscription) {
+    playoffSubscription.unsubscribe();
   }
   if (syncInterval) {
     clearInterval(syncInterval);

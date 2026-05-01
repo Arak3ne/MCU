@@ -150,8 +150,15 @@
             <div>
               <h3 class="text-xl font-title tracking-wider text-white drop-shadow-md">{{ player.pseudo }}</h3>
               <div class="flex items-center gap-2 mt-1">
-                <span class="text-xs font-bold px-2 py-0.5 rounded bg-black/50 text-mcu-primary border border-mcu-primary/30 backdrop-blur-sm">
-                  {{ player.rank }}
+                <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-black/50 text-mcu-primary border border-mcu-primary/30 backdrop-blur-sm shadow-inner" :title="player.rank">
+                  <img :src="getRankIconUrl(player.rank)" class="w-4 h-4 drop-shadow-[0_0_5px_rgba(34,197,94,0.4)]" :alt="player.rank" />
+                  <span class="text-[10px] font-bold uppercase tracking-wider">{{ player.rank }}</span>
+                </div>
+                <span v-if="player.fantasy_tier" class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-black/50 text-yellow-400 border border-yellow-400/30 backdrop-blur-sm">
+                  Tier {{ player.fantasy_tier }}
+                </span>
+                <span v-if="getPlayerTeam(player)" class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-black/50 text-white border border-white/30 backdrop-blur-sm truncate max-w-[100px]" :title="getPlayerTeam(player)">
+                  {{ getPlayerTeam(player) }}
                 </span>
               </div>
             </div>
@@ -212,7 +219,8 @@
               <th class="px-4 py-3 whitespace-nowrap">Style</th>
               <th class="px-4 py-3 whitespace-nowrap">Mindset</th>
               <th class="px-4 py-3 min-w-[200px]">Champion pool</th>
-              <th class="px-4 py-3 whitespace-nowrap text-right">Prix</th>
+              <th class="px-4 py-3 whitespace-nowrap">Équipe</th>
+              <th class="px-4 py-3 whitespace-nowrap text-right">Tier</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-mcu-border/60">
@@ -223,9 +231,10 @@
             >
               <td class="px-4 py-3 font-title tracking-wide text-white whitespace-nowrap">{{ player.pseudo }}</td>
               <td class="px-4 py-3 whitespace-nowrap">
-                <span class="text-xs font-bold px-2 py-0.5 rounded bg-black/40 text-mcu-primary border border-mcu-primary/30">
-                  {{ player.rank }}
-                </span>
+                <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-black/40 text-mcu-primary border border-mcu-primary/30 shadow-inner w-fit" :title="player.rank">
+                  <img :src="getRankIconUrl(player.rank)" class="w-5 h-5 drop-shadow-[0_0_5px_rgba(34,197,94,0.4)]" :alt="player.rank" />
+                  <span class="text-xs font-bold uppercase tracking-wider">{{ player.rank }}</span>
+                </div>
               </td>
               <td class="px-4 py-3 text-white/90 whitespace-nowrap uppercase text-xs font-bold">{{ player.primary_role }}</td>
               <td class="px-4 py-3 text-white/70 whitespace-nowrap uppercase text-xs font-bold">{{ player.secondary_role || '—' }}</td>
@@ -244,8 +253,11 @@
                 </div>
                 <span v-else class="text-mcu-text-muted text-xs">—</span>
               </td>
+              <td class="px-4 py-3 text-white/90 whitespace-nowrap font-bold">
+                {{ getPlayerTeam(player) || '—' }}
+              </td>
               <td class="px-4 py-3 text-right font-title text-mcu-primary">
-                {{ mapDbPlayerToFantasy(player).price }}
+                {{ player.fantasy_tier || '—' }}
               </td>
             </tr>
           </tbody>
@@ -267,7 +279,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { getPlayers, getChampions } from '../lib/queries';
-import { mapDbPlayerToFantasy } from '../utils/fantasyMapper';
+import { supabase } from '../lib/supabase';
+import { getRankIconUrl } from '../utils/rankIcon';
 import type { Database } from '../types/supabase';
 
 import topIcon from '../assets/top.png';
@@ -276,11 +289,23 @@ import midIcon from '../assets/mid.png';
 import adcIcon from '../assets/adc.png';
 import supIcon from '../assets/support.png';
 
-type Player = Database['public']['Tables']['players']['Row'];
+type Player = Database['public']['Tables']['players']['Row'] & {
+  primary_role: string;
+  secondary_role: string;
+  rank: string;
+  playstyle: string;
+  mindset: string;
+  champion_pool: string[];
+  champion_signature: string;
+  fantasy_tier?: string;
+  team?: any;
+  team_id?: string;
+};
 
 const isAdmin = ref(localStorage.getItem('admin_auth') === 'true');
 const players = ref<Player[]>([]);
 const champions = ref<any[]>([]);
+const teamsMap = ref<Map<string, string>>(new Map());
 const loading = ref(true);
 
 // Filters
@@ -341,17 +366,22 @@ const roleWeights: Record<string, number> = {
 onMounted(async () => {
   loading.value = true;
   
-  const [playersRes, championsRes] = await Promise.all([
+  const [playersRes, championsRes, teamsRes] = await Promise.all([
     getPlayers(),
-    getChampions()
+    getChampions(),
+    supabase.from('teams').select('id, name')
   ]);
   
   if (playersRes.data) {
-    players.value = playersRes.data;
+    players.value = playersRes.data.filter((p: any) => p.participation_type === 'joueur') as Player[];
   }
   
   if (championsRes.data) {
     champions.value = championsRes.data;
+  }
+
+  if (teamsRes.data) {
+    teamsMap.value = new Map(teamsRes.data.map(t => [t.id, t.name]));
   }
   
   loading.value = false;
@@ -378,6 +408,13 @@ const getChampionSquare = (name: string) => {
 const getChampionSplash = (name: string) => {
   const champ = champions.value.find(c => c.name === name);
   return champ?.splash_url || champ?.image_url || '';
+};
+
+const getPlayerTeam = (player: any) => {
+  if (player.team?.name) return player.team.name;
+  if (player.team) return player.team;
+  if (player.team_id) return teamsMap.value.get(player.team_id);
+  return null;
 };
 
 const filteredPlayers = computed(() => {

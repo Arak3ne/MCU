@@ -8,7 +8,7 @@
     "build": "vue-tsc -b && vite build",
     "preview": "vite preview",
     "supabase:deploy:sync-match": "npx supabase@latest functions deploy sync-match-results",
-    "supabase:serve:sync-match": "npx supabase@latest functions serve sync-match-results --no-verify-jwt"
+    "dump-lcu-game": "node scripts/dump-lcu-game-json.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.104.0",

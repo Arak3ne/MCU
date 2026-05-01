@@ -92,12 +92,14 @@
               v-for="champ in filteredChampions"
               :key="champ.id"
               @click="toggleAvailability(champ)"
-              class="relative rounded-sm overflow-hidden border transition-all duration-300 group flex flex-col cursor-pointer bg-[#1A1A1A]"
+              class="relative rounded-sm overflow-hidden border transition-all duration-300 group flex flex-col bg-[#1A1A1A]"
               :class="[
                 champ.is_available
                   ? 'border-[#2A2A2A] hover:border-[#22C55E] shadow-lg hover:shadow-[0_0_15px_rgba(200,170,110,0.3)] hover:-translate-y-1'
                   : 'border-red-900/50 opacity-50 grayscale-[0.8] hover:grayscale-[0.5] hover:opacity-80 hover:border-red-500/50',
+                isAdmin ? 'cursor-pointer' : 'cursor-default pointer-events-none',
               ]"
+              :title="isAdmin ? `Cliquer pour ${champ.is_available ? 'bannir' : 'débannir'}` : 'Action réservée à un compte admin'"
             >
               <!-- Image -->
               <div class="relative aspect-square overflow-hidden bg-[#0B0F0C]">
@@ -177,6 +179,7 @@ const loading = ref(true);
 const searchQuery = ref("");
 const selectedRole = ref<string | null>(null);
 const showOnlyAvailable = ref(false);
+const isAdmin = ref(localStorage.getItem("admin_auth") === "true");
 let subscription: any = null;
 
 // League of Legends Positions mapping with imported icons
@@ -188,25 +191,55 @@ const roles = [
   { name: "Supp", icon: supportIcon, tags: ["support"] },
 ];
 
+const roleAliases: Record<string, string> = {
+  top: "top",
+  toplane: "top",
+  jgl: "jungle",
+  jungle: "jungle",
+  mid: "mid",
+  middle: "mid",
+  adc: "adc",
+  bot: "adc",
+  bottom: "adc",
+  supp: "support",
+  support: "support",
+};
+
+const normalizeRole = (role: string | null | undefined): string | null => {
+  if (!role) return null;
+  const normalized = role.trim().toLowerCase();
+  return roleAliases[normalized] ?? normalized;
+};
+
 const filteredChampions = computed(() => {
+  const normalizedSearch = searchQuery.value.trim().toLowerCase();
+
   return champions.value.filter((champ) => {
     // 1. Availability filter
     if (showOnlyAvailable.value && !champ.is_available) return false;
 
     // 2. Search filter
-    if (
-      searchQuery.value &&
-      !champ.name.toLowerCase().includes(searchQuery.value.toLowerCase())
-    )
+    if (normalizedSearch && !champ.name.toLowerCase().includes(normalizedSearch))
       return false;
 
     // 3. Position filter
     if (selectedRole.value) {
       const position = roles.find((r) => r.name === selectedRole.value);
       if (position && position.tags.length > 0) {
-        // If champion has ANY of the tags associated with the position
-        if (!champ.roles || !champ.roles.some(tag => position.tags.includes(tag)))
+        const normalizedPositionTags = new Set(
+          position.tags.map((tag) => normalizeRole(tag)).filter(Boolean),
+        );
+        const championRoles = (champ.roles ?? [])
+          .map((tag) => normalizeRole(tag))
+          .filter(Boolean) as string[];
+
+        // If champion has ANY of the tags associated with the selected role
+        if (
+          championRoles.length === 0 ||
+          !championRoles.some((tag) => normalizedPositionTags.has(tag))
+        ) {
           return false;
+        }
       }
     }
 
@@ -237,6 +270,8 @@ const resetFilters = () => {
 };
 
 const toggleAvailability = async (champ: Champion) => {
+  if (!isAdmin.value) return;
+
   // Optimistic UI update
   const previousState = champ.is_available;
   champ.is_available = !champ.is_available;

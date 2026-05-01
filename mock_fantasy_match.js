@@ -63,13 +63,25 @@ async function mockMatchData() {
 
   console.log(`✅ Match created: ${match.id}`);
 
+  // 3.5 Get some champions for mock data
+  const { data: championsData, error: champsError } = await supabase
+    .from('champions')
+    .select('id')
+    .limit(10);
+    
+  if (champsError || !championsData || championsData.length === 0) {
+    console.error('❌ Failed to get champions:', champsError);
+    return;
+  }
+  
   // 4. Create match participants with random stats
   const participants = playersToUse.map((playerId, index) => {
     const isWinner = index < 5;
+    const randomChamp = championsData[Math.floor(Math.random() * championsData.length)];
     return {
       match_id: match.id,
       player_id: playerId,
-      champion_id: Math.floor(Math.random() * 150) + 1,
+      champion_id: randomChamp.id,
       kills: Math.floor(Math.random() * 15),
       deaths: Math.floor(Math.random() * 10),
       assists: Math.floor(Math.random() * 20),

@@ -6,39 +6,45 @@ export type Database = {
           id: string;
           pseudo: string;
           discord: string;
-          primary_role: string;
-          secondary_role: string;
-          champion_pool: string[];
-          champion_signature: string;
-          rank: string;
-          playstyle: string;
-          mindset: string;
+          riot_id: string | null;
+          participation_type: string;
+          primary_role: string | null;
+          secondary_role: string | null;
+          champion_pool: string[] | null;
+          champion_signature: string | null;
+          rank: string | null;
+          playstyle: string | null;
+          mindset: string | null;
           created_at: string;
         };
         Insert: {
           id?: string;
           pseudo: string;
           discord: string;
-          primary_role: string;
-          secondary_role: string;
-          champion_pool: string[];
-          champion_signature: string;
-          rank: string;
-          playstyle: string;
-          mindset: string;
+          riot_id?: string | null;
+          participation_type?: string;
+          primary_role?: string | null;
+          secondary_role?: string | null;
+          champion_pool?: string[] | null;
+          champion_signature?: string | null;
+          rank?: string | null;
+          playstyle?: string | null;
+          mindset?: string | null;
           created_at?: string;
         };
         Update: {
           id?: string;
           pseudo?: string;
           discord?: string;
-          primary_role?: string;
-          secondary_role?: string;
-          champion_pool?: string[];
-          champion_signature?: string;
-          rank?: string;
-          playstyle?: string;
-          mindset?: string;
+          riot_id?: string | null;
+          participation_type?: string;
+          primary_role?: string | null;
+          secondary_role?: string | null;
+          champion_pool?: string[] | null;
+          champion_signature?: string | null;
+          rank?: string | null;
+          playstyle?: string | null;
+          mindset?: string | null;
           created_at?: string;
         };
       };
@@ -126,7 +132,7 @@ export type Database = {
       playoff_matches: {
         Row: {
           id: string;
-          bracket: string;
+          stage: string;
           round: number;
           match_order: number;
           team1_id: string | null;
@@ -134,14 +140,13 @@ export type Database = {
           team1_score: number | null;
           team2_score: number | null;
           winner_to_match_id: string | null;
-          loser_to_match_id: string | null;
           is_completed: boolean | null;
           created_at: string | null;
           updated_at: string | null;
         };
         Insert: {
           id?: string;
-          bracket: string;
+          stage: string;
           round: number;
           match_order: number;
           team1_id?: string | null;
@@ -149,14 +154,13 @@ export type Database = {
           team1_score?: number | null;
           team2_score?: number | null;
           winner_to_match_id?: string | null;
-          loser_to_match_id?: string | null;
           is_completed?: boolean | null;
           created_at?: string | null;
           updated_at?: string | null;
         };
         Update: {
           id?: string;
-          bracket?: string;
+          stage?: string;
           round?: number;
           match_order?: number;
           team1_id?: string | null;
@@ -164,7 +168,6 @@ export type Database = {
           team1_score?: number | null;
           team2_score?: number | null;
           winner_to_match_id?: string | null;
-          loser_to_match_id?: string | null;
           is_completed?: boolean | null;
           created_at?: string | null;
           updated_at?: string | null;

@@ -64,8 +64,23 @@
 
             <!-- Metric Selector -->
             <div class="relative group w-full lg:w-[700px]">
-              <div class="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-[#111814] to-transparent z-10 pointer-events-none"></div>
-              <div class="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-[#111814] to-transparent z-10 pointer-events-none"></div>
+              <!-- Left Gradient & Hint -->
+              <div class="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-[#111814] via-[#111814]/80 to-transparent z-10 pointer-events-none flex items-center justify-start pl-2 transition-opacity duration-500" :class="scrollPos > 0 ? 'opacity-100' : 'opacity-0'">
+                <div class="flex items-center gap-1 opacity-50">
+                  <div class="w-0.5 h-0.5 rounded-full bg-[#22C55E]"></div>
+                  <div class="w-1 h-1 rounded-full bg-[#22C55E]"></div>
+                  <div class="w-1.5 h-1.5 rounded-full bg-[#22C55E]"></div>
+                </div>
+              </div>
+              
+              <!-- Right Gradient & Hint -->
+              <div class="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-[#111814] via-[#111814]/80 to-transparent z-10 pointer-events-none flex items-center justify-end pr-2 transition-opacity duration-500" :class="scrollPos < maxScroll - 5 ? 'opacity-100' : 'opacity-0'">
+                <div class="flex items-center gap-1 opacity-50">
+                  <div class="w-1.5 h-1.5 rounded-full bg-[#22C55E]"></div>
+                  <div class="w-1 h-1 rounded-full bg-[#22C55E]"></div>
+                  <div class="w-0.5 h-0.5 rounded-full bg-[#22C55E]"></div>
+                </div>
+              </div>
               
               <div 
                 ref="metricsContainer" 
@@ -75,6 +90,7 @@
                 @mouseup="stopDrag"
                 @mouseleave="stopDrag"
                 @wheel="onWheel"
+                @scroll="checkScroll"
               >
                 <button 
                   v-for="metric in topMetrics" 
@@ -190,28 +206,44 @@
     <!-- Raw Stats Section -->
     <div id="raw-data-section" class="max-w-7xl mx-auto px-4 sm:px-6 relative z-10 pt-16" v-if="!loading && !error">
       <div class="animate-fade-in-up" style="animation-delay: 0.2s;">
-        <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-6">
-          <div class="text-center md:text-left">
-            <h2 class="text-2xl md:text-3xl font-title uppercase tracking-widest text-[#F0FDF4] mb-1 flex items-center justify-center md:justify-start gap-3">
-              <span class="w-6 h-[2px] bg-[#22C55E] hidden md:block"></span>
+        <div class="flex flex-col xl:flex-row justify-between items-center mb-8 gap-6">
+          <div class="text-center xl:text-left shrink-0">
+            <h2 class="text-2xl md:text-3xl font-title uppercase tracking-widest text-[#F0FDF4] mb-1 flex items-center justify-center xl:justify-start gap-3">
+              <span class="w-6 h-[2px] bg-[#22C55E] hidden xl:block"></span>
               The Numbers Don't Lie
             </h2>
             <p class="text-[#A1A1AA] text-xs md:text-sm uppercase tracking-widest font-bold">Statistiques complètes des joueurs</p>
           </div>
           
-          <!-- Tabs -->
-          <div class="flex bg-[#111111] p-1.5 border border-[#2A2A2A] rounded-full shadow-lg">
-            <button 
-              v-for="tab in tabs" 
-              :key="tab.id"
-              @click="activeTab = tab.id"
-              class="px-5 py-2 text-xs font-bold tracking-widest uppercase transition-all rounded-full cursor-pointer"
-              :class="activeTab === tab.id 
-                ? 'bg-[#22C55E] text-[#0B0F0C] shadow-[0_0_15px_rgba(34,197,94,0.3)]' 
-                : 'text-[#A1A1AA] hover:text-[#F0FDF4] hover:bg-[#1A1A1A]'"
-            >
-              {{ tab.label }}
-            </button>
+          <div class="flex flex-col md:flex-row items-center gap-4 w-full xl:w-auto justify-end">
+            <!-- Role Filter -->
+            <div class="flex flex-wrap justify-center gap-2">
+              <button 
+                v-for="role in roles" 
+                :key="role.value"
+                @click="toggleRoleFilter(role.value)"
+                class="px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 border"
+                :class="selectedRole === role.value ? 'bg-[#22C55E]/20 border-[#22C55E] text-[#22C55E] shadow-[0_0_15px_rgba(34,197,94,0.2)]' : 'bg-[#1A1A1A]/50 border-[#2A2A2A] text-[#A1A1AA] hover:border-[#4A4A4A] hover:text-[#F0FDF4] hover:bg-[#2A2A2A]/50'"
+              >
+                <img :src="role.icon" class="w-4 h-4" :class="selectedRole === role.value ? 'invert-[.5] sepia-[1] hue-rotate-[90deg] saturate-[5]' : 'grayscale opacity-60'" />
+                <span class="hidden sm:inline">{{ role.label }}</span>
+              </button>
+            </div>
+
+            <!-- Tabs -->
+            <div class="flex bg-[#111111] p-1.5 border border-[#2A2A2A] rounded-full shadow-lg shrink-0">
+              <button 
+                v-for="tab in tabs" 
+                :key="tab.id"
+                @click="activeTab = tab.id"
+                class="px-5 py-2 text-xs font-bold tracking-widest uppercase transition-all rounded-full cursor-pointer"
+                :class="activeTab === tab.id 
+                  ? 'bg-[#22C55E] text-[#0B0F0C] shadow-[0_0_15px_rgba(34,197,94,0.3)]' 
+                  : 'text-[#A1A1AA] hover:text-[#F0FDF4] hover:bg-[#1A1A1A]'"
+              >
+                {{ tab.label }}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -224,16 +256,32 @@
             <table class="w-full text-left border-collapse whitespace-nowrap">
               <thead>
                 <tr class="bg-[#1A1A1A]/80 text-[#A1A1AA] text-[10px] font-bold uppercase tracking-[0.15em] border-b border-[#2A2A2A]">
-                  <th class="p-5 cursor-pointer hover:text-[#22C55E] transition-colors sticky left-0 bg-[#1A1A1A] z-20 shadow-[4px_0_10px_rgba(0,0,0,0.2)]" @click="sortBy('playerName')">
+                  <th class="p-5 cursor-pointer hover:text-[#22C55E] transition-colors sticky left-0 bg-[#1A1A1A] z-20 shadow-[4px_0_10px_rgba(0,0,0,0.2)]" 
+                      @click="sortBy('playerName')"
+                      @mouseenter="showTooltip($event, 'Nom du joueur')"
+                      @mouseleave="hideTooltip">
                     <div class="flex items-center gap-2">
                       Joueur 
                       <span v-if="sortKey === 'playerName'" class="text-[#22C55E]">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
                     </div>
                   </th>
+                  <th class="p-5 cursor-pointer hover:text-[#22C55E] transition-colors text-center" 
+                      @click="sortBy('primaryRole')"
+                      @mouseenter="showTooltip($event, 'Rôle principal du joueur')"
+                      @mouseleave="hideTooltip">
+                    <div class="flex items-center justify-center gap-2">
+                      Rôle
+                      <span v-if="sortKey === 'primaryRole'" class="text-[#22C55E]">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
+                    </div>
+                  </th>
                   
                   <!-- Classic Stats -->
                   <template v-if="activeTab === 'classic'">
-                    <th v-for="col in classicCols" :key="col.key" class="p-5 text-center cursor-pointer hover:text-[#22C55E] transition-colors" @click="sortBy(col.key)">
+                    <th v-for="col in classicCols" :key="col.key" 
+                        class="p-5 text-center cursor-pointer hover:text-[#22C55E] transition-colors" 
+                        @click="sortBy(col.key)"
+                        @mouseenter="showTooltip($event, col.tooltip)"
+                        @mouseleave="hideTooltip">
                       <div class="flex items-center justify-center gap-2">
                         {{ col.label }}
                         <span v-if="sortKey === col.key" class="text-[#22C55E]">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
@@ -243,7 +291,11 @@
 
                   <!-- Advanced Stats -->
                   <template v-if="activeTab === 'advanced'">
-                    <th v-for="col in advancedCols" :key="col.key" class="p-5 text-center cursor-pointer hover:text-[#22C55E] transition-colors" @click="sortBy(col.key)">
+                    <th v-for="col in advancedCols" :key="col.key" 
+                        class="p-5 text-center cursor-pointer hover:text-[#22C55E] transition-colors" 
+                        @click="sortBy(col.key)"
+                        @mouseenter="showTooltip($event, col.tooltip)"
+                        @mouseleave="hideTooltip">
                       <div class="flex items-center justify-center gap-2">
                         {{ col.label }}
                         <span v-if="sortKey === col.key" class="text-[#22C55E]">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
@@ -253,7 +305,11 @@
 
                   <!-- Fun Stats -->
                   <template v-if="activeTab === 'fun'">
-                    <th v-for="col in funCols" :key="col.key" class="p-5 text-center cursor-pointer hover:text-[#22C55E] transition-colors" @click="sortBy(col.key)">
+                    <th v-for="col in funCols" :key="col.key" 
+                        class="p-5 text-center cursor-pointer hover:text-[#22C55E] transition-colors" 
+                        @click="sortBy(col.key)"
+                        @mouseenter="showTooltip($event, col.tooltip)"
+                        @mouseleave="hideTooltip">
                       <div class="flex items-center justify-center gap-2">
                         {{ col.label }}
                         <span v-if="sortKey === col.key" class="text-[#22C55E]">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
@@ -272,46 +328,67 @@
                       <span class="font-bold text-[#F0FDF4] uppercase tracking-wide group-hover:text-[#22C55E] transition-colors text-sm">{{ stat.playerName }}</span>
                     </div>
                   </td>
+                  <td class="p-4 text-center">
+                    <div class="flex items-center justify-center" :title="stat.primaryRole">
+                      <img v-if="getRoleIcon(stat.primaryRole)" :src="getRoleIcon(stat.primaryRole)" class="w-6 h-6 invert-[.5] sepia-[1] hue-rotate-[90deg] saturate-[5]" />
+                      <span v-else class="text-[#A1A1AA] text-xs font-bold uppercase">{{ stat.primaryRole }}</span>
+                    </div>
+                  </td>
                   
                   <!-- Classic Stats -->
                   <template v-if="activeTab === 'classic'">
-                    <td class="p-4 text-center text-[#F0FDF4] font-bold">{{ stat.totalKills }}</td>
-                    <td class="p-4 text-center text-[#F0FDF4] font-bold">{{ stat.totalDeaths }}</td>
-                    <td class="p-4 text-center text-[#F0FDF4] font-bold">{{ stat.totalAssists }}</td>
                     <td class="p-4 text-center font-title text-lg" :class="getKdaColor(stat.kda)">
                       {{ stat.kda.toFixed(2) }}
                     </td>
-                    <td class="p-4 text-center text-[#A1A1AA]">{{ stat.avgKills.toFixed(1) }}</td>
-                    <td class="p-4 text-center text-[#A1A1AA]">{{ stat.avgDeaths.toFixed(1) }}</td>
-                    <td class="p-4 text-center text-[#A1A1AA]">{{ stat.avgAssists.toFixed(1) }}</td>
-                    <td class="p-4 text-center text-[#A1A1AA] font-bold">{{ stat.killParticipation.toFixed(1) }}%</td>
+                    <td class="p-4 text-center font-bold" :class="getKpColor(stat.killParticipation)">
+                      {{ stat.killParticipation.toFixed(1) }}%
+                    </td>
+                    <td class="p-4 text-center font-bold" :class="getAvgKillsColor(stat.avgKills)">{{ stat.avgKills.toFixed(1) }}</td>
+                    <td class="p-4 text-center font-bold" :class="getAvgDeathsColor(stat.avgDeaths)">{{ stat.avgDeaths.toFixed(1) }}</td>
+                    <td class="p-4 text-center font-bold" :class="getAvgAssistsColor(stat.avgAssists)">{{ stat.avgAssists.toFixed(1) }}</td>
+                    <td class="p-4 text-center text-[#F0FDF4]">{{ stat.totalKills }}</td>
+                    <td class="p-4 text-center text-[#A1A1AA]">{{ stat.totalDeaths }}</td>
+                    <td class="p-4 text-center text-[#A1A1AA]">{{ stat.totalAssists }}</td>
                   </template>
 
                   <!-- Advanced Stats -->
                   <template v-if="activeTab === 'advanced'">
-                    <td class="p-4 text-center text-[#F0FDF4] font-bold">{{ stat.dpm.toFixed(0) }}</td>
+                    <td class="p-4 text-center font-title text-lg" :class="getDpmColor(stat.dpm)">{{ stat.dpm.toFixed(0) }}</td>
+                    <td class="p-4 text-center font-bold" :class="getShareColor(stat.dmgShare)">{{ stat.dmgShare.toFixed(1) }}%</td>
+                    <td class="p-4 text-center font-bold" :class="getGpmColor(stat.gpm)">{{ stat.gpm.toFixed(0) }}</td>
+                    <td class="p-4 text-center font-bold" :class="getShareColor(stat.goldShare)">{{ stat.goldShare.toFixed(1) }}%</td>
+                    <td class="p-4 text-center font-bold" :class="getCspmColor(stat.cspm)">{{ stat.cspm.toFixed(1) }}</td>
+                    <td class="p-4 text-center font-medium" :class="getDmgPerGoldColor(stat.dmgPerGold)">{{ stat.dmgPerGold.toFixed(2) }}</td>
+                    <td class="p-4 text-center font-bold" :class="getVisionColor(stat.avgVisionScore)">{{ stat.avgVisionScore.toFixed(1) }}</td>
                     <td class="p-4 text-center text-[#A1A1AA]">{{ stat.dtpm.toFixed(0) }}</td>
-                    <td class="p-4 text-center text-[#A1A1AA] font-bold">{{ stat.dmgShare.toFixed(1) }}%</td>
-                    <td class="p-4 text-center text-[#EAB308] font-bold">{{ stat.gpm.toFixed(0) }}</td>
-                    <td class="p-4 text-center text-[#A1A1AA] font-bold">{{ stat.goldShare.toFixed(1) }}%</td>
-                    <td class="p-4 text-center text-[#A1A1AA]">{{ stat.cspm.toFixed(1) }}</td>
-                    <td class="p-4 text-center text-[#A1A1AA] font-medium">{{ stat.dmgPerGold.toFixed(2) }}</td>
-                    <td class="p-4 text-center text-[#A1A1AA] font-bold">{{ stat.avgVisionScore.toFixed(1) }}</td>
                   </template>
 
                   <!-- Fun Stats -->
                   <template v-if="activeTab === 'fun'">
-                    <td class="p-4 text-center" :class="stat.firstBloodRate > 20 ? 'text-red-400 font-bold' : 'text-[#A1A1AA]'">
+                    <td class="p-4 text-center font-bold" :class="stat.firstBloodRate >= 20 ? 'text-[#EAB308] drop-shadow-[0_0_8px_rgba(234,179,8,0.3)]' : (stat.firstBloodRate > 0 ? 'text-[#22C55E]' : 'text-[#A1A1AA]')">
                       {{ stat.firstBloodRate.toFixed(1) }}%
                     </td>
-                    <td class="p-4 text-center text-[#A1A1AA] font-medium">{{ formatDuration(stat.avgTimeSpentDead) }}</td>
-                    <td class="p-4 text-center text-[#F0FDF4] font-bold text-xl font-title">{{ stat.largestKillingSpree }}</td>
-                    <td class="p-4 text-center text-[#A1A1AA] font-medium">{{ formatDuration(stat.avgGameDuration) }}</td>
-                    <td class="p-4 text-center text-[#A1A1AA]">{{ stat.pacifistScore === Infinity ? '-' : stat.pacifistScore }}</td>
-                    <td class="p-4 text-center text-red-400 font-bold text-xl font-title">{{ stat.feederScore }}</td>
-                    <td class="p-4 text-center text-[#A1A1AA] font-medium">{{ stat.wardDispenserScore.toFixed(2) }}</td>
-                    <td class="p-4 text-center text-[#A1A1AA] font-medium">{{ stat.blindScore.toFixed(2) }}</td>
-                    <td class="p-4 text-center text-[#A1A1AA] font-bold">{{ stat.survivorScore.toFixed(0) }}</td>
+                    <td class="p-4 text-center font-title text-xl" :class="stat.largestKillingSpree >= 10 ? 'text-[#EAB308] drop-shadow-[0_0_8px_rgba(234,179,8,0.3)]' : (stat.largestKillingSpree >= 5 ? 'text-[#22C55E]' : 'text-[#F0FDF4]')">
+                      {{ stat.largestKillingSpree }}
+                    </td>
+                    <td class="p-4 text-center font-title text-xl" :class="stat.feederScore >= 12 ? 'text-red-400 drop-shadow-[0_0_8px_rgba(248,113,113,0.3)]' : (stat.feederScore >= 8 ? 'text-orange-400' : 'text-[#A1A1AA]')">
+                      {{ stat.feederScore }}
+                    </td>
+                    <td class="p-4 text-center font-medium" :class="stat.pacifistScore < 5000 ? 'text-red-400' : 'text-[#A1A1AA]'">
+                      {{ stat.pacifistScore === Infinity ? '-' : stat.pacifistScore }}
+                    </td>
+                    <td class="p-4 text-center font-medium" :class="stat.blindScore < 0.5 ? 'text-red-400 font-bold' : 'text-[#A1A1AA]'">
+                      {{ stat.blindScore.toFixed(2) }}
+                    </td>
+                    <td class="p-4 text-center font-medium" :class="stat.wardDispenserScore >= 0.8 ? 'text-[#EAB308] font-bold' : 'text-[#A1A1AA]'">
+                      {{ stat.wardDispenserScore.toFixed(2) }}
+                    </td>
+                    <td class="p-4 text-center font-bold text-[#A1A1AA]">
+                      {{ stat.survivorScore.toFixed(0) }}
+                    </td>
+                    <td class="p-4 text-center font-medium text-[#A1A1AA]">
+                      {{ formatDuration(stat.avgGameDuration) }}
+                    </td>
                   </template>
                 </tr>
               </tbody>
@@ -324,12 +401,55 @@
         </div>
       </div>
     </div>
+
+    <!-- Global Tooltip -->
+    <div 
+      class="fixed z-[100] pointer-events-none px-4 py-2.5 bg-[#0B0F0C]/95 backdrop-blur-md border border-[#22C55E]/30 text-[#F0FDF4] text-xs font-bold tracking-wide rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.5),0_0_15px_rgba(34,197,94,0.15)] transition-all duration-200 -translate-x-1/2 -translate-y-full whitespace-nowrap flex items-center gap-2"
+      :class="tooltip.show ? 'opacity-100 scale-100' : 'opacity-0 scale-95'"
+      :style="{ left: tooltip.x + 'px', top: tooltip.y + 'px' }"
+    >
+      <div class="w-1.5 h-1.5 rounded-full bg-[#22C55E] shadow-[0_0_5px_rgba(34,197,94,0.8)]"></div>
+      {{ tooltip.text }}
+      
+      <!-- Triangle pointer -->
+      <div class="absolute top-full left-1/2 -translate-x-1/2 -mt-[2px] border-[6px] border-transparent border-t-[#22C55E]/30"></div>
+      <div class="absolute top-full left-1/2 -translate-x-1/2 -mt-[3px] border-[5px] border-transparent border-t-[#0B0F0C]"></div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { supabase } from '../lib/supabase';
+
+import topIcon from '../assets/top.png';
+import jglIcon from '../assets/jgl.png';
+import midIcon from '../assets/mid.png';
+import adcIcon from '../assets/adc.png';
+import supIcon from '../assets/support.png';
+
+const roles = [
+  { label: 'Top', value: 'top', icon: topIcon },
+  { label: 'Jungle', value: 'jungle', icon: jglIcon },
+  { label: 'Mid', value: 'mid', icon: midIcon },
+  { label: 'ADC', value: 'adc', icon: adcIcon },
+  { label: 'Support', value: 'support', icon: supIcon },
+];
+
+const selectedRole = ref<string | null>(null);
+
+const toggleRoleFilter = (role: string) => {
+  if (selectedRole.value === role) {
+    selectedRole.value = null;
+  } else {
+    selectedRole.value = role;
+  }
+};
+
+const getRoleIcon = (roleName: string) => {
+  const role = roles.find(r => r.value === roleName);
+  return role ? role.icon : '';
+};
 
 const showScrollHint = ref(true);
 
@@ -340,16 +460,28 @@ const handleScroll = () => {
 onMounted(() => {
   fetchStats();
   window.addEventListener('scroll', handleScroll, { passive: true });
+  window.addEventListener('resize', checkScroll);
 });
 
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll);
+  window.removeEventListener('resize', checkScroll);
 });
 
 const metricsContainer = ref<HTMLElement | null>(null);
 const isDragging = ref(false);
 const startX = ref(0);
 const scrollLeft = ref(0);
+
+const scrollPos = ref(0);
+const maxScroll = ref(999);
+
+const checkScroll = () => {
+  if (metricsContainer.value) {
+    scrollPos.value = metricsContainer.value.scrollLeft;
+    maxScroll.value = metricsContainer.value.scrollWidth - metricsContainer.value.clientWidth;
+  }
+};
 
 const startDrag = (e: MouseEvent) => {
   isDragging.value = true;
@@ -398,6 +530,7 @@ const scrollToRawData = () => {
 interface PlayerStats {
   playerId: string;
   playerName: string;
+  primaryRole: string;
   gamesPlayed: number;
   
   // Classic
@@ -429,8 +562,6 @@ interface PlayerStats {
   // Fun
   firstBloods: number;
   firstBloodRate: number;
-  totalTimeSpentDead: number;
-  avgTimeSpentDead: number;
   largestKillingSpree: number;
   totalGameDurationSeconds: number;
   avgGameDuration: number;
@@ -470,7 +601,6 @@ const topMetrics = [
   // Fun
   { id: 'firstBloodRate', label: 'FB %' },
   { id: 'largestKillingSpree', label: 'Série Max' },
-  { id: 'avgTimeSpentDead', label: 'Temps mort' },
   { id: 'avgGameDuration', label: 'Temps Moyen' },
   { id: 'pacifistScore', label: 'Pacifiste' },
   { id: 'feederScore', label: 'Feeder' },
@@ -484,7 +614,7 @@ const topMetrics = [
   { id: 'cspm', label: 'CS/M' },
   { id: 'dmgShare', label: 'Part Dégâts %' },
   { id: 'goldShare', label: 'Part Gold %' },
-  { id: 'avgVisionScore', label: 'Vision' },
+  { id: 'avgVisionScore', label: 'Vision/M' },
   { id: 'dtpm', label: 'Dégâts subis/M' },
   { id: 'dmgPerGold', label: 'Dégâts/Gold' }
 ] as const;
@@ -492,8 +622,39 @@ const topMetrics = [
 type TopMetricId = typeof topMetrics[number]['id'];
 const activeTopMetric = ref<TopMetricId>('kda');
 
+const tooltip = ref({
+  show: false,
+  text: '',
+  x: 0,
+  y: 0
+});
+
+const showTooltip = (e: MouseEvent, text: string | undefined) => {
+  if (!text) return;
+  const target = e.currentTarget as HTMLElement;
+  const rect = target.getBoundingClientRect();
+  
+  tooltip.value.text = text;
+  tooltip.value.show = true;
+  // Center above the th
+  tooltip.value.x = rect.left + rect.width / 2;
+  tooltip.value.y = rect.top - 10;
+};
+
+const hideTooltip = () => {
+  tooltip.value.show = false;
+};
+
 const activeTopMetricLabel = computed(() => {
   return topMetrics.find(m => m.id === activeTopMetric.value)?.label || '';
+});
+
+const filteredStats = computed(() => {
+  let result = stats.value;
+  if (selectedRole.value) {
+    result = result.filter(p => p.primaryRole === selectedRole.value);
+  }
+  return result;
 });
 
 const top4 = computed(() => {
@@ -503,48 +664,52 @@ const top4 = computed(() => {
       let valA = a[metricId] as number;
       let valB = b[metricId] as number;
       
-      // Usually highest is top, but for deaths lower is "better". 
-      // However, for "freedom", we'll just show the highest value as "Top".
+      // Inverse sort for "L'Aveugle" (lowest vision/M = top blind) 
+      // and "Pacifiste" (lowest damage = top pacifist)
+      if (metricId === 'blindScore' || metricId === 'pacifistScore') {
+        return valA - valB;
+      }
+      
+      // Usually highest is top
       return valB - valA;
     })
     .slice(0, 4);
 });
 
 const classicCols = [
-  { key: 'totalKills', label: 'Kills' },
-  { key: 'totalDeaths', label: 'Deaths' },
-  { key: 'totalAssists', label: 'Assists' },
-  { key: 'kda', label: 'KDA' },
-  { key: 'avgKills', label: 'K Moy' },
-  { key: 'avgDeaths', label: 'D Moy' },
-  { key: 'avgAssists', label: 'A Moy' },
-  { key: 'killParticipation', label: 'KP %' }
+  { key: 'kda', label: 'KDA', tooltip: 'Ratio Kills + Assists / Deaths' },
+  { key: 'killParticipation', label: 'KP %', tooltip: 'Pourcentage de participation aux éliminations de l\'équipe' },
+  { key: 'avgKills', label: 'K Moy', tooltip: 'Moyenne d\'éliminations par partie' },
+  { key: 'avgDeaths', label: 'D Moy', tooltip: 'Moyenne de morts par partie' },
+  { key: 'avgAssists', label: 'A Moy', tooltip: 'Moyenne d\'assistances par partie' },
+  { key: 'totalKills', label: 'Total Kills', tooltip: 'Nombre total d\'éliminations' },
+  { key: 'totalDeaths', label: 'Total Deaths', tooltip: 'Nombre total de morts' },
+  { key: 'totalAssists', label: 'Total Assists', tooltip: 'Nombre total d\'assistances' }
 ] as const;
 
 const advancedCols = [
-  { key: 'dpm', label: 'DPM' },
-  { key: 'dtpm', label: 'Dégâts subis/M' },
-  { key: 'dmgShare', label: 'Part Dégâts %' },
-  { key: 'gpm', label: 'GPM' },
-  { key: 'goldShare', label: 'Part Gold %' },
-  { key: 'cspm', label: 'CS/M' },
-  { key: 'dmgPerGold', label: 'Dégâts/Gold' },
-  { key: 'avgVisionScore', label: 'Vision' }
+  { key: 'dpm', label: 'DPM', tooltip: 'Dégâts par minute infligés aux champions' },
+  { key: 'dmgShare', label: 'Part Dégâts %', tooltip: 'Pourcentage des dégâts totaux de l\'équipe' },
+  { key: 'gpm', label: 'GPM', tooltip: 'Or gagné par minute' },
+  { key: 'goldShare', label: 'Part Gold %', tooltip: 'Pourcentage de l\'or total de l\'équipe' },
+  { key: 'cspm', label: 'CS/M', tooltip: 'Sbires tués par minute' },
+  { key: 'dmgPerGold', label: 'Dégâts/Gold', tooltip: 'Dégâts infligés par pièce d\'or gagnée' },
+  { key: 'avgVisionScore', label: 'Vision/M', tooltip: 'Score de vision moyen par minute' },
+  { key: 'dtpm', label: 'Dégâts subis/M', tooltip: 'Dégâts subis par minute' }
 ] as const;
 
 const funCols = [
-  { key: 'firstBloodRate', label: 'FB %' },
-  { key: 'avgTimeSpentDead', label: 'Temps mort' },
-  { key: 'largestKillingSpree', label: 'Série Max' },
-  { key: 'avgGameDuration', label: 'Temps Moyen' },
-  { key: 'pacifistScore', label: 'Pacifiste' },
-  { key: 'feederScore', label: 'Feeder' },
-  { key: 'wardDispenserScore', label: 'Poseur de Wards' },
-  { key: 'blindScore', label: 'L\'Aveugle' },
-  { key: 'survivorScore', label: 'Survivant' }
+  { key: 'firstBloodRate', label: 'FB %', tooltip: 'Pourcentage de parties avec le Premier Sang' },
+  { key: 'largestKillingSpree', label: 'Série Max', tooltip: 'Plus longue série d\'éliminations sans mourir' },
+  { key: 'feederScore', label: 'Feeder', tooltip: 'Plus grand nombre de morts en une partie' },
+  { key: 'pacifistScore', label: 'Pacifiste', tooltip: 'Plus petit montant de dégâts infligés en une partie' },
+  { key: 'blindScore', label: 'L\'Aveugle', tooltip: 'Score de vision par minute' },
+  { key: 'wardDispenserScore', label: 'Poseur de Wards', tooltip: 'Balises posées par minute' },
+  { key: 'survivorScore', label: 'Survivant', tooltip: 'Dégâts auto-mitigés par minute' },
+  { key: 'avgGameDuration', label: 'Temps Moyen', tooltip: 'Durée moyenne des parties' }
 ] as const;
 
-const sortKey = ref<keyof PlayerStats>('totalKills');
+const sortKey = ref<keyof PlayerStats>('kda');
 const sortOrder = ref<'asc' | 'desc'>('desc');
 
 const sortBy = (key: keyof PlayerStats) => {
@@ -557,7 +722,7 @@ const sortBy = (key: keyof PlayerStats) => {
 };
 
 const sortedStats = computed(() => {
-  return [...stats.value].sort((a, b) => {
+  return [...filteredStats.value].sort((a, b) => {
     let valA = a[sortKey.value];
     let valB = b[sortKey.value];
     
@@ -579,7 +744,7 @@ const formatMetricValue = (value: any) => {
   const metricId = activeTopMetric.value;
   
   // Time formats
-  if (['avgTimeSpentDead', 'avgGameDuration'].includes(metricId)) {
+  if (['avgGameDuration'].includes(metricId)) {
     return formatDuration(value);
   }
   
@@ -619,6 +784,74 @@ const getKdaColor = (kda: number) => {
   return 'text-[#F0FDF4]';
 };
 
+const getKpColor = (kp: number) => {
+  if (kp >= 65) return 'text-[#EAB308] drop-shadow-[0_0_8px_rgba(234,179,8,0.3)]';
+  if (kp >= 50) return 'text-[#22C55E]';
+  if (kp < 40) return 'text-red-400';
+  return 'text-[#F0FDF4]';
+};
+
+const getAvgKillsColor = (val: number) => {
+  if (val >= 8) return 'text-[#EAB308] drop-shadow-[0_0_8px_rgba(234,179,8,0.3)] font-bold';
+  if (val >= 5) return 'text-[#22C55E] font-bold';
+  return 'text-[#F0FDF4]';
+};
+
+const getAvgDeathsColor = (val: number) => {
+  if (val >= 7) return 'text-red-400 font-bold';
+  if (val <= 3) return 'text-[#EAB308] drop-shadow-[0_0_8px_rgba(234,179,8,0.3)] font-bold';
+  if (val <= 4.5) return 'text-[#22C55E] font-bold';
+  return 'text-[#F0FDF4]';
+};
+
+const getAvgAssistsColor = (val: number) => {
+  if (val >= 12) return 'text-[#EAB308] drop-shadow-[0_0_8px_rgba(234,179,8,0.3)] font-bold';
+  if (val >= 8) return 'text-[#22C55E] font-bold';
+  return 'text-[#F0FDF4]';
+};
+
+const getDpmColor = (val: number) => {
+  if (val >= 800) return 'text-[#EAB308] drop-shadow-[0_0_8px_rgba(234,179,8,0.3)]';
+  if (val >= 600) return 'text-[#22C55E]';
+  if (val < 400) return 'text-red-400';
+  return 'text-[#F0FDF4]';
+};
+
+const getShareColor = (val: number) => {
+  if (val >= 28) return 'text-[#EAB308] drop-shadow-[0_0_8px_rgba(234,179,8,0.3)]';
+  if (val >= 23) return 'text-[#22C55E]';
+  if (val < 18) return 'text-red-400';
+  return 'text-[#F0FDF4]';
+};
+
+const getGpmColor = (val: number) => {
+  if (val >= 450) return 'text-[#EAB308] drop-shadow-[0_0_8px_rgba(234,179,8,0.3)]';
+  if (val >= 380) return 'text-[#22C55E]';
+  if (val < 300) return 'text-red-400';
+  return 'text-[#F0FDF4]';
+};
+
+const getCspmColor = (val: number) => {
+  if (val >= 8.0) return 'text-[#EAB308] drop-shadow-[0_0_8px_rgba(234,179,8,0.3)]';
+  if (val >= 6.5) return 'text-[#22C55E]';
+  if (val < 5.0) return 'text-red-400';
+  return 'text-[#F0FDF4]';
+};
+
+const getDmgPerGoldColor = (val: number) => {
+  if (val >= 1.5) return 'text-[#EAB308] drop-shadow-[0_0_8px_rgba(234,179,8,0.3)]';
+  if (val >= 1.2) return 'text-[#22C55E]';
+  if (val < 0.9) return 'text-red-400';
+  return 'text-[#F0FDF4]';
+};
+
+const getVisionColor = (val: number) => {
+  if (val >= 40) return 'text-[#EAB308] drop-shadow-[0_0_8px_rgba(234,179,8,0.3)]';
+  if (val >= 25) return 'text-[#22C55E]';
+  if (val < 15) return 'text-red-400';
+  return 'text-[#F0FDF4]';
+};
+
 const formatDuration = (seconds: number) => {
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
@@ -635,7 +868,7 @@ const fetchStats = async () => {
       .select(`
         *,
         match_history!inner(game_duration),
-        players!inner(pseudo, riot_id)
+        players!inner(pseudo, riot_id, primary_role)
       `);
 
     if (fetchError) throw fetchError;
@@ -670,6 +903,7 @@ const fetchStats = async () => {
     for (const row of data) {
       const playerId = row.player_id;
       const playerName = row.players?.pseudo || row.players?.riot_id || 'Unknown';
+      const primaryRole = row.players?.primary_role || 'Unknown';
       const gameDurationSecs = row.match_history?.game_duration || 0;
       const gameDurationMins = gameDurationSecs / 60;
 
@@ -677,6 +911,7 @@ const fetchStats = async () => {
         playerMap.set(playerId, {
           playerId,
           playerName,
+          primaryRole,
           gamesPlayed: 0,
           totalKills: 0,
           totalDeaths: 0,
@@ -702,8 +937,6 @@ const fetchStats = async () => {
           goldShare: 0,
           firstBloods: 0,
           firstBloodRate: 0,
-          totalTimeSpentDead: 0,
-          avgTimeSpentDead: 0,
           largestKillingSpree: 0,
           totalGameDurationSeconds: 0,
           avgGameDuration: 0,
@@ -753,7 +986,6 @@ const fetchStats = async () => {
       }
       
       if (row.first_blood_kill) p.firstBloods++;
-      p.totalTimeSpentDead += (row.total_time_spent_dead || 0);
       
       const spree = row.largest_killing_spree || 0;
       if (spree > p.largestKillingSpree) p.largestKillingSpree = spree;
@@ -780,10 +1012,9 @@ const fetchStats = async () => {
       p.gpm = p.totalGameDurationMinutes > 0 ? p.totalGoldEarned / p.totalGameDurationMinutes : 0;
       p.cspm = p.totalGameDurationMinutes > 0 ? p.totalMinionsKilled / p.totalGameDurationMinutes : 0;
       p.dmgPerGold = p.totalGoldEarned > 0 ? p.totalDamageToChampions / p.totalGoldEarned : 0;
-      p.avgVisionScore = p.totalVisionScore / p.gamesPlayed;
+      p.avgVisionScore = p.totalGameDurationMinutes > 0 ? p.totalVisionScore / p.totalGameDurationMinutes : 0;
       
       p.firstBloodRate = (p.firstBloods / p.gamesPlayed) * 100;
-      p.avgTimeSpentDead = p.totalTimeSpentDead / p.gamesPlayed;
       p.avgGameDuration = p.totalGameDurationSeconds / p.gamesPlayed;
       
       p.pacifistScore = p.minDamageInGame === Infinity ? 0 : p.minDamageInGame;
@@ -796,6 +1027,7 @@ const fetchStats = async () => {
     }
 
     stats.value = finalStats;
+    setTimeout(checkScroll, 100);
   } catch (err: any) {
     console.error('Error fetching stats:', err);
     error.value = 'Failed to load statistics. Please try again later.';
