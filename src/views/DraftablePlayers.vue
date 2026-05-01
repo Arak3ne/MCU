@@ -1,9 +1,9 @@
 <template>
-  <div class="max-w-7xl mx-auto px-4 py-8">
+  <div class="max-w-7xl mx-auto px-4 py-8 animate-fade-in-up">
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
       <div>
         <h1 class="text-3xl font-title uppercase tracking-widest text-white mb-2">
-          <span class="text-mcu-primary">Draftable</span> Players
+          Joueurs <span class="text-mcu-primary">Draftables</span>
         </h1>
         <p class="text-mcu-text-muted text-sm">Préparez vos équipes pour le tournoi.</p>
       </div>
@@ -27,7 +27,7 @@
           class="px-4 py-2 rounded-xl text-sm font-bold bg-mcu-surface border border-mcu-border text-mcu-text-muted hover:text-white hover:border-mcu-primary transition-all flex items-center gap-2 whitespace-nowrap"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 002 2h2a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
           </svg>
           Copier
         </button>
@@ -119,14 +119,18 @@
       </div>
     </div>
 
-    <!-- Loading State -->
-    <div v-if="loading" class="flex flex-col items-center justify-center py-24 opacity-50">
-      <div class="w-12 h-12 border-4 border-[#2A2A2A] border-t-[#22C55E] rounded-full animate-spin mb-6"></div>
-      <p class="text-[#22C55E] uppercase tracking-widest text-sm font-bold animate-pulse">Chargement des joueurs...</p>
-    </div>
+      <!-- Loading State -->
+      <div v-if="loading" class="flex flex-col items-center justify-center py-32 opacity-80">
+        <div class="relative w-20 h-20 mb-8">
+          <div class="absolute inset-0 border-4 border-mcu-border rounded-full"></div>
+          <div class="absolute inset-0 border-4 border-mcu-primary rounded-full border-t-transparent animate-spin shadow-[0_0_15px_rgba(34,197,94,0.5)]"></div>
+          <div class="absolute inset-2 border-4 border-mcu-primary/30 rounded-full border-b-transparent animate-[spin_1.5s_linear_infinite_reverse]"></div>
+        </div>
+        <p class="text-mcu-primary uppercase tracking-widest text-sm font-bold animate-pulse drop-shadow-[0_0_8px_rgba(34,197,94,0.8)]">Chargement des joueurs...</p>
+      </div>
 
-    <!-- Players Grid -->
-    <div v-else-if="!loading && filteredPlayers.length > 0 && playerView === 'cards'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <!-- Players Grid -->
+      <div v-else-if="!loading && filteredPlayers.length > 0 && playerView === 'cards'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-fade-in-up">
       <div 
         v-for="player in filteredPlayers" 
         :key="player.id"
@@ -182,10 +186,10 @@
               <div 
                 v-for="champ in player.champion_pool" 
                 :key="champ"
-                class="w-8 h-8 rounded-full overflow-hidden border border-mcu-border/80 relative group/champ shadow-[0_6px_18px_rgba(0,0,0,0.6)]"
+                class="w-8 h-8 rounded-full overflow-hidden border border-mcu-border/80 relative group/champ shadow-[0_6px_18px_rgba(0,0,0,0.6)] cursor-default"
               >
                 <img :src="getChampionSquare(champ)" class="w-full h-full object-cover" :title="champ" />
-                <div class="absolute inset-0 bg-black/60 opacity-0 group-hover/champ:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[1px]">
+                <div class="absolute inset-0 bg-black/60 opacity-0 group-hover/champ:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[1px] pointer-events-none">
                   <span class="text-[8px] font-bold text-white truncate px-1">{{ champ.substring(0, 3) }}</span>
                 </div>
               </div>
@@ -208,6 +212,7 @@
               <th class="px-4 py-3 whitespace-nowrap">Style</th>
               <th class="px-4 py-3 whitespace-nowrap">Mindset</th>
               <th class="px-4 py-3 min-w-[200px]">Champion pool</th>
+              <th class="px-4 py-3 whitespace-nowrap text-right">Prix</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-mcu-border/60">
@@ -239,6 +244,9 @@
                 </div>
                 <span v-else class="text-mcu-text-muted text-xs">—</span>
               </td>
+              <td class="px-4 py-3 text-right font-title text-mcu-primary">
+                {{ mapDbPlayerToFantasy(player).price }}
+              </td>
             </tr>
           </tbody>
         </table>
@@ -259,6 +267,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { getPlayers, getChampions } from '../lib/queries';
+import { mapDbPlayerToFantasy } from '../utils/fantasyMapper';
 import type { Database } from '../types/supabase';
 
 import topIcon from '../assets/top.png';
@@ -285,6 +294,7 @@ const PLAYERS_VIEW_STORAGE_KEY = 'mcu_players_view';
 
 const readStoredPlayerView = (): PlayerViewMode => {
   const raw = localStorage.getItem(PLAYERS_VIEW_STORAGE_KEY);
+  if (!raw) return 'cards';
   return raw === 'table' ? 'table' : 'cards';
 };
 
@@ -431,3 +441,20 @@ const copyPlayerList = () => {
   });
 };
 </script>
+
+<style scoped>
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+</style>

@@ -8,7 +8,7 @@
     </div>
 
     <!-- Main Content -->
-    <main class="relative z-10 max-w-7xl mx-auto px-6 py-12 space-y-8">
+    <main class="relative z-10 max-w-7xl mx-auto px-6 py-12 space-y-8 animate-fade-in-up">
       <!-- Header & Filters -->
       <div class="flex flex-col md:flex-row justify-between items-end gap-6 border-b border-[#2A2A2A] pb-6">
         <div>
@@ -17,7 +17,7 @@
               Champions
             </h1>
           </div>
-          <p class="text-[#A1A1AA] font-medium tracking-widest uppercase text-xs mt-2">Manage Global Champion Availability</p>
+          <p class="text-[#A1A1AA] font-medium tracking-widest uppercase text-xs mt-2">Gérer la disponibilité globale des Champions</p>
         </div>
 
         <div class="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
@@ -26,7 +26,7 @@
             <input
               v-model="searchQuery"
               type="text"
-              placeholder="Search champions..."
+              placeholder="Rechercher des champions..."
               class="w-full bg-[#111111] border border-[#2A2A2A] group-hover:border-[#22C55E]/50 focus:border-[#22C55E] rounded-sm px-4 py-2 focus:outline-none focus:ring-1 focus:ring-[#22C55E] text-[#F0FDF4] placeholder-[#A1A1AA] transition-all font-medium text-sm tracking-wide shadow-inner"
             />
             <span
@@ -66,21 +66,25 @@
             ]"
           >
             <div class="w-2 h-2 rounded-full" :class="showOnlyAvailable ? 'bg-green-400 shadow-[0_0_5px_#22c55e]' : 'bg-gray-600'"></div>
-            {{ showOnlyAvailable ? "Available Only" : "Show All" }}
+            {{ showOnlyAvailable ? "Disponibles Uniquement" : "Afficher Tout" }}
           </button>
         </div>
       </div>
 
       <!-- Loading State -->
-      <div v-if="loading" class="flex flex-col items-center justify-center py-24 opacity-50">
-        <div class="w-12 h-12 border-4 border-[#2A2A2A] border-t-[#22C55E] rounded-full animate-spin mb-6"></div>
-        <p class="text-[#22C55E] uppercase tracking-widest text-sm font-bold animate-pulse">Loading Roster...</p>
+      <div v-if="loading" class="flex flex-col items-center justify-center py-32 opacity-80">
+        <div class="relative w-20 h-20 mb-8">
+          <div class="absolute inset-0 border-4 border-mcu-border rounded-full"></div>
+          <div class="absolute inset-0 border-4 border-mcu-primary rounded-full border-t-transparent animate-spin shadow-[0_0_15px_rgba(34,197,94,0.5)]"></div>
+          <div class="absolute inset-2 border-4 border-mcu-primary/30 rounded-full border-b-transparent animate-[spin_1.5s_linear_infinite_reverse]"></div>
+        </div>
+        <p class="text-mcu-primary uppercase tracking-widest text-sm font-bold animate-pulse drop-shadow-[0_0_8px_rgba(34,197,94,0.8)]">Chargement des champions...</p>
       </div>
 
       <!-- Champion Grid -->
       <div
-        v-else
-        class="bg-[#0B0F0C]/60 backdrop-blur-sm border border-[#22C55E]/30 p-1 shadow-[0_0_40px_rgba(0,0,0,0.8)] relative before:absolute before:-inset-[1px] before:bg-gradient-to-b before:from-[#22C55E]/50 before:to-[#22C55E]/10 before:-z-10 before:rounded-sm rounded-sm"
+        v-else-if="!loading"
+        class="bg-[#0B0F0C]/60 backdrop-blur-sm border border-[#22C55E]/30 p-1 shadow-[0_0_40px_rgba(0,0,0,0.8)] relative before:absolute before:-inset-[1px] before:bg-gradient-to-b before:from-[#22C55E]/50 before:to-[#22C55E]/10 before:-z-10 before:rounded-sm rounded-sm animate-fade-in-up"
       >
         <div class="bg-[#111111] p-6 rounded-sm w-full h-full min-h-[500px]">
           <div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 xl:grid-cols-12 gap-3 md:gap-4">
@@ -113,7 +117,7 @@
                   <div class="w-full h-1 bg-red-500 rotate-45 absolute shadow-[0_0_10px_rgba(239,68,68,0.8)]"></div>
                   <div class="w-full h-1 bg-red-500 -rotate-45 absolute shadow-[0_0_10px_rgba(239,68,68,0.8)]"></div>
                   <span class="absolute text-red-500 font-title text-[10px] tracking-[0.2em] bg-black/80 px-2 py-1 border border-red-500/50 uppercase rounded-sm shadow-[0_0_10px_rgba(0,0,0,0.8)]">
-                    Banned
+                    Banni
                   </span>
                 </div>
                 
@@ -139,12 +143,12 @@
             class="flex flex-col items-center justify-center py-20 text-center"
           >
             <div class="text-4xl mb-4 opacity-50">🔍</div>
-            <p class="text-[#A1A1AA] uppercase tracking-widest text-sm font-bold mb-4">No champions match your filters</p>
+            <p class="text-[#A1A1AA] uppercase tracking-widest text-sm font-bold mb-4">Aucun champion ne correspond à vos filtres</p>
             <button
               @click="resetFilters"
-              class="px-6 py-2 text-xs font-bold tracking-widest uppercase text-[#22C55E] border border-[#22C55E]/30 hover:border-[#22C55E] hover:bg-[#22C55E]/10 transition-all rounded-sm"
-             cursor-pointer>
-              Reset Filters
+              class="px-6 py-2 text-xs font-bold tracking-widest uppercase text-[#22C55E] border border-[#22C55E]/30 hover:border-[#22C55E] hover:bg-[#22C55E]/10 transition-all rounded-sm cursor-pointer"
+            >
+              Réinitialiser les filtres
             </button>
           </div>
         </div>
@@ -270,3 +274,20 @@ onUnmounted(() => {
   }
 });
 </script>
+
+<style scoped>
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+</style>

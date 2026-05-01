@@ -12,6 +12,14 @@ dist
 dist-ssr
 *.local
 
+# Env files (keep secrets/local config out of git)
+.env
+.env.*
+!.env.example
+
+# Supabase CLI local state (project link, versions, etc.)
+supabase/.temp/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

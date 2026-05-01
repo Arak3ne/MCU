@@ -17,17 +17,17 @@
           </h1>
           <div class="absolute -inset-x-16 top-1/2 -translate-y-1/2 h-[1px] bg-gradient-to-r from-transparent via-[#22C55E]/30 to-transparent -z-10"></div>
         </div>
-        <p class="text-[#A1A1AA] font-medium tracking-widest uppercase text-sm mt-2">Live Double Elimination Tree</p>
+        <p class="text-[#A1A1AA] font-medium tracking-widest uppercase text-sm mt-2">Arbre à double élimination en direct</p>
       </div>
 
       <!-- Loading State -->
       <div v-if="loading" class="flex flex-col items-center justify-center py-24 opacity-50">
         <div class="w-12 h-12 border-4 border-[#2A2A2A] border-t-[#22C55E] rounded-full animate-spin mb-6"></div>
-        <p class="text-[#22C55E] uppercase tracking-widest text-sm font-bold animate-pulse">Loading Bracket...</p>
+        <p class="text-[#22C55E] uppercase tracking-widest text-sm font-bold animate-pulse">Chargement de l'arbre...</p>
       </div>
 
       <div v-else-if="groupedMatches.length === 0" class="text-center py-20">
-        <p class="text-[#A1A1AA] uppercase tracking-widest text-sm font-bold mb-4">No active playoff bracket</p>
+        <p class="text-[#A1A1AA] uppercase tracking-widest text-sm font-bold mb-4">Aucun arbre de playoffs actif</p>
       </div>
 
       <!-- Bracket Container -->
@@ -196,7 +196,7 @@
               </svg>
             </button>
             
-            <h2 class="text-3xl font-title mb-2 text-center text-transparent bg-clip-text bg-gradient-to-b from-[#F0FDF4] to-[#22C55E] tracking-wider uppercase">Initialize Draft</h2>
+            <h2 class="text-3xl font-title mb-2 text-center text-transparent bg-clip-text bg-gradient-to-b from-[#F0FDF4] to-[#22C55E] tracking-wider uppercase">Initialiser la Draft</h2>
             
             <div class="flex justify-center items-center gap-4 mb-8 text-sm font-bold uppercase tracking-widest">
               <span class="text-[#4ADE80]">{{ blueName }}</span>
@@ -206,11 +206,11 @@
 
             <div v-if="drafting" class="text-center py-10">
               <div class="w-16 h-16 border-4 border-[#2A2A2A] border-t-[#22C55E] rounded-full animate-spin mx-auto mb-6"></div>
-              <p class="text-[#22C55E] uppercase tracking-widest text-sm font-bold animate-pulse">{{ message || 'Generating draft...' }}</p>
+              <p class="text-[#22C55E] uppercase tracking-widest text-sm font-bold animate-pulse">{{ message || 'Génération de la draft...' }}</p>
             </div>
 
             <div v-else-if="draftUrl" class="space-y-6">
-              <p class="text-green-400 text-center font-bold tracking-widest uppercase text-sm drop-shadow-[0_0_5px_rgba(34,197,94,0.5)]">Draft Generated!</p>
+              <p class="text-green-400 text-center font-bold tracking-widest uppercase text-sm drop-shadow-[0_0_5px_rgba(34,197,94,0.5)]">Draft Générée !</p>
               
               <div class="flex flex-col gap-4">
                 <a
@@ -218,7 +218,7 @@
                   target="_blank"
                   class="w-full py-4 bg-gradient-to-r from-[#22C55E] to-[#14532D] hover:from-[#d9b876] hover:to-[#8a6831] text-[#0B0F0C] rounded-sm font-title text-center transition-all shadow-[0_0_15px_rgba(200,170,110,0.3)] uppercase tracking-widest text-sm border border-[#22C55E]"
                 >
-                  Open Draft Tool
+                  Ouvrir l'outil de Draft
                 </a>
                 <button
                   @click="copyDraftLink"
@@ -230,22 +230,22 @@
                   <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                   </svg>
-                  <span :class="linkCopied ? 'text-green-400' : ''">{{ linkCopied ? 'Copied!' : 'Copy Link' }}</span>
+                  <span :class="linkCopied ? 'text-green-400' : ''">{{ linkCopied ? 'Copié !' : 'Copier le lien' }}</span>
                 </button>
               </div>
               
               <div v-if="draftId" class="flex items-center justify-center gap-2 mt-6 p-3 bg-[#1A1A1A] border border-[#2A2A2A] rounded-sm">
                 <span class="inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_5px_#22c55e]"></span>
                 <p class="text-[10px] text-[#A1A1AA] uppercase tracking-widest font-bold">
-                  Auto-syncing picks in background
+                  Synchronisation automatique des picks en arrière-plan...
                 </p>
               </div>
             </div>
             
             <div v-else class="text-center py-8">
-              <p class="text-red-400 font-bold uppercase tracking-widest text-xs mb-6">{{ message || 'Error generating draft' }}</p>
+              <p class="text-red-400 font-bold uppercase tracking-widest text-xs mb-6">{{ message || 'Erreur lors de la génération de la draft' }}</p>
               <button @click="generateDraft" class="px-8 py-3 bg-[#1A1A1A] border border-[#2A2A2A] hover:border-[#22C55E]/50 hover:bg-[#282d33] rounded-sm text-[#F0FDF4] font-bold uppercase tracking-widest text-xs transition-all" cursor-pointer>
-                Try Again
+                Réessayer
               </button>
             </div>
           </div>
@@ -322,7 +322,7 @@ onUnmounted(() => {
 const startDraftForMatch = (match: any) => {
   if (!match.team1 || !match.team2) return;
   if (match.is_completed) {
-    alert("This match is already completed. Cannot start a new draft.");
+    alert("Ce match est déjà terminé. Impossible de lancer une nouvelle draft.");
     return;
   }
   blueName.value = match.team1.name;
@@ -345,7 +345,7 @@ const generateDraft = async () => {
     draftUrl.value = "";
     draftId.value = "";
     linkCopied.value = false;
-    message.value = "Fetching global bans...";
+    message.value = "Récupération des bans globaux...";
 
     // Fetch champions that are marked as NOT available
     const { data: champions, error: fetchError } = await supabase
@@ -363,7 +363,7 @@ const generateDraft = async () => {
       return c.name.replace(/[^a-zA-Z0-9]/g, '');
     });
     
-    message.value = "Initializing interface...";
+    message.value = "Initialisation de l'interface...";
     
     const { data, error: funcError } = await supabase.functions.invoke("generate-draft", {
       body: {
@@ -390,7 +390,7 @@ const generateDraft = async () => {
     if (data?.draftUrl) {
       draftUrl.value = data.draftUrl;
       draftId.value = data.draftId || "";
-      message.value = "Draft generated!";
+      message.value = "Draft générée !";
       
       if (syncInterval) clearInterval(syncInterval);
       syncInterval = setInterval(() => {
@@ -400,7 +400,7 @@ const generateDraft = async () => {
       throw new Error("Draft generated, but couldn't parse URL.");
     }
   } catch (err: any) {
-    message.value = err.message || "Error generating draft";
+    message.value = err.message || "Erreur lors de la génération de la draft";
     console.error(err);
   } finally {
     drafting.value = false;

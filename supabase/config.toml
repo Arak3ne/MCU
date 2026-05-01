@@ -9,3 +9,9 @@ entrypoint = "./functions/sync-draft/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/sync-draft/*.html" ]
+
+[functions.sync-match-results]
+enabled = true
+verify_jwt = true
+import_map = "./functions/sync-match-results/deno.json"
+entrypoint = "./functions/sync-match-results/index.ts"

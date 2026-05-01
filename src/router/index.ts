@@ -25,9 +25,24 @@ const router = createRouter({
       component: () => import("../views/DraftablePlayers.vue"),
     },
     {
+      path: "/fantasy",
+      name: "fantasy",
+      component: () => import("../views/FantasyDashboard.vue"),
+    },
+    {
       path: "/future-matches",
       name: "future-matches",
       component: () => import("../views/FutureMatches.vue"),
+    },
+    {
+      path: "/stats",
+      name: "stats",
+      component: () => import("../views/Stats.vue"),
+    },
+    {
+      path: "/fantasy-leaderboard",
+      name: "fantasy-leaderboard",
+      component: () => import("../views/FantasyLeaderboard.vue"),
     },
     {
       path: "/playoffs",

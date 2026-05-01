@@ -80,6 +80,20 @@
                 />
                 <label for="pseudo" class="absolute left-4 top-2 text-xs font-medium text-mcu-text-muted uppercase tracking-wider transition-all peer-placeholder-shown:text-base peer-placeholder-shown:top-4 peer-focus:top-2 peer-focus:text-xs peer-focus:text-mcu-primary cursor-text">Pseudo en jeu</label>
               </div>
+
+              <div class="relative group">
+                <input 
+                  v-model="form.riot_id" 
+                  type="text" 
+                  id="riot_id"
+                  required
+                  pattern="^.+#.+$"
+                  title="Format requis: Pseudo#TAG"
+                  class="peer w-full bg-mcu-surface border border-mcu-border rounded-xl px-4 pt-6 pb-2 text-white focus:outline-none focus:border-mcu-primary focus:ring-1 focus:ring-mcu-primary transition-all placeholder-transparent"
+                  placeholder="Riot ID (Pseudo#TAG)"
+                />
+                <label for="riot_id" class="absolute left-4 top-2 text-xs font-medium text-mcu-text-muted uppercase tracking-wider transition-all peer-placeholder-shown:text-base peer-placeholder-shown:top-4 peer-focus:top-2 peer-focus:text-xs peer-focus:text-mcu-primary cursor-text">Riot ID (Pseudo#TAG)</label>
+              </div>
               
               <div class="relative group">
                 <input 
@@ -345,6 +359,7 @@ import supIcon from '../assets/support.png';
 interface FormState {
   pseudo: string;
   discord: string;
+  riot_id: string;
   primary_role: string;
   secondary_role: string;
   rank: string;
@@ -374,6 +389,7 @@ const mindsets = ['Chill', 'Competitive', 'Tryhard'];
 const form = ref<FormState>({
   pseudo: '',
   discord: '',
+  riot_id: '',
   primary_role: '',
   secondary_role: '',
   rank: '',
@@ -424,7 +440,8 @@ const signatureChampion = computed(() => {
 
 const isStepValid = computed(() => {
   if (currentStep.value === 1) {
-    return form.value.pseudo.trim().length > 0 && form.value.discord.trim().length > 0;
+    const isRiotIdValid = /^.+#.+$/.test(form.value.riot_id.trim());
+    return form.value.pseudo.trim().length > 0 && form.value.discord.trim().length > 0 && isRiotIdValid;
   }
   if (currentStep.value === 2) {
     return form.value.primary_role !== '' && form.value.secondary_role !== '';
@@ -492,6 +509,7 @@ const submitForm = async () => {
     const { data, error } = await supabase.from('players').insert({
       pseudo: form.value.pseudo,
       discord: form.value.discord,
+      riot_id: form.value.riot_id.trim(),
       primary_role: form.value.primary_role,
       secondary_role: form.value.secondary_role,
       rank: form.value.rank,
