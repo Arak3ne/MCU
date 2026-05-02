@@ -426,14 +426,9 @@ ipcMain.on('sync-matches', async (event) => {
       }, lcuCredentials);
       
       const matchDetails = await matchDetailsResponse.json();
-      
-      // Sécurité supplémentaire : on s'assure qu'il y a bien 10 joueurs dans la custom game
-      // (Évite de synchroniser des parties de test en 1v1 ou des parties avec des bots)
+
       const matchParticipants = matchDetails.participants || [];
-      if (matchParticipants.length !== 10) {
-        sendLog(`[Sync] Match ${gameId} ignoré : ${matchParticipants.length} joueurs trouvés (10 requis)`);
-        continue;
-      }
+      sendLog(`[Sync] Match ${gameId} : ${matchParticipants.length} participant(s) (sync autorisée quel que soit le nombre, filtre custom inchangé).`);
 
       // Call the Edge Function to process the match and calculate fantasy points
       sendLog(`[Sync] Appel de l'Edge Function pour le match ${gameId}...`);

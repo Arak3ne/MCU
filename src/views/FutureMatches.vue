@@ -60,10 +60,30 @@
                 </div>
               </div>
 
-              <!-- VS -->
-              <div class="mx-2 sm:mx-4 md:mx-6 relative flex flex-col items-center justify-center z-10 shrink-0">
+              <!-- Scores or VS -->
+              <div class="mx-2 sm:mx-4 md:mx-6 relative flex flex-col items-center justify-center z-10 shrink-0 min-w-[4.25rem] sm:min-w-[5rem]">
                 <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60px] sm:w-[100px] h-[1px] bg-gradient-to-r from-transparent via-[#2A2A2A] group-hover:via-mcu-primary to-transparent transition-colors duration-500 -z-10"></div>
-                <div class="text-[10px] sm:text-xs text-white/50 group-hover:text-black font-title italic bg-black/80 group-hover:bg-mcu-primary px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-white/10 group-hover:border-mcu-primary shadow-[0_0_20px_rgba(0,0,0,1)] group-hover:shadow-[0_0_25px_rgba(34,197,94,0.6)] uppercase tracking-[0.2em] sm:tracking-[0.3em] transition-all duration-500 group-hover:scale-110 backdrop-blur-sm">
+                <template v-if="matchHasScores(match)">
+                  <div class="flex items-center gap-1 sm:gap-1.5 font-title tabular-nums leading-none">
+                    <span
+                      class="text-lg sm:text-xl md:text-2xl transition-colors duration-300"
+                      :class="championshipScoreClass(match, 1)"
+                    >{{ match.team1_score }}</span>
+                    <span class="text-white/20 text-xs sm:text-sm font-normal select-none">—</span>
+                    <span
+                      class="text-lg sm:text-xl md:text-2xl transition-colors duration-300"
+                      :class="championshipScoreClass(match, 2)"
+                    >{{ match.team2_score }}</span>
+                  </div>
+                  <span
+                    v-if="match.is_completed"
+                    class="text-[9px] text-white/35 uppercase tracking-[0.2em] mt-1.5"
+                  >Terminé</span>
+                </template>
+                <div
+                  v-else
+                  class="text-[10px] sm:text-xs text-white/50 group-hover:text-black font-title italic bg-black/80 group-hover:bg-mcu-primary px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-white/10 group-hover:border-mcu-primary shadow-[0_0_20px_rgba(0,0,0,1)] group-hover:shadow-[0_0_25px_rgba(34,197,94,0.6)] uppercase tracking-[0.2em] sm:tracking-[0.3em] transition-all duration-500 group-hover:scale-110 backdrop-blur-sm"
+                >
                   VS
                 </div>
               </div>
@@ -188,6 +208,8 @@ interface Match {
   team1: Team;
   team2: Team;
   is_completed?: boolean;
+  team1_score?: number | null;
+  team2_score?: number | null;
   draft_url?: string | null;
   draft_id?: string | null;
 }
@@ -216,6 +238,8 @@ const rounds = computed<Round[]>(() => {
       team1: m.team1,
       team2: m.team2,
       is_completed: m.is_completed,
+      team1_score: m.team1_score,
+      team2_score: m.team2_score,
       draft_url: m.draft_url,
       draft_id: m.draft_id
     });
@@ -269,7 +293,22 @@ onUnmounted(() => {
   playoffSub = null;
 });
 
+const matchHasScores = (match: Match) =>
+  match.team1_score != null && match.team2_score != null;
 
+/** Score color when match is completed (blue / red side); ties stay neutral. */
+const championshipScoreClass = (match: Match, side: 1 | 2) => {
+  if (!matchHasScores(match)) return "text-white/60";
+  if (!match.is_completed) return "text-white/80";
+  const s1 = Number(match.team1_score);
+  const s2 = Number(match.team2_score);
+  if (s1 === s2) return "text-white/45";
+  const won = side === 1 ? s1 > s2 : s2 > s1;
+  if (!won) return "text-white/25";
+  return side === 1
+    ? "text-mcu-accent drop-shadow-[0_0_8px_rgba(11,198,227,0.35)]"
+    : "text-red-400 drop-shadow-[0_0_8px_rgba(255,78,80,0.35)]";
+};
 
 const startDraftForMatch = (match: Match) => {
   currentMatchId.value = match.id || "";

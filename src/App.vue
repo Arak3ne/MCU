@@ -12,7 +12,13 @@ const showNavbar = computed(() => {
 
 const currentUser = ref<any>(null);
 const needsRiotId = computed(() => {
-  return currentUser.value && !currentUser.value.riot_id && !["/admin/login", "/overlay", "/register"].includes(route.path) && !route.path.startsWith("/admin");
+  const user = currentUser.value;
+  if (!user || user.participation_type === "drafter") return false;
+  return (
+    !user.riot_id &&
+    !["/admin/login", "/overlay", "/register"].includes(route.path) &&
+    !route.path.startsWith("/admin")
+  );
 });
 
 onMounted(() => {

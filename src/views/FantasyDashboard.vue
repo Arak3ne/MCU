@@ -972,6 +972,7 @@ import MercatoTransitionOverlay from '../components/MercatoTransitionOverlay.vue
 import { fantasyService } from '../services/fantasyService';
 import { supabase } from '../lib/supabase';
 import { getRankIconUrl } from '../utils/rankIcon';
+import { getFantasyTierBadgeClass as getTierColor, getFantasyTierGlowClass as getTierGlow } from '../utils/tierStyles';
 
 import topIcon from '../assets/top.png';
 import jglIcon from '../assets/jgl.png';
@@ -1376,28 +1377,6 @@ const getDraftCardSplashUrl = (player: EnrichedPlayer) => {
   const first = player.champion_pool?.[0];
   if (first) return getChampionSplash(first) || '';
   return '';
-};
-
-const getTierColor = (tier: string) => {
-  switch(tier) {
-    case 'S': return 'text-yellow-400 border-yellow-500/40 shadow-[0_0_10px_rgba(250,204,21,0.2)]';
-    case 'A': return 'text-purple-400 border-purple-500/40 shadow-[0_0_10px_rgba(192,132,252,0.2)]';
-    case 'B': return 'text-teal-400 border-teal-500/40 shadow-[0_0_10px_rgba(45,212,191,0.2)]';
-    case 'C': return 'text-emerald-400 border-emerald-500/40 shadow-[0_0_10px_rgba(52,211,153,0.2)]';
-    case 'D': return 'text-gray-400 border-gray-500/40 shadow-[0_0_10px_rgba(156,163,175,0.2)]';
-    default: return 'text-white/50 border-white/10';
-  }
-};
-
-const getTierGlow = (tier: string) => {
-  switch(tier) {
-    case 'S': return 'hover:shadow-[0_20px_70px_rgba(250,204,21,0.2)] hover:border-yellow-500/50';
-    case 'A': return 'hover:shadow-[0_20px_70px_rgba(192,132,252,0.2)] hover:border-purple-500/50';
-    case 'B': return 'hover:shadow-[0_20px_70px_rgba(45,212,191,0.2)] hover:border-teal-500/50';
-    case 'C': return 'hover:shadow-[0_20px_70px_rgba(52,211,153,0.2)] hover:border-emerald-500/50';
-    case 'D': return 'hover:shadow-[0_20px_70px_rgba(156,163,175,0.2)] hover:border-gray-500/50';
-    default: return 'hover:shadow-[0_20px_70px_rgba(34,197,94,0.2)] hover:border-mcu-primary/50';
-  }
 };
 
 const getDisplayPrice = (player: FantasyPlayer) => {

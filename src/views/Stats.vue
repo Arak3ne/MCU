@@ -600,7 +600,7 @@ const topMetrics = [
   
   // Fun
   { id: 'firstBloodRate', label: 'FB %' },
-  { id: 'largestKillingSpree', label: 'Série Max' },
+  { id: 'largestKillingSpree', label: 'Max K / match' },
   { id: 'avgGameDuration', label: 'Temps Moyen' },
   { id: 'pacifistScore', label: 'Pacifiste' },
   { id: 'feederScore', label: 'Feeder' },
@@ -700,7 +700,7 @@ const advancedCols = [
 
 const funCols = [
   { key: 'firstBloodRate', label: 'FB %', tooltip: 'Pourcentage de parties avec le Premier Sang' },
-  { key: 'largestKillingSpree', label: 'Série Max', tooltip: 'Plus longue série d\'éliminations sans mourir' },
+  { key: 'largestKillingSpree', label: 'Max K / match', tooltip: 'Maximum d\'éliminations sur une partie' },
   { key: 'feederScore', label: 'Feeder', tooltip: 'Plus grand nombre de morts en une partie' },
   { key: 'pacifistScore', label: 'Pacifiste', tooltip: 'Plus petit montant de dégâts infligés en une partie' },
   { key: 'blindScore', label: 'L\'Aveugle', tooltip: 'Score de vision par minute' },

@@ -20,17 +20,6 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         </div>
-        
-        <button 
-          v-if="isAdmin"
-          @click="copyPlayerList"
-          class="px-4 py-2 rounded-xl text-sm font-bold bg-mcu-surface border border-mcu-border text-mcu-text-muted hover:text-white hover:border-mcu-primary transition-all flex items-center gap-2 whitespace-nowrap"
-        >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 002 2h2a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-          </svg>
-          Copier
-        </button>
       </div>
     </div>
 
@@ -154,7 +143,7 @@
                   <img :src="getRankIconUrl(player.rank)" class="w-4 h-4 drop-shadow-[0_0_5px_rgba(34,197,94,0.4)]" :alt="player.rank" />
                   <span class="text-[10px] font-bold uppercase tracking-wider">{{ player.rank }}</span>
                 </div>
-                <span v-if="player.fantasy_tier" class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-black/50 text-yellow-400 border border-yellow-400/30 backdrop-blur-sm">
+                <span v-if="player.fantasy_tier" class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-black/50 border backdrop-blur-sm" :class="getFantasyTierBadgeClass(player.fantasy_tier)">
                   Tier {{ player.fantasy_tier }}
                 </span>
                 <span v-if="getPlayerTeam(player)" class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-black/50 text-white border border-white/30 backdrop-blur-sm truncate max-w-[100px]" :title="getPlayerTeam(player)">
@@ -256,8 +245,13 @@
               <td class="px-4 py-3 text-white/90 whitespace-nowrap font-bold">
                 {{ getPlayerTeam(player) || '—' }}
               </td>
-              <td class="px-4 py-3 text-right font-title text-mcu-primary">
-                {{ player.fantasy_tier || '—' }}
+              <td class="px-4 py-3 text-right font-title">
+                <span
+                  v-if="player.fantasy_tier"
+                  class="inline-block font-bold px-2 py-0.5 rounded border bg-black/40 backdrop-blur-sm"
+                  :class="getFantasyTierBadgeClass(player.fantasy_tier)"
+                >{{ player.fantasy_tier }}</span>
+                <span v-else class="text-mcu-text-muted">—</span>
               </td>
             </tr>
           </tbody>
@@ -281,6 +275,7 @@ import { ref, computed, onMounted } from 'vue';
 import { getPlayers, getChampions } from '../lib/queries';
 import { supabase } from '../lib/supabase';
 import { getRankIconUrl } from '../utils/rankIcon';
+import { getFantasyTierBadgeClass } from '../utils/tierStyles';
 import type { Database } from '../types/supabase';
 
 import topIcon from '../assets/top.png';
@@ -302,7 +297,6 @@ type Player = Database['public']['Tables']['players']['Row'] & {
   team_id?: string;
 };
 
-const isAdmin = ref(localStorage.getItem('admin_auth') === 'true');
 const players = ref<Player[]>([]);
 const champions = ref<any[]>([]);
 const teamsMap = ref<Map<string, string>>(new Map());
@@ -465,18 +459,6 @@ const filteredPlayers = computed(() => {
   
   return result;
 });
-
-const copyPlayerList = () => {
-  const text = filteredPlayers.value.map(p => {
-    return `${p.pseudo} - ${p.rank} - ${p.primary_role}/${p.secondary_role} - Pool: ${p.champion_pool.join(', ')}`;
-  }).join('\n');
-  
-  navigator.clipboard.writeText(text).then(() => {
-    alert('Liste copiée dans le presse-papier !');
-  }).catch(err => {
-    console.error('Erreur lors de la copie:', err);
-  });
-};
 </script>
 
 <style scoped>
