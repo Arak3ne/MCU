@@ -26,44 +26,41 @@
       
       <div class="flex flex-col sm:flex-row items-center gap-4 w-full xl:w-auto">
         <!-- Day Transition Banner (Mercato Alert) -->
-        <div v-if="tournamentDay === 2 && !team?.isLocked" class="flex items-center gap-3 px-4 py-2 bg-blue-500/10 border border-blue-500/30 rounded-2xl animate-pulse shadow-[0_0_15px_rgba(59,130,246,0.1)]">
-          <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0">
-            <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div v-if="isMercatoMode" class="flex items-center gap-3 px-4 py-2 bg-mcu-primary/10 border border-mcu-primary/30 rounded-2xl animate-pulse shadow-lg shadow-mcu-primary/20">
+          <div class="w-8 h-8 rounded-full bg-mcu-primary/20 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 text-mcu-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
             </svg>
           </div>
           <div class="flex flex-col">
-            <span class="text-[10px] font-bold text-blue-400 uppercase tracking-widest leading-none">Mercato Ouvert</span>
+            <span class="text-[10px] font-bold text-mcu-primary uppercase tracking-widest leading-none">Mercato Ouvert</span>
             <span class="text-[11px] text-white/80 leading-tight">Prix mis à jour & 2 transferts offerts !</span>
           </div>
         </div>
 
         <div class="flex items-center gap-3 w-full sm:w-auto">
-        <!-- Day Toggle -->
-        <div class="flex bg-black/40 backdrop-blur-xl border border-white/10 rounded-full p-1 shrink-0 shadow-inner relative">
-          <div 
-            class="absolute inset-y-1 w-[calc(50%-4px)] bg-gradient-to-r from-mcu-primary to-emerald-400 rounded-full transition-transform duration-500 cubic-bezier(0.4, 0, 0.2, 1) shadow-[0_0_20px_rgba(34,197,94,0.4)]" 
-            :class="tournamentDay === 1 ? 'translate-x-0 left-1' : 'translate-x-full left-1'"
-          ></div>
-          <button
-            @click="setDay(1)"
-            class="px-5 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all relative z-10 w-20 sm:w-24 cursor-pointer"
-            :class="tournamentDay === 1 ? 'text-white drop-shadow-md' : 'text-white/50 hover:text-white'"
-          >
-            Jour 1
-          </button>
-          <button
-            @click="setDay(2)"
-            :disabled="!hasPlayoffs"
-            class="px-5 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all relative z-10 w-20 sm:w-24 cursor-pointer disabled:cursor-not-allowed group/day2"
-            :class="tournamentDay === 2 ? 'text-white drop-shadow-md' : 'text-white/50 hover:text-white'"
-          >
-            <span :class="!hasPlayoffs ? 'opacity-50' : ''">Jour 2</span>
-            <!-- Tooltip if locked -->
-            <div v-if="!hasPlayoffs" class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-black/80 text-[8px] text-white rounded opacity-0 group-hover/day2:opacity-100 transition-opacity whitespace-nowrap pointer-events-none border border-white/10">
-              Bientôt disponible
+        <!-- Timeline Indicator -->
+        <div class="flex items-center gap-2.5 bg-black/40 backdrop-blur-xl border border-white/10 rounded-full px-5 py-2.5 shrink-0 shadow-inner">
+          <div class="flex items-center gap-2 transition-opacity duration-500" :class="tournamentDay === 1 ? 'opacity-100' : 'opacity-40'">
+            <div class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold"
+                 :class="tournamentDay === 1 ? 'bg-mcu-primary text-black shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-mcu-primary text-black'">
+              1
             </div>
-          </button>
+            <span class="text-[11px] font-bold uppercase tracking-widest" :class="tournamentDay === 1 ? 'text-white drop-shadow-md' : 'text-white/80'">Jour 1</span>
+          </div>
+          
+          <div class="w-8 h-1 rounded-full overflow-hidden bg-white/10 relative">
+            <div class="absolute inset-y-0 left-0 bg-mcu-primary transition-all duration-1000 ease-out"
+                 :class="tournamentDay === 2 ? 'w-full shadow-[0_0_8px_rgba(34,197,94,0.8)]' : 'w-0'"></div>
+          </div>
+          
+          <div class="flex items-center gap-2 transition-opacity duration-500" :class="tournamentDay === 2 ? 'opacity-100' : 'opacity-40'">
+            <div class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-500"
+                 :class="tournamentDay === 2 ? 'bg-mcu-primary text-black shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-white/20 text-white'">
+              2
+            </div>
+            <span class="text-[11px] font-bold uppercase tracking-widest transition-colors duration-500" :class="tournamentDay === 2 ? 'text-white drop-shadow-md' : 'text-white/80'">Jour 2</span>
+          </div>
         </div>
 
           <div v-if="!team?.isLocked" class="relative w-full sm:w-56 group">
@@ -228,16 +225,17 @@
               </div>
               
               <!-- Fantasy Price Badge -->
-              <div class="absolute top-3 right-3 z-20 bg-black/60 backdrop-blur-xl px-2.5 py-1 rounded-full border border-white/10 font-title text-mcu-primary drop-shadow-[0_0_10px_rgba(34,197,94,0.4)] flex items-center gap-1 group-hover:scale-105 transition-transform duration-300 shadow-lg text-sm">
+              <div class="absolute top-3 right-3 z-20 bg-black/60 backdrop-blur-xl px-2.5 py-1 rounded-full border border-white/10 font-title text-mcu-primary drop-shadow-[0_0_10px_rgba(var(--color-mcu-primary),0.4)] flex items-center gap-1 group-hover:scale-105 transition-transform duration-300 shadow-lg text-sm"
+                   :class="{ 'border-mcu-primary/50 bg-mcu-primary/10': isMercatoMode && getPriceChange(player.fantasy) < 0, 'border-red-500/50 bg-red-500/10 text-red-400': isMercatoMode && getPriceChange(player.fantasy) > 0 }">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 {{ getDisplayPrice(player.fantasy) }}
                 <div v-if="tournamentDay === 2 && getPriceChange(player.fantasy) !== 0" 
-                     class="flex items-center text-[9px] font-sans ml-1 px-1 rounded bg-black/40 border border-white/5"
-                     :class="getPriceChange(player.fantasy) > 0 ? 'text-red-400' : 'text-mcu-primary'">
-                  <svg v-if="getPriceChange(player.fantasy) > 0" class="w-2 h-2 mr-0.5" fill="currentColor" viewBox="0 0 20 20">
+                     class="flex items-center text-[10px] font-sans ml-1 px-1.5 py-0.5 rounded-full bg-black/60 border shadow-inner"
+                     :class="getPriceChange(player.fantasy) > 0 ? 'text-red-400 border-red-500/30' : 'text-mcu-primary border-mcu-primary/30'">
+                  <svg v-if="getPriceChange(player.fantasy) > 0" class="w-2.5 h-2.5 mr-0.5 animate-bounce" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
                   </svg>
-                  <svg v-else class="w-2 h-2 mr-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <svg v-else class="w-2.5 h-2.5 mr-0.5 animate-bounce" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 112 0v7.586l2.293-2.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                   </svg>
                   {{ Math.abs(getPriceChange(player.fantasy)) }}
@@ -275,7 +273,7 @@
                     @click="removePlayer(player.id)"
                     class="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 hover:border-red-500/60 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(239,68,68,0.15)] hover:shadow-[0_0_20px_rgba(239,68,68,0.25)] cursor-pointer"
                   >
-                    Retirer
+                    {{ isMercatoMode ? `Vendre (+${getDisplayPrice(player.fantasy)})` : 'Retirer' }}
                   </button>
                   <button
                     v-else
@@ -364,7 +362,7 @@
                       @click="removePlayer(player.id)"
                       class="px-5 py-2 bg-red-500/10 text-red-400 border border-red-500/30 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-red-500/20 hover:border-red-500/50 hover:shadow-[0_0_15px_rgba(239,68,68,0.2)] transition-all cursor-pointer"
                     >
-                      Retirer
+                      {{ isMercatoMode ? `Vendre (+${getDisplayPrice(player.fantasy)})` : 'Retirer' }}
                     </button>
                     <button
                       v-else
@@ -425,10 +423,11 @@
 
             <!-- Budget Progress Bar -->
             <div class="mb-6 relative z-10">
-              <div class="h-2 w-full bg-black/60 rounded-full overflow-hidden border border-white/5 shadow-inner">
+              <div class="h-2 w-full bg-black/60 rounded-full overflow-hidden border border-white/5 shadow-inner relative">
+                <div v-if="budgetFlash" class="absolute inset-0 bg-mcu-primary/50 animate-[flash_0.5s_ease-out] z-20"></div>
                 <div 
-                  class="h-full transition-all duration-700 ease-out relative"
-                  :class="budgetRemaining >= 0 ? 'bg-gradient-to-r from-mcu-primary/60 to-mcu-primary shadow-[0_0_15px_rgba(34,197,94,0.6)]' : 'bg-gradient-to-r from-red-500/60 to-red-500 shadow-[0_0_15px_rgba(239,68,68,0.6)]'"
+                  class="h-full transition-all duration-700 ease-out relative z-10"
+                  :class="budgetRemaining >= 0 ? 'bg-gradient-to-r from-mcu-primary/60 to-mcu-primary shadow-[0_0_15px_rgba(var(--color-mcu-primary),0.6)]' : 'bg-gradient-to-r from-red-500/60 to-red-500 shadow-[0_0_15px_rgba(239,68,68,0.6)]'"
                   :style="{ width: `${Math.min(100, Math.max(0, ((maxBudget - budgetRemaining) / maxBudget) * 100))}%` }"
                 >
                   <div class="absolute inset-0 bg-white/20 w-full animate-[shimmer_2s_infinite]"></div>
@@ -436,19 +435,23 @@
               </div>
             </div>
 
-            <div v-if="tournamentDay === 2 && !team?.isLocked" class="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3 mb-5 flex flex-col gap-3 shadow-[0_0_20px_rgba(59,130,246,0.1)]">
-              <div class="flex items-center gap-2">
-                <div class="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center">
-                  <svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                  </svg>
+            <div v-if="isMercatoMode" class="bg-mcu-primary/10 border border-mcu-primary/30 rounded-xl p-3 mb-5 flex flex-col gap-3 shadow-lg shadow-mcu-primary/10 transition-all duration-300" :class="{ 'shake-animation border-red-500/50 bg-red-500/10 shadow-red-500/20': transfersMade > 2 }">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <div class="w-6 h-6 rounded-full flex items-center justify-center transition-colors duration-300" :class="transfersMade > 2 ? 'bg-red-500/20' : 'bg-mcu-primary/20'">
+                    <svg class="w-3.5 h-3.5" :class="transfersMade > 2 ? 'text-red-400' : 'text-mcu-primary'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                    </svg>
+                  </div>
+                  <h4 class="text-[10px] font-bold uppercase tracking-widest transition-colors duration-300" :class="transfersMade > 2 ? 'text-red-400' : 'text-mcu-primary'">Fenêtre de Transferts</h4>
                 </div>
-                <h4 class="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Fenêtre de Transferts</h4>
+                <button @click="showMercatoOverlay = true" class="text-[10px] text-white/50 hover:text-white underline decoration-white/30 hover:decoration-white transition-colors cursor-pointer">Revoir l'intro</button>
               </div>
               
-              <div class="flex items-center justify-between bg-black/40 rounded-lg p-2 border border-white/5">
-                <span class="text-[10px] text-white/60">Transferts gratuits</span>
-                <span class="text-xs font-bold" :class="transfersMade <= 2 ? 'text-mcu-primary' : 'text-red-400'">
+              <div class="flex items-center justify-between bg-black/40 rounded-lg p-2 border border-white/5 relative overflow-hidden">
+                <div :key="transfersMade" class="absolute inset-0 bg-mcu-primary/20 animate-[flash_0.5s_ease-out]"></div>
+                <span class="text-[10px] text-white/60 relative z-10">Transferts gratuits</span>
+                <span :key="transfersMade" class="text-xs font-bold relative z-10 animate-[pop_0.3s_ease-out]" :class="transfersMade <= 2 ? 'text-mcu-primary' : 'text-red-400'">
                   {{ Math.max(0, 2 - transfersMade) }} / 2
                 </span>
               </div>
@@ -515,16 +518,16 @@
 
               <!-- Price (Default view) -->
               <div class="px-3 flex flex-col items-end group-hover/slot:opacity-0 transition-opacity duration-200 relative z-10">
-                <div class="font-title text-mcu-primary text-base drop-shadow-[0_0_10px_rgba(34,197,94,0.5)]">
+                <div class="font-title text-mcu-primary text-base drop-shadow-[0_0_10px_rgba(var(--color-mcu-primary),0.5)]">
                   {{ getDisplayPrice(getPlayerByRole(roleObj.value)!) }}
                 </div>
                 <div v-if="tournamentDay === 2 && getPriceChange(getPlayerByRole(roleObj.value)!) !== 0" 
-                     class="text-[9px] font-bold flex items-center gap-0.5"
-                     :class="getPriceChange(getPlayerByRole(roleObj.value)!) > 0 ? 'text-red-400' : 'text-mcu-primary'">
-                  <svg v-if="getPriceChange(getPlayerByRole(roleObj.value)!) > 0" class="w-2 h-2" fill="currentColor" viewBox="0 0 20 20">
+                     class="text-[9px] font-bold flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-black/60 border shadow-inner"
+                     :class="getPriceChange(getPlayerByRole(roleObj.value)!) > 0 ? 'text-mcu-primary border-mcu-primary/30' : 'text-red-400 border-red-500/30'">
+                  <svg v-if="getPriceChange(getPlayerByRole(roleObj.value)!) > 0" class="w-2.5 h-2.5 animate-bounce" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
                   </svg>
-                  <svg v-else class="w-2 h-2" fill="currentColor" viewBox="0 0 20 20">
+                  <svg v-else class="w-2.5 h-2.5 animate-bounce" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 112 0v7.586l2.293-2.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                   </svg>
                   {{ Math.abs(getPriceChange(getPlayerByRole(roleObj.value)!)) }}
@@ -547,12 +550,13 @@
                     <button 
                       v-if="!(team?.isLocked)"
                       @click="removePlayer(getPlayerByRole(roleObj.value)!.id)"
-                      class="p-1.5 rounded-lg bg-black/60 hover:bg-red-500/20 text-white/50 hover:text-red-500 border border-white/10 hover:border-red-500/50 transition-all backdrop-blur-sm cursor-pointer shadow-lg"
-                      title="Retirer"
+                      class="px-2 py-1.5 rounded-lg bg-black/60 hover:bg-red-500/20 text-white/50 hover:text-red-500 border border-white/10 hover:border-red-500/50 transition-all backdrop-blur-sm cursor-pointer shadow-lg flex items-center gap-1"
+                      :title="isMercatoMode ? `Vendre (+${getDisplayPrice(getPlayerByRole(roleObj.value)!)} pts)` : 'Retirer'"
                     >
                       <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                       </svg>
+                      <span v-if="isMercatoMode" class="text-[9px] font-bold uppercase tracking-wider whitespace-nowrap">Vendre (+{{ getDisplayPrice(getPlayerByRole(roleObj.value)!) }})</span>
                     </button>
                   </div>
                 </div>
@@ -896,7 +900,7 @@
                 <tr class="hover:bg-white/5 transition-colors"><td class="px-6 py-4">Score de Vision</td><td class="px-6 py-4 text-right text-mcu-primary font-bold text-lg">+0.1 pts</td></tr>
                 <tr class="hover:bg-white/5 transition-colors"><td class="px-6 py-4">Dégâts aux Champions</td><td class="px-6 py-4 text-right text-mcu-primary font-bold text-lg">+0.001 pts</td></tr>
                 <tr class="hover:bg-white/5 transition-colors"><td class="px-6 py-4">Or gagné</td><td class="px-6 py-4 text-right text-mcu-primary font-bold text-lg">+0.001 pts</td></tr>
-                <tr class="hover:bg-white/5 transition-colors"><td class="px-6 py-4">Temps passé mort (par seconde)</td><td class="px-6 py-4 text-right text-red-400 font-bold text-lg">-0.02 pts</td></tr>
+                <tr class="hover:bg-white/5 transition-colors"><td class="px-6 py-4 text-red-400 font-bold">Malus "Le Boulet" ((K+A) &lt; D)</td><td class="px-6 py-4 text-right text-red-400 font-bold text-lg">-5 pts</td></tr>
                 <tr class="hover:bg-white/5 transition-colors"><td class="px-6 py-4 text-red-400 font-bold">Malus "Inter" (10+ morts)</td><td class="px-6 py-4 text-right text-red-400 font-bold text-lg">-10 pts</td></tr>
                 <tr class="hover:bg-white/5 transition-colors"><td class="px-6 py-4 text-red-400 font-bold">Malus "Agent 007" (0 K, 0 A, >0 D)</td><td class="px-6 py-4 text-right text-red-400 font-bold text-lg">-5 pts</td></tr>
                 <tr class="hover:bg-white/5 transition-colors"><td class="px-6 py-4 text-mcu-primary font-bold">Bonus "Carry" (10+ kills)</td><td class="px-6 py-4 text-right text-mcu-primary font-bold text-lg">+3 pts</td></tr>
@@ -940,6 +944,19 @@
     :get-role-icon="getRoleIcon"
     :get-champion-square-by-id="getChampionSquareById"
   />
+
+  <!-- Mercato Overlay -->
+  <MercatoTransitionOverlay
+    v-model:show="showMercatoOverlay"
+    :carried-over-budget="carriedOverBudget"
+    :previous-roster-value="previousRosterValue"
+    :previous-team="previousTeam"
+    :player-scores="playerScores"
+    :get-full-player="getFullPlayer"
+    :get-role-icon="getRoleIcon"
+    :get-price-change="getPriceChange"
+    :get-roster-card-splash-url="getRosterCardSplashUrl"
+  />
   </div>
 </template>
 
@@ -951,6 +968,7 @@ import { mapDbPlayerToFantasy } from '../utils/fantasyMapper';
 import type { Database } from '../types/supabase';
 import type { FantasyPlayer } from '../types/fantasy';
 import FantasyScoreReveal from '../components/FantasyScoreReveal.vue';
+import MercatoTransitionOverlay from '../components/MercatoTransitionOverlay.vue';
 import { fantasyService } from '../services/fantasyService';
 import { supabase } from '../lib/supabase';
 import { getRankIconUrl } from '../utils/rankIcon';
@@ -984,8 +1002,10 @@ let realtimeChannel: any = null;
 // Fantasy State
 const currentUserId = ref<string | null>(null);
 const tournamentDay = ref<1 | 2>(1);
+const isMercatoMode = computed(() => tournamentDay.value === 2 && !team.value?.isLocked);
 const saveSuccess = ref(false);
 const showRules = ref(false);
+const showMercatoOverlay = ref(false);
 
 const showScoreReveal = ref(false);
 const playerScores = ref<Record<string, number>>({});
@@ -997,6 +1017,7 @@ const totalParticipants = ref<number>(0);
 
 const {
   team,
+  previousTeam,
   selectedPlayers,
   captainId,
   teamName,
@@ -1007,6 +1028,8 @@ const {
   isValid,
   budgetRemaining,
   maxBudget,
+  carriedOverBudget,
+  previousRosterValue,
   transfersMade,
   penaltyPoints,
   loadTeam,
@@ -1017,6 +1040,16 @@ const {
   saveTeam,
   saveTeamName
 } = useFantasyTeam(currentUserId, tournamentDay);
+
+const budgetFlash = ref(false);
+watch(budgetRemaining, (newVal, oldVal) => {
+  if (newVal > oldVal && tournamentDay.value === 2) {
+    budgetFlash.value = true;
+    setTimeout(() => {
+      budgetFlash.value = false;
+    }, 500);
+  }
+});
 
 const nameSaveSuccess = ref(false);
 
@@ -1131,7 +1164,27 @@ onMounted(async () => {
     fetchPlayoffMatches()
   ]);
   
-  hasPlayoffs.value = (playoffsRes.data && playoffsRes.data.length > 0) || false;
+  if (playoffsRes.data && playoffsRes.data.length > 0) {
+    hasPlayoffs.value = true;
+    const championshipMatches = playoffsRes.data.filter((m: any) => m.stage === 'championship');
+    const allChampionshipCompleted = championshipMatches.length > 0 && championshipMatches.every((m: any) => m.is_completed);
+    
+    if (allChampionshipCompleted) {
+      tournamentDay.value = 2;
+      if (currentUserId.value) {
+        const storageKey = `mcu_fantasy_mercato_seen_${currentUserId.value}`;
+        if (!localStorage.getItem(storageKey)) {
+          showMercatoOverlay.value = true;
+          localStorage.setItem(storageKey, 'true');
+        }
+      }
+    } else {
+      tournamentDay.value = 1;
+    }
+  } else {
+    hasPlayoffs.value = false;
+    tournamentDay.value = 1;
+  }
   
   if (playersRes.data) {
     players.value = playersRes.data
@@ -1182,11 +1235,6 @@ onUnmounted(() => {
   }
 });
 
-const setDay = async (day: 1 | 2) => {
-  if (tournamentDay.value === day) return;
-  tournamentDay.value = day;
-  saveSuccess.value = false;
-};
 
 const initDay = async () => {
   isCheckingReveal.value = true;
@@ -1195,14 +1243,20 @@ const initDay = async () => {
     hydratePlayers(players.value.map(p => p.fantasy));
   }
   
+  // Toujours charger les scores pour l'affichage (utilisé par le mercato et le dashboard)
+  try {
+    const scores = await fantasyService.getPlayerScores('all');
+    playerScores.value = scores;
+  } catch (err) {
+    console.error('Failed to load player scores', err);
+  }
+
   if (team.value && team.value.isLocked) {
     try {
-      const [scores, stats, leaderboard] = await Promise.all([
-        fantasyService.getPlayerScores('all'),
+      const [stats, leaderboard] = await Promise.all([
         fantasyService.getPlayerMatchStats(team.value.playerIds),
         fantasyService.getLeaderboard(tournamentDay.value)
       ]);
-      playerScores.value = scores;
       playerStats.value = stats;
       
       totalParticipants.value = leaderboard.length;
@@ -1480,5 +1534,26 @@ const filteredPlayers = computed(() => {
 
 .animate-scale-in {
   animation: scaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+.shake-animation {
+  animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+@keyframes flash {
+  0% { opacity: 0.8; }
+  100% { opacity: 0; }
+}
+
+@keyframes pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); }
 }
 </style>

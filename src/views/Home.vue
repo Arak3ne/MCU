@@ -320,6 +320,7 @@ const loading = ref(true);
 type Team = Database["public"]["Tables"]["teams"]["Row"];
 
 interface Match {
+  id?: string;
   team1: Team;
   team2: Team;
 }
@@ -331,6 +332,7 @@ let playoffSubscription: any = null;
 
 // Draft related state
 const showDraftModal = ref(false);
+const currentMatchId = ref("");
 const blueName = ref("");
 const redName = ref("");
 const apiKey = ref("DRAFTER-59605981-E026-439E-BAFC-3C532CF18FB1");
@@ -366,6 +368,7 @@ const closeMatches = () => {
 };
 
 const startDraftForMatch = (match: Match) => {
+  currentMatchId.value = match.id || "";
   blueName.value = match.team1.name;
   redName.value = match.team2.name;
   showDraftModal.value = true;
@@ -386,9 +389,27 @@ const generateDraft = async () => {
     draftUrl.value = "";
     draftId.value = "";
     linkCopied.value = false;
+
+    // Check if draft already exists in database
+    const match = matches.value.find((m: any) => m.id === currentMatchId.value);
+    if (match && match.draft_url) {
+      message.value = "Draft récupérée (base de données)...";
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      draftUrl.value = match.draft_url;
+      draftId.value = match.draft_id || "";
+      message.value = "Draft récupérée !";
+      
+      if (syncInterval) clearInterval(syncInterval);
+      syncInterval = setInterval(() => {
+        syncDraftPicks();
+      }, 5000);
+      return;
+    }
+
     message.value = "Récupération des bans globaux...";
 
-    const draftCacheKey = `draft_${blueName.value}_${redName.value}`;
+    const draftCacheKey = `draft_${currentMatchId.value}_${blueName.value}_${redName.value}`;
     const cachedDraft = localStorage.getItem(draftCacheKey);
 
     if (cachedDraft) {
@@ -399,6 +420,14 @@ const generateDraft = async () => {
       draftUrl.value = parsed.draftUrl;
       draftId.value = parsed.draftId || "";
       message.value = "Draft récupérée !";
+      
+      // Also update DB since we have it cached locally but maybe not in DB yet
+      if (currentMatchId.value) {
+        await supabase.from("playoff_matches").update({
+          draft_url: parsed.draftUrl,
+          draft_id: parsed.draftId || ""
+        }).eq("id", currentMatchId.value);
+      }
       
       if (syncInterval) clearInterval(syncInterval);
       syncInterval = setInterval(() => {
@@ -457,6 +486,13 @@ const generateDraft = async () => {
         draftUrl: data.draftUrl,
         draftId: data.draftId || ""
       }));
+
+      if (currentMatchId.value) {
+        await supabase.from("playoff_matches").update({
+          draft_url: data.draftUrl,
+          draft_id: data.draftId || ""
+        }).eq("id", currentMatchId.value);
+      }
       
       if (syncInterval) clearInterval(syncInterval);
       syncInterval = setInterval(() => {
