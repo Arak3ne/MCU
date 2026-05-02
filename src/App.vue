@@ -3,6 +3,7 @@ import { computed, ref, onMounted } from "vue";
 import { useRoute } from "vue-router";
 import Navbar from "./components/Navbar.vue";
 import RiotIdModal from "./components/RiotIdModal.vue";
+import { useGlobalDraftSync } from "./composables/useGlobalDraftSync";
 
 const route = useRoute();
 const showNavbar = computed(() => {
@@ -14,6 +15,9 @@ const currentUser = ref<any>(null);
 const needsRiotId = computed(() => {
   return currentUser.value && !currentUser.value.riot_id && !["/admin/login", "/overlay", "/register"].includes(route.path) && !route.path.startsWith("/admin");
 });
+
+// Initialize global draft sync
+useGlobalDraftSync();
 
 onMounted(() => {
   const userStr = localStorage.getItem('mcu_user');

@@ -1,5 +1,34 @@
 <template>
   <div class="min-h-screen bg-[#0B0F0C] text-[#F0FDF4] font-sans selection:bg-[#22C55E] selection:text-[#0B0F0C] overflow-x-hidden">
+    <!-- Error Toast -->
+    <Transition
+      enter-active-class="transition duration-300 ease-out"
+      enter-from-class="opacity-0 -translate-y-4"
+      enter-to-class="opacity-100 translate-y-0"
+      leave-active-class="transition duration-200 ease-in"
+      leave-from-class="opacity-100 translate-y-0"
+      leave-to-class="opacity-0 -translate-y-4"
+    >
+      <div v-if="globalError" class="fixed top-24 left-1/2 -translate-x-1/2 z-[110] w-full max-w-md px-4">
+        <div class="bg-[#111111] border border-red-500/50 rounded-lg p-4 shadow-[0_0_30px_rgba(239,68,68,0.4)] flex items-center gap-4 backdrop-blur-xl">
+          <div class="flex-shrink-0 w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center text-red-500">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div class="flex-1">
+            <p class="text-red-500 font-bold uppercase tracking-widest text-xs">Erreur</p>
+            <p class="text-[#F0FDF4] text-sm">{{ globalError }}</p>
+          </div>
+          <button @click="globalError = ''" class="text-[#A1A1AA] hover:text-white transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </Transition>
+
     <!-- Background accents -->
     <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
       <div class="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-[#4ADE80] opacity-[0.03] blur-[120px] rounded-full"></div>
@@ -113,7 +142,7 @@
 
                           <!-- Action Bar if not completed -->
                           <div v-if="!match.is_completed" class="p-1.5 bg-black/40 flex justify-center border-t border-[#2A2A2A]/50">
-                            <button @click="startDraftForMatch(match)" 
+                            <button @click="startDraftForMatch(match, round.number, groupARounds)" 
                                     class="text-[9px] font-bold uppercase tracking-widest text-[#22C55E] hover:text-[#4ADE80] transition-colors py-1 px-3 rounded-full border border-[#22C55E]/30 hover:border-[#22C55E]/60 bg-[#22C55E]/5 cursor-pointer">
                               Draft
                             </button>
@@ -198,7 +227,7 @@
 
                           <!-- Action Bar if not completed -->
                           <div v-if="!match.is_completed" class="p-1.5 bg-black/40 flex justify-center border-t border-[#2A2A2A]/50">
-                            <button @click="startDraftForMatch(match)" 
+                            <button @click="startDraftForMatch(match, round.number, groupBRounds)" 
                                     class="text-[9px] font-bold uppercase tracking-widest text-[#A855F7] hover:text-[#C084FC] transition-colors py-1 px-3 rounded-full border border-[#A855F7]/30 hover:border-[#A855F7]/60 bg-[#A855F7]/5 cursor-pointer">
                               Draft
                             </button>
@@ -303,7 +332,7 @@
                         <!-- Initialize Draft Button -->
                         <div v-if="!match.is_completed && match.team1 && match.team2" 
                              class="p-3 bg-black/60 flex justify-center border-t border-white/5 relative z-10">
-                          <button @click="startDraftForMatch(match)" 
+                          <button @click="startDraftForMatch(match, round.number, knockoutRounds)" 
                                   class="w-full text-[10px] font-black uppercase tracking-[0.25em] text-[#22C55E] hover:text-black hover:bg-[#22C55E] transition-all py-2 rounded-lg border border-[#22C55E]/40 cursor-pointer shadow-[0_0_15px_rgba(34,197,94,0.1)] hover:shadow-[0_0_20px_rgba(34,197,94,0.3)]">
                             Enter Draft Phase
                           </button>
@@ -473,7 +502,15 @@ const draftId = ref("");
 const syncing = ref(false);
 const message = ref("");
 const linkCopied = ref(false);
+const globalError = ref("");
 let syncInterval: any = null;
+
+const showError = (msg: string) => {
+  globalError.value = msg;
+  setTimeout(() => {
+    if (globalError.value === msg) globalError.value = "";
+  }, 5000);
+};
 
 const loadMatches = async () => {
   const { data: matchesData } = await fetchPlayoffMatches();
@@ -502,12 +539,55 @@ onUnmounted(() => {
   }
 });
 
-const startDraftForMatch = (match: any) => {
+const startDraftForMatch = async (match: any, roundNumber?: number, allRounds?: any[]) => {
   if (!match.team1 || !match.team2) return;
   if (match.is_completed) {
-    alert("Ce match est déjà terminé. Impossible de lancer une nouvelle draft.");
+    showError("Ce match est déjà terminé. Impossible de lancer une nouvelle draft.");
     return;
   }
+
+  // Vérifier si les rounds précédents sont terminés
+  if (roundNumber && allRounds && roundNumber > 1) {
+    const previousRounds = allRounds.filter(r => r.number < roundNumber);
+    const allPreviousMatchesCompleted = previousRounds.every(r => 
+      r.matches.every((m: any) => m.is_completed)
+    );
+    
+    if (!allPreviousMatchesCompleted) {
+      showError("Vous ne pouvez pas lancer la draft pour ce round tant que les matchs des rounds précédents ne sont pas terminés.");
+      return;
+    }
+  }
+
+  // Vérifier si le joueur fait partie de l'une des deux équipes
+  const userStr = localStorage.getItem('mcu_user');
+  if (!userStr) {
+    showError("Vous devez être connecté pour lancer une draft.");
+    return;
+  }
+
+  try {
+    const user = JSON.parse(userStr);
+    
+    // Fetch latest user data from DB to ensure team_id is up to date
+    const { data: latestUser } = await supabase.from('players').select('team_id').eq('id', user.id).single();
+    const currentTeamId = latestUser?.team_id || user.team_id;
+
+    if (!currentTeamId || (currentTeamId !== match.team1.id && currentTeamId !== match.team2.id)) {
+      showError("Vous ne pouvez lancer la draft que pour les matchs de votre équipe.");
+      return;
+    }
+    
+    // Update local storage with latest team_id just in case
+    if (latestUser && latestUser.team_id !== user.team_id) {
+      user.team_id = latestUser.team_id;
+      localStorage.setItem('mcu_user', JSON.stringify(user));
+    }
+  } catch (e) {
+    showError("Erreur d'authentification.");
+    return;
+  }
+
   currentMatchId.value = match.id;
   blueName.value = match.team1.name;
   redName.value = match.team2.name;
@@ -547,7 +627,7 @@ const generateDraft = async () => {
       return;
     }
 
-    message.value = "Récupération des bans globaux...";
+    message.value = "Initialisation de la draft...";
 
     const draftCacheKey = `draft_${currentMatchId.value}_${blueName.value}_${redName.value}`;
     const cachedDraft = localStorage.getItem(draftCacheKey);
@@ -575,29 +655,12 @@ const generateDraft = async () => {
       }, 5000);
       return;
     }
-
-    const { data: champions, error: fetchError } = await supabase
-      .from("champions")
-      .select("name, image_url")
-      .eq("is_available", false);
-
-    if (fetchError) throw fetchError;
-
-    const disabledChampions = champions.map((c) => {
-      if (c.image_url) {
-        const parts = c.image_url.split('/');
-        return parts[parts.length - 1].replace('.png', '');
-      }
-      return c.name.replace(/[^a-zA-Z0-9]/g, '');
-    });
-    
-    message.value = "Initialisation de l'interface...";
     
     const { data, error: funcError } = await supabase.functions.invoke("generate-draft", {
       body: {
+        matchId: currentMatchId.value,
         blueName: blueName.value,
         redName: redName.value,
-        disabledChampions: disabledChampions,
         apiKey: apiKey.value
       }
     });
@@ -625,11 +688,11 @@ const generateDraft = async () => {
         draftId: data.draftId || ""
       }));
 
-      if (currentMatchId.value) {
-        await supabase.from("playoff_matches").update({
-          draft_url: data.draftUrl,
-          draft_id: data.draftId || ""
-        }).eq("id", currentMatchId.value);
+      // The Edge Function already updates the DB, but we can update our local state
+      const matchIndex = matches.value.findIndex((m: any) => m.id === currentMatchId.value);
+      if (matchIndex !== -1) {
+        matches.value[matchIndex].draft_url = data.draftUrl;
+        matches.value[matchIndex].draft_id = data.draftId || "";
       }
       
       if (syncInterval) clearInterval(syncInterval);
@@ -670,47 +733,16 @@ const syncDraftPicks = async () => {
 
     if (funcError) return;
 
-    const picks = data?.picks || [];
-    if (picks.length === 0) return;
-
-    const { data: champions, error: fetchError } = await supabase
-      .from("champions")
-      .select("id, name, image_url")
-      .eq("is_available", true);
-
-    if (fetchError) return;
-
-    const championsToDisable = champions.filter((c) => {
-      let key = "";
-      if (c.image_url) {
-        const parts = c.image_url.split('/');
-        key = parts[parts.length - 1].replace('.png', '');
-      } else {
-        key = c.name.replace(/[^a-zA-Z0-9]/g, '');
-      }
-      return picks.includes(key);
-    });
-
-    if (championsToDisable.length === 0) {
-      if (picks.length === 10 && syncInterval) {
+    // The Edge Function now handles updating the database directly when status is FINISHED
+    if (data?.status === "FINISHED") {
+      if (syncInterval) {
         clearInterval(syncInterval);
         syncInterval = null;
       }
-      return;
-    }
-
-    const idsToDisable = championsToDisable.map(c => c.id);
-
-    const { error: updateError } = await supabase
-      .from("champions")
-      .update({ is_available: false })
-      .in("id", idsToDisable);
-
-    if (updateError) return;
-
-    if (picks.length === 10 && syncInterval) {
-      clearInterval(syncInterval);
-      syncInterval = null;
+      message.value = "Draft terminée ! Champions désactivés.";
+      setTimeout(() => {
+        closeDraftModal();
+      }, 3000);
     }
   } catch (err: any) {
     console.error("Auto-sync error:", err);

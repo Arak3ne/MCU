@@ -40,8 +40,7 @@ export function validateFantasyTeam(
       errors.push(`Budget exceeded. Max is ${maxBudget}, used ${totalCost}`)
     }
   } else if (tournamentDay === 2) {
-    // For Day 2, we use priceDay2 if available, otherwise fallback to price
-    totalCost = selectedPlayers.reduce((sum, p) => sum + (p.priceDay2 ?? p.price), 0)
+    totalCost = selectedPlayers.reduce((sum, p) => sum + p.price, 0)
     
     // Calculate transfers made
     const currentRosterIds = selectedPlayers.map(p => p.id)

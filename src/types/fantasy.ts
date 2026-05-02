@@ -6,7 +6,6 @@ export interface FantasyPlayer {
   rank: Tier;
   roles: string[];
   price: number;
-  priceDay2?: number; // Optional day 2 price
   fantasyEnabled: boolean;
 }
 
