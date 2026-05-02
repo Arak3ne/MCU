@@ -51,6 +51,8 @@ serve(async (req) => {
             .select("id, name, ddragon_key, image_url")
             .eq("is_available", true);
 
+          if (fetchError) console.error("[sync-draft] Erreur fetch champions:", fetchError);
+
           if (!fetchError && champions) {
             const championsToDisable = champions.filter((c) => {
               let key = "";
@@ -77,14 +79,21 @@ serve(async (req) => {
               return finalPicks.includes(key) || finalPicks.includes(c.name);
             });
 
+            console.log(`[sync-draft] (403 fallback) Champions à désactiver :`, championsToDisable.map(c => c.name));
+
             if (championsToDisable.length > 0) {
               const idsToDisable = championsToDisable.map(c => c.id);
-              await supabase
+              const { error: updateErr } = await supabase
                 .from("champions")
                 .update({ is_available: false })
                 .in("id", idsToDisable);
+                
+              if (updateErr) console.error("[sync-draft] Erreur update champions (403 fallback):", updateErr);
+              else console.log("[sync-draft] Update champions réussi (403 fallback)");
             }
           }
+        } else {
+          console.log("[sync-draft] (403 fallback) Aucun pick final trouvé en base");
         }
         
         return new Response(
@@ -99,6 +108,8 @@ serve(async (req) => {
     const data = await drafterResponse.json()
     const draftData = data.draftData || {};
     const status = data.status || draftData.status || "UNKNOWN";
+    
+    console.log(`[sync-draft] Draft ID: ${draftId} | Status API: ${status}`);
 
     const picks = [];
     for (let i = 1; i <= 5; i++) {
@@ -116,10 +127,13 @@ serve(async (req) => {
 
     // If the draft is finished (au cas où on aurait l'info avant le 403), update the database directly
     if (status === "FINISHED" && picks.length > 0) {
+      console.log(`[sync-draft] Draft is FINISHED (status check). Picks:`, picks);
       const { data: champions, error: fetchError } = await supabase
         .from("champions")
         .select("id, name, ddragon_key, image_url")
         .eq("is_available", true);
+
+      if (fetchError) console.error("[sync-draft] Erreur fetch champions:", fetchError);
 
       if (!fetchError && champions) {
         const championsToDisable = champions.filter((c) => {
@@ -148,12 +162,17 @@ serve(async (req) => {
           return picks.includes(key) || picks.includes(c.name);
         });
 
+        console.log(`[sync-draft] (status check) Champions à désactiver :`, championsToDisable.map(c => c.name));
+
         if (championsToDisable.length > 0) {
           const idsToDisable = championsToDisable.map(c => c.id);
-          await supabase
+          const { error: updateErr } = await supabase
             .from("champions")
             .update({ is_available: false })
             .in("id", idsToDisable);
+            
+          if (updateErr) console.error("[sync-draft] Erreur update champions (status check):", updateErr);
+          else console.log("[sync-draft] Update champions réussi (status check)");
         }
       }
     }
