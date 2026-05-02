@@ -18,8 +18,190 @@ let lcuCredentials = null;
 let isLcuConnected = false;
 let lastKnownMatchId = null;
 let historyCheckInterval = null;
+let lcuReconnectTimeout = null;
+let syncInProgress = false;
 
 let currentPlayer = null;
+
+/** Comparaison fiable quel que soit le typage renvoyé par le LCU (number/string). */
+function matchIdsEqual(a, b) {
+  return String(a) === String(b);
+}
+
+/** Envoie les évènements synchro au renderer par `send` (depuis le processus principal). */
+function notifyRendererSync(channel, payload) {
+  if (mainWindow) mainWindow.webContents.send(channel, payload);
+}
+
+/**
+ * Synchronisation LCU → Supabase.
+ * `replyFn(channel, payload)` : `event.reply` côté IPC, ou `notifyRendererSync` pour l’auto / la barre système.
+ */
+async function runSyncMatches(replyFn) {
+  if (syncInProgress) {
+    sendLog('[Sync] Une synchronisation est déjà en cours, ignorée.');
+    return;
+  }
+  syncInProgress = true;
+  notifyRendererSync('sync-busy', true);
+
+  const notify = replyFn;
+
+  try {
+    if (!isLcuConnected || !lcuCredentials) {
+      notify('sync-error', 'LCU not connected');
+      return;
+    }
+
+    if (!currentPlayer) {
+      notify('sync-error', 'Veuillez vous connecter avec votre Riot ID');
+      return;
+    }
+
+    notify('sync-status', 'Fetching summoner...');
+    const summonerResponse = await createHttp1Request({
+      method: 'GET',
+      url: '/lol-summoner/v1/current-summoner'
+    }, lcuCredentials);
+
+    const summoner = await summonerResponse.json();
+    const puuid = summoner.puuid;
+    const riotId = `${summoner.gameName}#${summoner.tagLine}`;
+
+    const expectedId = currentPlayer.riot_id || currentPlayer.pseudo;
+
+    if (riotId.toLowerCase() !== expectedId.toLowerCase()) {
+      notify('sync-error', `Le compte League of Legends actuel (${riotId}) ne correspond pas au compte MCU (${expectedId}).`);
+      return;
+    }
+
+    notify('sync-status', `Found summoner: ${riotId}. Fetching matches...`);
+
+    const historyResponse = await createHttp1Request({
+      method: 'GET',
+      url: `/lol-match-history/v1/products/lol/${puuid}/matches?begIndex=0&endIndex=9`
+    }, lcuCredentials);
+
+    const history = await historyResponse.json();
+    const games = history.games?.games || [];
+
+    if (games.length === 0) {
+      notify('sync-status', 'No matches found.');
+      return;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const gamesToProcess = games.filter((g) => {
+      const gameDate = new Date(g.gameCreation);
+      return (
+        g.gameType === 'CUSTOM_GAME' &&
+        g.gameMode === 'CLASSIC' &&
+        gameDate >= today
+      );
+    });
+
+    if (gamesToProcess.length === 0) {
+      notify('sync-status', 'Aucune Custom Game récente trouvée.');
+      return;
+    }
+
+    notify('sync-status', `Processing ${gamesToProcess.length} matches...`);
+
+    let processedCount = 0;
+
+    for (const game of gamesToProcess) {
+      const gameId = game.gameId;
+
+      const { data: existingMatch } = await supabase
+        .from('match_history')
+        .select('id')
+        .eq('game_id', gameId)
+        .single();
+
+      if (existingMatch) continue;
+
+      const matchDetailsResponse = await createHttp1Request(
+        {
+          method: 'GET',
+          url: `/lol-match-history/v1/games/${gameId}`
+        },
+        lcuCredentials
+      );
+
+      const matchDetails = await matchDetailsResponse.json();
+
+      const matchParticipants = matchDetails.participants || [];
+      sendLog(`[Sync] Match ${gameId} : ${matchParticipants.length} joueurs trouvés`);
+
+      sendLog(`[Sync] Appel de l'Edge Function pour le match ${gameId}...`);
+      const { data, error } = await supabase.functions.invoke(
+        'sync-match-results',
+        {
+          body: matchDetails
+        }
+      );
+
+      if (error) {
+        console.error(`[Sync] Erreur Edge Function pour ${gameId}:`, error);
+        sendLog(`[Sync] Erreur lors du traitement du match ${gameId}`);
+      } else {
+        console.log(`[Sync] Succès Edge Function pour ${gameId}:`, data);
+        sendLog(`[Sync] Match ${gameId} traité avec succès !`);
+        processedCount++;
+      }
+    }
+
+    if (processedCount > 0) {
+      notify('sync-success', `${processedCount} nouveau(x) match(s) synchronisé(s) !`);
+    } else {
+      notify('sync-success', 'Aucun nouveau match à synchroniser.');
+    }
+
+    await refreshLastKnownMatchIdFromLcU();
+  } catch (error) {
+    console.error(error);
+    notify('sync-error', error.message);
+  } finally {
+    syncInProgress = false;
+    notifyRendererSync('sync-busy', false);
+  }
+}
+
+async function refreshLastKnownMatchIdFromLcU() {
+  if (!lcuCredentials || !currentPlayer) return;
+  try {
+    const summonerResponse = await createHttp1Request(
+      {
+        method: 'GET',
+        url: '/lol-summoner/v1/current-summoner'
+      },
+      lcuCredentials
+    );
+    const summoner = await summonerResponse.json();
+    const riotId = `${summoner.gameName}#${summoner.tagLine}`;
+    const expectedId = currentPlayer.riot_id || currentPlayer.pseudo;
+    if (riotId.toLowerCase() !== expectedId.toLowerCase()) return;
+
+    const puuid = summoner.puuid;
+    const historyResponse = await createHttp1Request(
+      {
+        method: 'GET',
+        url: `/lol-match-history/v1/products/lol/${puuid}/matches?begIndex=0&endIndex=0`
+      },
+      lcuCredentials
+    );
+    const history = await historyResponse.json();
+    const games = history.games?.games || [];
+    if (games.length > 0) {
+      lastKnownMatchId = games[0].gameId;
+      sendLog(`[Sync] Référence dernier match alignée après synchro (${lastKnownMatchId})`);
+    }
+  } catch (e) {
+    sendLog(`[Sync] Impossible de rafraîchir le dernier match connu: ${e.message}`);
+  }
+}
 
 // Initialize Supabase
 const SUPABASE_URL = 'https://dqoixaksmbdmbkbtphpt.supabase.co';
@@ -119,18 +301,15 @@ function createTray() {
   tray = new Tray(path.join(__dirname, 'icon.png'));
   const contextMenu = Menu.buildFromTemplate([
     { label: 'Ouvrir MorueTracker', click: () => mainWindow.show() },
-    { 
-      label: 'Forcer la synchronisation', 
+    {
+      label: 'Forcer la synchronisation',
       click: () => {
-        if (mainWindow) {
-          mainWindow.webContents.send('trigger-auto-sync');
-          // Optionnel: afficher une petite notif pour dire que c'est lancé
-          tray.displayBalloon({
-            title: 'MorueTracker',
-            content: 'Synchronisation lancée...',
-            iconType: 'info'
-          });
-        }
+        void runSyncMatches(notifyRendererSync);
+        tray.displayBalloon({
+          title: 'MorueTracker',
+          content: 'Synchronisation lancée...',
+          iconType: 'info'
+        });
       }
     },
     { type: 'separator' },
@@ -158,6 +337,11 @@ function sendLog(msg) {
 }
 
 async function setupLcuConnection() {
+  if (lcuReconnectTimeout) {
+    clearTimeout(lcuReconnectTimeout);
+    lcuReconnectTimeout = null;
+  }
+
   try {
     sendLog('Tentative de connexion au LCU...');
     const credentials = await authenticate();
@@ -194,6 +378,8 @@ async function setupLcuConnection() {
         setTimeout(checkForNewMatches, 5000);
         setTimeout(checkForNewMatches, 15000);
         setTimeout(checkForNewMatches, 30000);
+        setTimeout(checkForNewMatches, 45000);
+        setTimeout(checkForNewMatches, 75000);
       }
     });
     
@@ -203,28 +389,35 @@ async function setupLcuConnection() {
       setTimeout(checkForNewMatches, 3000);
       setTimeout(checkForNewMatches, 10000);
       setTimeout(checkForNewMatches, 20000);
+      setTimeout(checkForNewMatches, 45000);
     });
     
     // Lancer une première vérification immédiatement pour initialiser lastKnownMatchId
     checkForNewMatches();
     
-    // Lancer une vérification périodique toutes les 30 secondes au cas où les événements WS sont manqués
+    // Lancer une vérification périodique toutes les 15 secondes au cas où les événements WS sont manqués
     if (!historyCheckInterval) {
       historyCheckInterval = setInterval(() => {
         checkForNewMatches(true); // true = silent mode
-      }, 30000);
+      }, 15000);
     }
 
     ws.on('close', () => {
-      sendLog('Websocket LCU déconnecté');
+      sendLog('Websocket LCU déconnecté — reconnexion programmée...');
       isLcuConnected = false;
       lcuCredentials = null;
       if (mainWindow) mainWindow.webContents.send('lcu-status', { connected: false, message: 'Déconnecté du LCU' });
-      
+
       if (historyCheckInterval) {
         clearInterval(historyCheckInterval);
         historyCheckInterval = null;
       }
+
+      if (lcuReconnectTimeout) clearTimeout(lcuReconnectTimeout);
+      lcuReconnectTimeout = setTimeout(() => {
+        lcuReconnectTimeout = null;
+        setupLcuConnection();
+      }, 4000);
     });
 
   } catch (e) {
@@ -286,12 +479,11 @@ async function checkForNewMatches(isSilent = false) {
       }
       
       // Si l'ID du dernier match a changé, c'est qu'une nouvelle partie vient de se terminer
-      if (latestMatchId !== lastKnownMatchId) {
+      if (!matchIdsEqual(latestMatchId, lastKnownMatchId)) {
         sendLog(`[Sync] NOUVEAU MATCH DÉTECTÉ ! Ancien: ${lastKnownMatchId} -> Nouveau: ${latestMatchId}`);
         lastKnownMatchId = latestMatchId;
-        if (mainWindow) {
-          mainWindow.webContents.send('trigger-auto-sync');
-        }
+        sendLog('[Sync] Lancement de la synchro depuis le détecteur (processus principal)...');
+        void runSyncMatches(notifyRendererSync);
       } else {
         // Log discret pour confirmer que la vérification n'a rien trouvé de nouveau
         if (!isSilent) sendLog(`[Sync] Vérification OK. Aucun nouveau match (Dernier: ${lastKnownMatchId})`);
@@ -344,116 +536,5 @@ ipcMain.on('login-riot-id', async (event, riotId) => {
 });
 
 ipcMain.on('sync-matches', async (event) => {
-  if (!isLcuConnected || !lcuCredentials) {
-    event.reply('sync-error', 'LCU not connected');
-    return;
-  }
-  
-  if (!currentPlayer) {
-    event.reply('sync-error', 'Veuillez vous connecter avec votre Riot ID');
-    return;
-  }
-
-  try {
-    event.reply('sync-status', 'Fetching summoner...');
-    const summonerResponse = await createHttp1Request({
-      method: 'GET',
-      url: '/lol-summoner/v1/current-summoner'
-    }, lcuCredentials);
-    
-    const summoner = await summonerResponse.json();
-    const puuid = summoner.puuid;
-    const riotId = `${summoner.gameName}#${summoner.tagLine}`;
-
-    const expectedId = currentPlayer.riot_id || currentPlayer.pseudo;
-
-    if (riotId.toLowerCase() !== expectedId.toLowerCase()) {
-      event.reply('sync-error', `Le compte League of Legends actuel (${riotId}) ne correspond pas au compte MCU (${expectedId}).`);
-      return;
-    }
-
-    event.reply('sync-status', `Found summoner: ${riotId}. Fetching matches...`);
-    
-    const historyResponse = await createHttp1Request({
-      method: 'GET',
-      url: `/lol-match-history/v1/products/lol/${puuid}/matches?begIndex=0&endIndex=9`
-    }, lcuCredentials);
-    
-    const history = await historyResponse.json();
-    const games = history.games?.games || [];
-    
-    if (games.length === 0) {
-      event.reply('sync-status', 'No matches found.');
-      return;
-    }
-
-    // Filtrer pour ne garder que les Custom Games sur la Faille de l'invocateur (CLASSIC)
-    // Et on vérifie que la game a bien été jouée aujourd'hui (pour éviter de récupérer des vieilles customs 5v5)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Début de la journée
-    
-    const gamesToProcess = games.filter(g => {
-      const gameDate = new Date(g.gameCreation);
-      return g.gameType === 'CUSTOM_GAME' && 
-             g.gameMode === 'CLASSIC' &&
-             gameDate >= today;
-    });
-
-    if (gamesToProcess.length === 0) {
-      event.reply('sync-status', 'Aucune Custom Game récente trouvée.');
-      return;
-    }
-
-    event.reply('sync-status', `Processing ${gamesToProcess.length} matches...`);
-
-    let processedCount = 0;
-
-    for (const game of gamesToProcess) {
-      const gameId = game.gameId;
-      
-      // Check if match exists
-      const { data: existingMatch } = await supabase
-        .from('match_history')
-        .select('id')
-        .eq('game_id', gameId)
-        .single();
-        
-      if (existingMatch) continue;
-
-      const matchDetailsResponse = await createHttp1Request({
-        method: 'GET',
-        url: `/lol-match-history/v1/games/${gameId}`
-      }, lcuCredentials);
-      
-      const matchDetails = await matchDetailsResponse.json();
-
-      const matchParticipants = matchDetails.participants || [];
-      sendLog(`[Sync] Match ${gameId} : ${matchParticipants.length} participant(s) (sync autorisée quel que soit le nombre, filtre custom inchangé).`);
-
-      // Call the Edge Function to process the match and calculate fantasy points
-      sendLog(`[Sync] Appel de l'Edge Function pour le match ${gameId}...`);
-      const { data, error } = await supabase.functions.invoke('sync-match-results', {
-        body: matchDetails
-      });
-
-      if (error) {
-        console.error(`[Sync] Erreur Edge Function pour ${gameId}:`, error);
-        sendLog(`[Sync] Erreur lors du traitement du match ${gameId}`);
-      } else {
-        console.log(`[Sync] Succès Edge Function pour ${gameId}:`, data);
-        sendLog(`[Sync] Match ${gameId} traité avec succès !`);
-        processedCount++;
-      }
-    }
-
-    if (processedCount > 0) {
-      event.reply('sync-success', `${processedCount} nouveau(x) match(s) synchronisé(s) !`);
-    } else {
-      event.reply('sync-success', 'Aucun nouveau match à synchroniser.');
-    }
-
-  } catch (error) {
-    console.error(error);
-    event.reply('sync-error', error.message);
-  }
+  await runSyncMatches((channel, payload) => event.reply(channel, payload));
 });

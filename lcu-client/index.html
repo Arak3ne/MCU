@@ -285,7 +285,7 @@
           <span>Connecté en tant que</span>
           <strong id="user-riot-id"></strong>
         </div>
-        <p>L'application tourne en arrière-plan et synchronisera automatiquement vos Custom Games 5v5.</p>
+        <p>L'application tourne en arrière-plan et synchronisera automatiquement vos Custom Games.</p>
         <button id="sync-btn" disabled>Forcer la synchronisation</button>
       </div>
 
@@ -314,6 +314,7 @@
 
     let isAuthenticated = false;
     let isLcuConnected = false;
+    let syncBusy = false;
 
     function addLog(msg) {
       debugLogs.style.display = 'block';
@@ -332,6 +333,12 @@
     }
 
     function updateState() {
+      if (syncBusy && isAuthenticated && isLcuConnected) {
+        stateIndicator.className = 'indicator blue';
+        stateText.innerText = 'Synchronisation en cours...';
+        syncBtn.disabled = true;
+        return;
+      }
       if (!isAuthenticated) {
         stateIndicator.className = 'indicator red';
         stateText.innerText = 'Non connecté';
@@ -408,6 +415,11 @@
       addLog(msg);
     });
 
+    ipcRenderer.on('sync-busy', (event, busy) => {
+      syncBusy = !!busy;
+      updateState();
+    });
+
     ipcRenderer.on('sync-status', (event, msg) => {
       showStatus(msg, 'info');
     });
@@ -422,13 +434,10 @@
       updateState(); // reset to green/yellow
     });
 
+    /* La synchro auto est déclenchée depuis le processus principal (runSyncMatches), plus via ce canal. */
     ipcRenderer.on('trigger-auto-sync', () => {
-      if (!syncBtn.disabled) {
-        addLog('Déclenchement automatique de la synchronisation...');
-        syncBtn.click();
-      } else {
-        addLog('Impossible de lancer la sync auto (bouton désactivé)');
-      }
+      addLog('Synchro demandée (ancien canal) — utilisation du flux direct...');
+      ipcRenderer.send('sync-matches');
     });
   </script>
 </body>
