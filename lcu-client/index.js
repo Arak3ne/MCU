@@ -208,11 +208,11 @@ async function setupLcuConnection() {
     // Lancer une première vérification immédiatement pour initialiser lastKnownMatchId
     checkForNewMatches();
     
-    // Lancer une vérification périodique toutes les 30 secondes au cas où les événements WS sont manqués
+    // Lancer une vérification périodique toutes les 15 secondes au cas où les événements WS sont manqués
     if (!historyCheckInterval) {
       historyCheckInterval = setInterval(() => {
         checkForNewMatches(true); // true = silent mode
-      }, 30000);
+      }, 15000);
     }
 
     ws.on('close', () => {
@@ -427,13 +427,9 @@ ipcMain.on('sync-matches', async (event) => {
       
       const matchDetails = await matchDetailsResponse.json();
       
-      // Sécurité supplémentaire : on s'assure qu'il y a bien 10 joueurs dans la custom game
-      // (Évite de synchroniser des parties de test en 1v1 ou des parties avec des bots)
+      // Sécurité désactivée : on autorise toutes les customs (même les tests 1v1)
       const matchParticipants = matchDetails.participants || [];
-      if (matchParticipants.length !== 10) {
-        sendLog(`[Sync] Match ${gameId} ignoré : ${matchParticipants.length} joueurs trouvés (10 requis)`);
-        continue;
-      }
+      sendLog(`[Sync] Match ${gameId} : ${matchParticipants.length} joueurs trouvés`);
 
       // Call the Edge Function to process the match and calculate fantasy points
       sendLog(`[Sync] Appel de l'Edge Function pour le match ${gameId}...`);
