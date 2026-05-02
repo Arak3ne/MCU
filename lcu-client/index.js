@@ -216,7 +216,7 @@ async function setupLcuConnection() {
     }
 
     ws.on('close', () => {
-      sendLog('Websocket LCU déconnecté');
+      sendLog('Websocket LCU déconnecté. Tentative de reconnexion dans 5s...');
       isLcuConnected = false;
       lcuCredentials = null;
       if (mainWindow) mainWindow.webContents.send('lcu-status', { connected: false, message: 'Déconnecté du LCU' });
@@ -225,6 +225,9 @@ async function setupLcuConnection() {
         clearInterval(historyCheckInterval);
         historyCheckInterval = null;
       }
+      
+      // Relancer la connexion
+      setTimeout(setupLcuConnection, 5000);
     });
 
   } catch (e) {
@@ -240,12 +243,7 @@ async function setupLcuConnection() {
 
 // Fonction pour vérifier périodiquement si un nouveau match est apparu
 async function checkForNewMatches(isSilent = false) {
-  if (!isSilent) {
-    sendLog(`[Sync] Lancement de la vérification...`);
-  }
-  
   if (!isLcuConnected || !lcuCredentials || !currentPlayer) {
-    if (!isSilent) sendLog(`[Sync] Annulé: conditions non remplies.`);
     return;
   }
 
@@ -262,11 +260,10 @@ async function checkForNewMatches(isSilent = false) {
 
     const expectedId = currentPlayer.riot_id || currentPlayer.pseudo;
     if (riotId.toLowerCase() !== expectedId.toLowerCase()) {
-      if (!isSilent) sendLog(`[Sync] Ignoré: Le compte LCU (${riotId}) ne correspond pas au compte MCU (${expectedId})`);
-      return;
+      return; // Ne pas spammer les logs si le compte ne correspond pas
     }
 
-    // 2. Récupérer le dernier match de l'historique
+    // 2. Récupérer l'historique récent
     const historyResponse = await createHttp1Request({
       method: 'GET',
       url: `/lol-match-history/v1/products/lol/${puuid}/matches?begIndex=0&endIndex=9`
@@ -275,32 +272,42 @@ async function checkForNewMatches(isSilent = false) {
     const history = await historyResponse.json();
     const games = history.games?.games || [];
     
-    if (games.length > 0) {
-      const latestMatchId = games[0].gameId;
-      
-      // Si c'est la première vérification, on initialise juste la variable
-      if (lastKnownMatchId === null) {
-        lastKnownMatchId = latestMatchId;
-        sendLog(`[Sync] Initialisation: Dernier match connu = ${lastKnownMatchId}`);
-        return;
+    // 3. Filtrer les Custom Games d'aujourd'hui
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const gamesToProcess = games.filter(g => {
+      const gameDate = new Date(g.gameCreation);
+      return g.gameType === 'CUSTOM_GAME' && 
+             g.gameMode === 'CLASSIC' &&
+             gameDate >= today;
+    });
+
+    if (gamesToProcess.length === 0) return;
+
+    // 4. Vérifier si un de ces matchs manque dans la base de données
+    let hasNewGame = false;
+    for (const game of gamesToProcess) {
+      const { data: existingMatch } = await supabase
+        .from('match_history')
+        .select('id')
+        .eq('game_id', game.gameId)
+        .maybeSingle();
+        
+      if (!existingMatch) {
+        hasNewGame = true;
+        break;
       }
-      
-      // Si l'ID du dernier match a changé, c'est qu'une nouvelle partie vient de se terminer
-      if (latestMatchId !== lastKnownMatchId) {
-        sendLog(`[Sync] NOUVEAU MATCH DÉTECTÉ ! Ancien: ${lastKnownMatchId} -> Nouveau: ${latestMatchId}`);
-        lastKnownMatchId = latestMatchId;
-        if (mainWindow) {
-          mainWindow.webContents.send('trigger-auto-sync');
-        }
-      } else {
-        // Log discret pour confirmer que la vérification n'a rien trouvé de nouveau
-        if (!isSilent) sendLog(`[Sync] Vérification OK. Aucun nouveau match (Dernier: ${lastKnownMatchId})`);
+    }
+
+    if (hasNewGame) {
+      sendLog(`[Sync Auto] NOUVEAU MATCH DÉTECTÉ ! Déclenchement de la synchro...`);
+      if (mainWindow) {
+        mainWindow.webContents.send('trigger-auto-sync');
       }
-    } else {
-      if (!isSilent) sendLog(`[Sync] Historique vide pour ${riotId}`);
     }
   } catch (error) {
-    sendLog(`[Sync] Erreur: ${error.message}`);
+    if (!isSilent) sendLog(`[Sync Auto] Erreur: ${error.message}`);
   }
 }
 
