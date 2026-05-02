@@ -198,8 +198,15 @@ async function setupLcuConnection() {
     });
     
     // S'abonner à l'événement de fin de partie spécifique (utile pour les custom games solo)
-    ws.subscribe('/lol-end-of-game/v1/eog-stats-block', (data, event) => {
-      sendLog(`[WS] Écran des scores détecté ! Vérifications planifiées...`);
+    ws.subscribe('/lol-end-of-game/v1/eog-stats-block', async (data, event) => {
+      sendLog(`[WS] Écran des scores détecté !`);
+      
+      if (data && data.gameId) {
+        sendLog(`[WS] ID de la partie récupéré instantanément: ${data.gameId}`);
+        // Déclenche la synchronisation immédiate sans attendre l'historique global
+        syncGameById(data.gameId);
+      }
+
       setTimeout(checkForNewMatches, 3000);
       setTimeout(checkForNewMatches, 10000);
       setTimeout(checkForNewMatches, 20000);
@@ -241,9 +248,74 @@ async function setupLcuConnection() {
   }
 }
 
+async function syncGameById(gameId) {
+  if (!isLcuConnected || !lcuCredentials || !currentPlayer) {
+    sendLog(`[Sync Rapide] Annulé: conditions non remplies.`);
+    return;
+  }
+
+  try {
+    sendLog(`[Sync Rapide] Tentative de récupération immédiate du match ${gameId}...`);
+    
+    // Check if match exists in DB first to avoid duplicate calls
+    const { data: existingMatch } = await supabase
+      .from('match_history')
+      .select('id')
+      .eq('game_id', gameId)
+      .maybeSingle();
+      
+    if (existingMatch) {
+      sendLog(`[Sync Rapide] Le match ${gameId} est déjà en base.`);
+      return;
+    }
+
+    const matchDetailsResponse = await createHttp1Request({
+      method: 'GET',
+      url: `/lol-match-history/v1/games/${gameId}`
+    }, lcuCredentials);
+    
+    if (matchDetailsResponse.status !== 200) {
+      sendLog(`[Sync Rapide] Le match n'est pas encore disponible dans l'API (Status ${matchDetailsResponse.status}).`);
+      return; // It will be caught by the 15s auto-sync later
+    }
+    
+    const matchDetails = await matchDetailsResponse.json();
+    
+    // Check if it's a Custom Game Classic
+    if (matchDetails.gameMode !== 'CLASSIC' || matchDetails.gameType !== 'CUSTOM_GAME') {
+      sendLog(`[Sync Rapide] Ignoré: Ce n'est pas une Custom Game Classic.`);
+      return;
+    }
+    
+    const matchParticipants = matchDetails.participants || [];
+    sendLog(`[Sync Rapide] Match ${gameId} : ${matchParticipants.length} joueurs trouvés`);
+
+    // Call the Edge Function
+    sendLog(`[Sync Rapide] Appel de l'Edge Function pour le match ${gameId}...`);
+    const { data, error } = await supabase.functions.invoke('sync-match-results', {
+      body: matchDetails
+    });
+
+    if (error) {
+      console.error(`[Sync Rapide] Erreur Edge Function pour ${gameId}:`, error);
+      sendLog(`[Sync Rapide] Erreur lors du traitement du match ${gameId}`);
+    } else {
+      console.log(`[Sync Rapide] Succès Edge Function pour ${gameId}:`, data);
+      sendLog(`[Sync Rapide] Match ${gameId} traité avec succès !`);
+      if (mainWindow) {
+        // Just trigger a UI update saying it succeeded
+        mainWindow.webContents.send('sync-success', `Match ${gameId} synchronisé instantanément !`);
+      }
+    }
+  } catch (error) {
+    sendLog(`[Sync Rapide] Erreur: ${error.message}`);
+  }
+}
+
 // Fonction pour vérifier périodiquement si un nouveau match est apparu
 async function checkForNewMatches(isSilent = false) {
   if (!isLcuConnected || !lcuCredentials || !currentPlayer) {
+    if (!isSilent) sendLog(`[Sync Auto] Annulé: conditions non remplies. LCU: ${isLcuConnected}, Joueur: ${currentPlayer ? 'Oui' : 'Non'}`);
     return;
   }
 
@@ -260,8 +332,11 @@ async function checkForNewMatches(isSilent = false) {
 
     const expectedId = currentPlayer.riot_id || currentPlayer.pseudo;
     if (riotId.toLowerCase() !== expectedId.toLowerCase()) {
+      if (!isSilent) sendLog(`[Sync Auto] Compte ignoré (${riotId} vs ${expectedId})`);
       return; // Ne pas spammer les logs si le compte ne correspond pas
     }
+
+    if (!isSilent) sendLog(`[Sync Auto] Vérification de l'historique pour ${riotId}...`);
 
     // 2. Récupérer l'historique récent
     const historyResponse = await createHttp1Request({
@@ -271,6 +346,8 @@ async function checkForNewMatches(isSilent = false) {
     
     const history = await historyResponse.json();
     const games = history.games?.games || [];
+    
+    if (!isSilent) sendLog(`[Sync Auto] ${games.length} matchs trouvés dans l'historique.`);
     
     // 3. Filtrer les Custom Games d'aujourd'hui
     const today = new Date();
@@ -283,18 +360,25 @@ async function checkForNewMatches(isSilent = false) {
              gameDate >= today;
     });
 
+    if (!isSilent) sendLog(`[Sync Auto] ${gamesToProcess.length} Custom Games (CLASSIC) aujourd'hui.`);
+
     if (gamesToProcess.length === 0) return;
 
     // 4. Vérifier si un de ces matchs manque dans la base de données
     let hasNewGame = false;
     for (const game of gamesToProcess) {
-      const { data: existingMatch } = await supabase
+      const { data: existingMatch, error } = await supabase
         .from('match_history')
         .select('id')
         .eq('game_id', game.gameId)
         .maybeSingle();
         
+      if (error) {
+        sendLog(`[Sync Auto] Erreur Supabase lors de la vérification du match ${game.gameId}: ${error.message}`);
+      }
+        
       if (!existingMatch) {
+        sendLog(`[Sync Auto] Le match ${game.gameId} n'est pas en BDD !`);
         hasNewGame = true;
         break;
       }
@@ -305,9 +389,11 @@ async function checkForNewMatches(isSilent = false) {
       if (mainWindow) {
         mainWindow.webContents.send('trigger-auto-sync');
       }
+    } else {
+      if (!isSilent) sendLog(`[Sync Auto] Tous les matchs récents sont déjà en base de données.`);
     }
   } catch (error) {
-    if (!isSilent) sendLog(`[Sync Auto] Erreur: ${error.message}`);
+    sendLog(`[Sync Auto] Erreur: ${error.message}`);
   }
 }
 
