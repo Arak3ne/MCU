@@ -2,23 +2,22 @@ import type { Database } from '../types/supabase'
 import type { FantasyPlayer, Tier } from '../types/fantasy'
 
 type DbPlayer = Database['public']['Tables']['players']['Row'] & {
-  fantasy_price?: number;
-  fantasy_price_day2?: number;
+  fantasy_cost?: number;
   fantasy_enabled?: boolean;
 }
 
 // Default prices if not provided in DB
-const TIER_PRICES: Record<string, number> = {
-  'S': 28,
-  'A': 22,
-  'B': 18,
-  'C': 12,
-  'D': 8
+export const TIER_PRICES: Record<string, number> = {
+  'S': 30,
+  'A': 25,
+  'B': 20,
+  'C': 15,
+  'D': 10
 }
 
 export function mapDbPlayerToFantasy(dbPlayer: DbPlayer): FantasyPlayer {
   const rank = (dbPlayer.rank || 'C').toUpperCase() as Tier
-  const price = dbPlayer.fantasy_price ?? (TIER_PRICES[rank] || 15)
+  const price = dbPlayer.fantasy_cost ?? (TIER_PRICES[rank] || 15)
   const isEnabled = dbPlayer.fantasy_enabled ?? true // Assume true if not specified, though rules say "only fantasy_enabled players"
 
   return {
@@ -27,7 +26,6 @@ export function mapDbPlayerToFantasy(dbPlayer: DbPlayer): FantasyPlayer {
     rank,
     roles: [dbPlayer.primary_role, dbPlayer.secondary_role].filter((r): r is string => Boolean(r)),
     price,
-    priceDay2: dbPlayer.fantasy_price_day2 ?? undefined,
     fantasyEnabled: isEnabled
   }
 }

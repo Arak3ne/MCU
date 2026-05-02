@@ -319,63 +319,6 @@ const saveMatchVisible = (m: any) => !scoreInputsLocked(m);
 
 const isBO3 = (m: any) => m?.stage === 'knockout' && m?.round === 2;
 
-const getTeamName = (teamId: string | null) => {
-  if (!teamId) return "TBD";
-  const team = allTeams.value.find(t => t.id === teamId);
-  return team ? team.name : "TBD";
-};
-
-const generateDraftsForMatches = async (matchesToDraft: any[]) => {
-  const apiKey = "DRAFTER-59605981-E026-439E-BAFC-3C532CF18FB1";
-  
-  const { data: champions } = await supabase
-    .from("champions")
-    .select("name, image_url")
-    .eq("is_available", false);
-    
-  const disabledChampions = (champions || []).map((c) => {
-    if (c.image_url) {
-      const parts = c.image_url.split('/');
-      return parts[parts.length - 1].replace('.png', '');
-    }
-    return c.name.replace(/[^a-zA-Z0-9]/g, '');
-  });
-
-  for (const match of matchesToDraft) {
-    if (!match.team1_id || !match.team2_id) continue;
-    
-    const blueName = getTeamName(match.team1_id);
-    const redName = getTeamName(match.team2_id);
-    
-    try {
-      const { data, error } = await supabase.functions.invoke("generate-draft", {
-        body: {
-          blueName,
-          redName,
-          disabledChampions,
-          apiKey
-        }
-      });
-      
-      if (error) {
-        console.error(`Error from generate-draft for ${blueName} vs ${redName}:`, error);
-      } else {
-        console.log(`Successfully generated draft for ${blueName} vs ${redName}`);
-      }
-      
-      if (!error && data?.draftUrl) {
-        match.draft_url = data.draftUrl;
-        match.draft_id = data.draftId || "";
-      }
-      
-      await new Promise(resolve => setTimeout(resolve, 500));
-    } catch (e) {
-      console.error("Failed to generate draft for match", match.id, e);
-    }
-  }
-  
-  return matchesToDraft;
-};
 
 const handleGenerateChampionship = async () => {
   if (allTeams.value.length === 0) {
@@ -388,10 +331,7 @@ const handleGenerateChampionship = async () => {
 
   const rawMatches = generateChampionship(teamIds);
   
-  alert('Génération des liens Drafter en cours... Veuillez patienter.');
-  const generatedMatches = await generateDraftsForMatches(rawMatches);
-
-  const { error } = await generatePlayoffMatches(generatedMatches, 'championship');
+  const { error } = await generatePlayoffMatches(rawMatches, 'championship');
   
   if (error) {
     alert('Error generating championship: ' + error.message);
@@ -417,12 +357,8 @@ const handleGenerateGroups = async () => {
   const rawMatchesA = generateGroupMatches(groupSetup.value.groupA as string[], 'group_a');
   const rawMatchesB = generateGroupMatches(groupSetup.value.groupB as string[], 'group_b');
 
-  alert('Génération des liens Drafter en cours... Veuillez patienter.');
-  const matchesA = await generateDraftsForMatches(rawMatchesA);
-  const matchesB = await generateDraftsForMatches(rawMatchesB);
-
-  await generatePlayoffMatches(matchesA, 'group_a');
-  await generatePlayoffMatches(matchesB, 'group_b');
+  await generatePlayoffMatches(rawMatchesA, 'group_a');
+  await generatePlayoffMatches(rawMatchesB, 'group_b');
   
   await loadMatches();
   alert('Group Matches Generated!');
@@ -445,9 +381,7 @@ const handleGenerateKnockout = async () => {
   if (!confirm('Are you sure? This will delete the current knockout bracket and generate a new one.')) return;
   
   const rawMatches = generateSingleEliminationBracket(selectedIds);
-  alert('Génération des liens Drafter en cours... Veuillez patienter.');
-  const newMatches = await generateDraftsForMatches(rawMatches);
-  const { error } = await generatePlayoffMatches(newMatches, 'knockout');
+  const { error } = await generatePlayoffMatches(rawMatches, 'knockout');
   if (error) {
     alert('Error generating knockout: ' + error.message);
   } else {

@@ -4,6 +4,7 @@ import type { FantasyTeam, FantasyPlayer } from '../types/fantasy'
 import { validateFantasyTeam } from '../utils/fantasyValidation'
 import { fantasyService } from '../services/fantasyService'
 import { calculateTeamPoints } from '../utils/fantasyLeaderboard'
+import { TIER_PRICES } from '../utils/fantasyMapper'
 
 export function useFantasyTeam(userId: Ref<string | null>, tournamentDay: Ref<1 | 2>) {
   const team = ref<FantasyTeam | null>(null)
@@ -60,12 +61,13 @@ export function useFantasyTeam(userId: Ref<string | null>, tournamentDay: Ref<1 
 
   const carriedOverBudget = computed(() => {
     if (tournamentDay.value === 2) {
-      if (team.value) {
-        return team.value.carriedOverBudget ?? 0
+      if (team.value && team.value.carriedOverBudget !== undefined && team.value.carriedOverBudget > 0) {
+        return team.value.carriedOverBudget
       } else if (previousTeam.value) {
         const day1Cost = previousTeam.value.playerIds.reduce((sum, id) => {
           const p = knownPlayers.value.find(player => player.id === id)
-          return sum + (p ? p.price : 0)
+          const basePrice = p ? TIER_PRICES[p.rank] || 15 : 0
+          return sum + basePrice
         }, 0)
         return 100 - day1Cost
       }
@@ -78,13 +80,13 @@ export function useFantasyTeam(userId: Ref<string | null>, tournamentDay: Ref<1 
     let carriedOverBudgetVal = carriedOverBudget.value
     let previousTeamRoster: string[] = []
 
-    if (tournamentDay.value === 2 && previousTeam.value) {
-      previousTeamRoster = previousTeam.value.playerIds
-      previousRosterValue = previousTeamRoster.reduce((sum, id) => {
-        const p = allPlayers.find(player => player.id === id)
-        return sum + (p ? (p.priceDay2 ?? p.price) : 0)
-      }, 0)
-    }
+      if (tournamentDay.value === 2 && previousTeam.value) {
+        previousTeamRoster = previousTeam.value.playerIds
+        previousRosterValue = previousTeamRoster.reduce((sum, id) => {
+          const p = allPlayers.find(player => player.id === id)
+          return sum + (p ? p.price : 0)
+        }, 0)
+      }
 
     validationResult.value = validateFantasyTeam(
       selectedPlayers.value,
@@ -101,13 +103,13 @@ export function useFantasyTeam(userId: Ref<string | null>, tournamentDay: Ref<1 
   // Hydrate selected players (called by component after fetching players list)
   const hydratePlayers = (allPlayers: FantasyPlayer[]) => {
     knownPlayers.value = allPlayers
-    if (!team.value) {
-      // If we are on Day 2 and have no Day 2 team yet, initialize selectedPlayers with Day 1 roster
+    if (!team.value || (team.value && team.value.playerIds.length === 0 && tournamentDay.value === 2)) {
+      // If we are on Day 2 and have no Day 2 team yet (or it is empty), initialize selectedPlayers with Day 1 roster
       if (tournamentDay.value === 2 && previousTeam.value) {
         selectedPlayers.value = previousTeam.value.playerIds
           .map(id => allPlayers.find(p => p.id === id))
           .filter((p): p is FantasyPlayer => p !== undefined)
-        captainId.value = previousTeam.value.captainId
+        captainId.value = team.value?.captainId || previousTeam.value.captainId
       } else {
         selectedPlayers.value = []
       }
@@ -126,7 +128,7 @@ export function useFantasyTeam(userId: Ref<string | null>, tournamentDay: Ref<1 
     if (tournamentDay.value === 2 && previousTeam.value) {
       return previousTeam.value.playerIds.reduce((sum, id) => {
         const p = knownPlayers.value.find(player => player.id === id)
-        return sum + (p ? (p.priceDay2 ?? p.price) : 0)
+        return sum + (p ? p.price : 0)
       }, 0)
     }
     return 0

@@ -208,9 +208,10 @@
                 <div>
                   <h3 class="text-xl font-title tracking-wider text-white drop-shadow-lg">{{ player.pseudo }}</h3>
                   <div class="flex items-center gap-2 mt-0.5">
-                    <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-black/60 border backdrop-blur-sm shadow-inner" :class="getTierColor(player.fantasy.rank)">
-                      {{ player.rank }}
-                    </span>
+                    <div class="flex items-center gap-1.5 px-2 py-0.5 rounded bg-black/60 border backdrop-blur-sm shadow-inner" :class="getTierColor(player.fantasy.rank)" :title="'Tier Fantasy: ' + player.fantasy.rank">
+                      <img :src="getRankIconUrl(player.rank)" class="w-3.5 h-3.5 drop-shadow-[0_0_5px_rgba(255,255,255,0.2)]" :alt="player.rank" />
+                      <span class="text-[10px] font-bold uppercase tracking-wider">{{ player.rank }}</span>
+                    </div>
                   </div>
                 </div>
                 
@@ -415,9 +416,12 @@
                   class="w-full min-w-0 bg-transparent border-0 border-b-2 border-white/15 pb-1.5 text-lg sm:text-xl font-title uppercase tracking-widest text-white placeholder:text-white/25 focus:border-mcu-primary/80 focus:outline-none focus:ring-0 transition-colors drop-shadow-[0_0_12px_rgba(0,0,0,0.4)]"
                 />
               </div>
-              <div class="px-3 py-1 rounded-xl bg-black/60 border border-white/10 text-xs font-bold font-title shadow-inner shrink-0">
-                <span :class="budgetRemaining >= 0 ? 'text-mcu-primary drop-shadow-[0_0_10px_rgba(34,197,94,0.8)]' : 'text-red-500 drop-shadow-[0_0_10px_rgba(239,68,68,0.8)]'">{{ budgetRemaining }}</span>
-                <span class="text-white/40"> / {{ maxBudget }}</span>
+              <div class="flex flex-col items-end shrink-0">
+                <span class="text-[9px] uppercase tracking-widest text-white/50 mb-0.5 font-bold">{{ isMercatoMode ? 'Budget Potentiel' : 'Budget Restant' }}</span>
+                <div class="px-3 py-1 rounded-xl bg-black/60 border border-white/10 text-xs font-bold font-title shadow-inner flex items-center justify-center">
+                  <span :class="budgetRemaining >= 0 ? 'text-mcu-primary drop-shadow-[0_0_10px_rgba(34,197,94,0.8)]' : 'text-red-500 drop-shadow-[0_0_10px_rgba(239,68,68,0.8)]'">{{ budgetRemaining }}</span>
+                  <span class="text-white/40 ml-1">/ {{ maxBudget }}</span>
+                </div>
               </div>
             </div>
 
@@ -1380,12 +1384,11 @@ const getDraftCardSplashUrl = (player: EnrichedPlayer) => {
 };
 
 const getDisplayPrice = (player: FantasyPlayer) => {
-  return tournamentDay.value === 2 ? (player.priceDay2 ?? player.price) : player.price;
+  return player.price;
 };
 
-const getPriceChange = (player: FantasyPlayer) => {
-  if (tournamentDay.value !== 2 || player.priceDay2 === undefined) return 0;
-  return player.priceDay2 - player.price;
+const getPriceChange = (_player: FantasyPlayer) => {
+  return 0; // Price changes are no longer used
 };
 
 const getFullPlayer = (id: string) => {
