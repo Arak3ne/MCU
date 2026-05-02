@@ -255,12 +255,12 @@ Deno.serve(async (req) => {
         win: win,
         first_blood_kill: firstBlood,
         total_time_spent_dead: timeDead,
-        total_damage_delt: Number(s.totalDamageDealt) || 0,
+        total_damage_dealt: Number(s.totalDamageDealt) || 0,
         total_damage_taken: Number(s.totalDamageTaken) || 0,
         damage_self_mitigated: Number(s.damageSelfMitigated) || 0,
         vision_score: vision,
         wards_placed: Number(s.wardsPlaced) || 0,
-        ward_killed: Number(s.wardsKilled) || 0,
+        wards_killed: Number(s.wardsKilled) || 0,
         gold_earned: gold,
         total_minions_killed: cs,
         largest_killing_spree: Number(s.largestKillingSpree) || 0,
@@ -285,6 +285,7 @@ Deno.serve(async (req) => {
 
     if (partError) {
       console.error(`Failed to insert participants: ${partError.message}`)
+      throw new Error(`Failed to insert participants: ${partError.message}`)
     }
 
     // Update fantasy_player_scores
