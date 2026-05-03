@@ -6,7 +6,7 @@
         <span class="font-title tracking-widest uppercase text-3xl text-[#22C55E] drop-shadow-[0_2px_10px_rgba(34,197,94,0.2)]">Party</span>
       </router-link>
       
-      <div class="flex items-center space-x-1 font-sans z-50">
+      <div class="flex flex-1 min-w-0 items-center justify-end gap-0 font-sans z-50">
         
         <!-- Tournament -->
         <router-link to="/" class="px-4 py-3 text-sm font-bold tracking-widest uppercase relative group flex items-center h-20 cursor-pointer" :class="route.path === '/' ? 'text-[#F0FDF4]' : 'text-[#A1A1AA] hover:text-[#F0FDF4] transition-colors'">
@@ -69,11 +69,23 @@
           </div>
         </div>
 
-        <div class="h-8 w-px bg-[#2A2A2A] mx-4"></div>
+        <div class="h-8 w-px bg-[#2A2A2A] mx-2 shrink-0"></div>
 
         <!-- Playoffs button -->
-        <router-link to="/playoffs" class="px-6 py-2.5 text-xs font-bold tracking-widest uppercase transition-all rounded cursor-pointer" :class="route.path === '/playoffs' ? 'text-[#0B0F0C] border border-[#22C55E] bg-[#22C55E] shadow-[0_0_15px_rgba(34,197,94,0.4)]' : 'text-[#22C55E] border border-[#22C55E]/30 hover:border-[#22C55E] hover:bg-[#22C55E]/10 shadow-[inset_0_0_20px_rgba(34,197,94,0.0)] hover:shadow-[inset_0_0_20px_rgba(34,197,94,0.2)]'">
+        <router-link to="/playoffs" class="px-6 py-2.5 text-xs font-bold tracking-widest uppercase transition-all rounded cursor-pointer shrink-0" :class="route.path === '/playoffs' ? 'text-[#0B0F0C] border border-[#22C55E] bg-[#22C55E] shadow-[0_0_15px_rgba(34,197,94,0.4)]' : 'text-[#22C55E] border border-[#22C55E]/30 hover:border-[#22C55E] hover:bg-[#22C55E]/10 shadow-[inset_0_0_20px_rgba(34,197,94,0.0)] hover:shadow-[inset_0_0_20px_rgba(34,197,94,0.2)]'">
           Playoffs
+        </router-link>
+
+        <router-link
+          to="/profil"
+          title="Profil"
+          aria-label="Profil — avatar DiceBear"
+          class="ml-3 flex shrink-0 items-center justify-center w-11 h-11 rounded-lg border transition-colors hover:border-[#2A2A2A]"
+          :class="route.path === '/profil'
+            ? 'text-[#22C55E] border-[#22C55E]/45 bg-[#22C55E]/10 shadow-[0_0_14px_rgba(34,197,94,0.2)]'
+            : 'text-[#A1A1AA] border-transparent hover:text-[#F0FDF4]'"
+        >
+          <UserCircle class="w-6 h-6" stroke-width="2" />
         </router-link>
 
       </div>
@@ -86,7 +98,8 @@ import { useRoute } from 'vue-router';
 import { 
   ChevronDown, 
   LayoutDashboard, 
-  ListOrdered 
+  ListOrdered,
+  UserCircle,
 } from 'lucide-vue-next';
 
 const route = useRoute();

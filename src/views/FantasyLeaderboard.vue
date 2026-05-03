@@ -20,8 +20,16 @@
           </h1>
           <p class="relative text-white/50 text-sm md:text-base tracking-wide font-medium">Découvrez le classement des meilleures équipes du tournoi.</p>
         </div>
-        
-          <!-- Day Toggle REMOVED - General Leaderboard only -->
+
+        <router-link
+          to="/fantasy"
+          class="group flex items-center gap-2 px-4 py-3 bg-[#111111]/40 hover:bg-mcu-primary/15 border border-[#2A2A2A] hover:border-mcu-primary/50 rounded-xl text-xs font-bold text-white uppercase tracking-widest transition-all shrink-0 shadow-lg"
+        >
+          <svg class="w-4 h-4 text-mcu-primary group-hover:-translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7M8 12h9" />
+          </svg>
+          Retour au dashboard
+        </router-link>
       </div>
 
       <!-- Loading State -->
@@ -60,8 +68,21 @@
             </div>
             <div class="text-right relative z-10 w-full sm:w-auto flex sm:block justify-between items-center border-t sm:border-t-0 border-white/10 pt-4 sm:pt-0 mt-2 sm:mt-0">
               <div class="text-sm text-white/50 uppercase tracking-widest font-bold sm:hidden">Score Total</div>
-              <div class="text-3xl font-title text-transparent bg-clip-text bg-gradient-to-r from-mcu-primary to-emerald-300 drop-shadow-[0_0_15px_rgba(34,197,94,0.3)]">
-                {{ userRankEntry.totalPoints.toFixed(2) }} <span class="text-sm text-mcu-primary/70">pts</span>
+              <div
+                class="text-3xl font-title"
+                :class="[
+                  userRankEntry.totalPoints > 0
+                    ? 'text-transparent bg-clip-text bg-gradient-to-r from-mcu-primary to-emerald-300 drop-shadow-[0_0_15px_rgba(34,197,94,0.3)]'
+                    : userRankEntry.totalPoints < 0
+                      ? 'text-red-400/95 drop-shadow-[0_0_12px_rgba(248,113,113,0.25)]'
+                      : 'text-white/45'
+                ]"
+              >
+                {{ userRankEntry.totalPoints.toFixed(2) }}
+                <span
+                  class="text-sm"
+                  :class="userRankEntry.totalPoints > 0 ? 'text-mcu-primary/70' : userRankEntry.totalPoints < 0 ? 'text-red-400/60' : 'text-white/35'"
+                > pts</span>
               </div>
             </div>
           </div>

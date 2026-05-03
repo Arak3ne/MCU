@@ -5,6 +5,36 @@
       <div class="absolute bottom-[-18%] right-[-10%] w-[46%] h-[46%] bg-[#22C55E] opacity-[0.04] blur-[100px] rounded-full"></div>
       <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.07] mix-blend-overlay"></div>
     </div>
+
+    <!-- Modales hors du conteneur animé (transform/opacity créent un mauvais contexte pour position:fixed) -->
+    <Teleport to="body">
+      <FantasyScoreReveal
+        v-if="team"
+        v-model:show="showScoreReveal"
+        :team="team"
+        :player-scores="playerScores"
+        :old-total="oldTotalScore"
+        :new-total="newTotalScore"
+        :get-full-player="getFullPlayer"
+        :get-champion-splash="getChampionSplash"
+        :get-champion-splash-by-id="getChampionSplashById"
+        :get-role-icon="getRoleIcon"
+        :get-champion-square-by-id="getChampionSquareById"
+      />
+      <MercatoTransitionOverlay
+        v-model:show="showMercatoOverlay"
+        :carried-over-budget="carriedOverBudget"
+        :previous-roster-value="previousRosterValue"
+        :max-mercato-budget="maxBudget"
+        :previous-team="previousTeam"
+        :player-scores="playerScores"
+        :get-full-player="getFullPlayer"
+        :get-role-icon="getRoleIcon"
+        :get-price-change="getPriceChange"
+        :get-roster-card-splash-url="getRosterCardSplashUrl"
+      />
+    </Teleport>
+
     <div class="relative z-10 max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6 animate-fade-in-up">
     <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 gap-4">
       <div>
@@ -272,9 +302,38 @@
                   <button
                     v-if="isPlayerSelected(player.id)"
                     @click="removePlayer(player.id)"
-                    class="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 hover:border-red-500/60 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(239,68,68,0.15)] hover:shadow-[0_0_20px_rgba(239,68,68,0.25)] cursor-pointer"
+                    type="button"
+                    class="inline-flex items-center justify-center shrink-0 w-9 h-9 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 hover:border-red-500/60 transition-all shadow-[0_0_15px_rgba(239,68,68,0.15)] hover:shadow-[0_0_20px_rgba(239,68,68,0.25)] cursor-pointer"
+                    :title="isMercatoMode ? `Vendre cette place (+${getDisplayPrice(player.fantasy)} pts au budget)` : 'Retirer de l\'équipe'"
                   >
-                    {{ isMercatoMode ? `Vendre (+${getDisplayPrice(player.fantasy)})` : 'Retirer' }}
+                    <svg
+                      v-if="isMercatoMode"
+                      class="w-[18px] h-[18px]"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2H2v10l9.29 9.29a2 2 0 003.42 0l6.58-6.58a2 2 0 000-2.82L13.17 3.41A2 2 0 0012 2Z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01" />
+                    </svg>
+                    <svg
+                      v-else
+                      class="w-[18px] h-[18px]"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    <span class="sr-only">
+                      {{
+                        isMercatoMode
+                          ? `Vendre (+${getDisplayPrice(player.fantasy)} points)`
+                          : 'Retirer de l\'équipe'
+                      }}
+                    </span>
                   </button>
                   <button
                     v-else
@@ -361,9 +420,32 @@
                     <button
                       v-if="isPlayerSelected(player.id)"
                       @click="removePlayer(player.id)"
-                      class="px-5 py-2 bg-red-500/10 text-red-400 border border-red-500/30 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-red-500/20 hover:border-red-500/50 hover:shadow-[0_0_15px_rgba(239,68,68,0.2)] transition-all cursor-pointer"
+                      type="button"
+                      class="inline-flex items-center justify-center w-10 h-10 bg-red-500/10 text-red-400 border border-red-500/30 rounded-xl hover:bg-red-500/20 hover:border-red-500/50 hover:shadow-[0_0_15px_rgba(239,68,68,0.2)] transition-all cursor-pointer mx-auto lg:mr-0"
+                      :title="isMercatoMode ? `Vendre cette place (+${getDisplayPrice(player.fantasy)} pts)` : 'Retirer de l\'équipe'"
                     >
-                      {{ isMercatoMode ? `Vendre (+${getDisplayPrice(player.fantasy)})` : 'Retirer' }}
+                      <svg
+                        v-if="isMercatoMode"
+                        class="w-[18px] h-[18px]"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                      >
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2H2v10l9.29 9.29a2 2 0 003.42 0l6.58-6.58a2 2 0 000-2.82L13.17 3.41A2 2 0 0012 2Z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01" />
+                      </svg>
+                      <svg
+                        v-else
+                        class="w-[18px] h-[18px]"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                      >
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      <span class="sr-only">{{ isMercatoMode ? `Vendre (+${getDisplayPrice(player.fantasy)} points)` : 'Retirer' }}</span>
                     </button>
                     <button
                       v-else
@@ -466,7 +548,7 @@
               </div>
               
               <p v-if="transfersMade > 2" class="text-[9px] text-red-400/80 italic leading-tight">
-                Attention : chaque transfert au-delà des 2 gratuits coûte 20 points de pénalité.
+                Ces {{ penaltyPoints }} pts retirent aussi le même montant à ton budget potentiel mercato ; tu les perds en plus sur le score classement jour 2.
               </p>
             </div>
 
@@ -553,14 +635,37 @@
                     </button>
                     <button 
                       v-if="!(team?.isLocked)"
+                      type="button"
                       @click="removePlayer(getPlayerByRole(roleObj.value)!.id)"
-                      class="px-2 py-1.5 rounded-lg bg-black/60 hover:bg-red-500/20 text-white/50 hover:text-red-500 border border-white/10 hover:border-red-500/50 transition-all backdrop-blur-sm cursor-pointer shadow-lg flex items-center gap-1"
-                      :title="isMercatoMode ? `Vendre (+${getDisplayPrice(getPlayerByRole(roleObj.value)!)} pts)` : 'Retirer'"
+                      class="p-1.5 rounded-lg bg-black/60 hover:bg-red-500/20 text-white/50 hover:text-red-500 border border-white/10 hover:border-red-500/50 transition-all backdrop-blur-sm cursor-pointer shadow-lg inline-flex items-center justify-center"
+                      :title="isMercatoMode ? `Vendre (+${getDisplayPrice(getPlayerByRole(roleObj.value)!)} pts au budget)` : 'Retirer de l\'équipe'"
                     >
-                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg
+                        v-if="isMercatoMode"
+                        class="w-3.5 h-3.5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                      >
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2H2v10l9.29 9.29a2 2 0 003.42 0l6.58-6.58a2 2 0 000-2.82L13.17 3.41A2 2 0 0012 2Z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01" />
+                      </svg>
+                      <svg
+                        v-else
+                        class="w-3.5 h-3.5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                      >
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                       </svg>
-                      <span v-if="isMercatoMode" class="text-[9px] font-bold uppercase tracking-wider whitespace-nowrap">Vendre (+{{ getDisplayPrice(getPlayerByRole(roleObj.value)!) }})</span>
+                      <span class="sr-only">{{
+                        isMercatoMode
+                          ? `Vendre (+${getDisplayPrice(getPlayerByRole(roleObj.value)!)} points)`
+                          : 'Retirer'
+                      }}</span>
                     </button>
                   </div>
                 </div>
@@ -596,11 +701,16 @@
                 {{ isSaving ? 'Sauvegarde...' : 'Sauvegarder' }}
               </button>
               
-              <!-- Success Message Animation -->
+              <!-- Succès équipe : in-flow sous le bouton (évite clip overflow-hidden carte) + z élevé vs glow -->
               <Transition name="fade">
-                <div v-if="saveSuccess" class="absolute -bottom-10 left-0 right-0 flex justify-center">
-                  <div class="bg-mcu-primary/20 border border-mcu-primary text-mcu-primary px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest backdrop-blur-md shadow-[0_0_20px_rgba(34,197,94,0.4)] flex items-center gap-1.5">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
+                <div
+                  v-if="saveSuccess"
+                  class="relative z-[70] mt-3 flex justify-center isolate pointer-events-none"
+                  role="status"
+                  aria-live="polite"
+                >
+                  <div class="bg-mcu-primary/25 border border-mcu-primary/80 text-mcu-primary px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest backdrop-blur-md shadow-[0_4px_24px_rgba(34,197,94,0.45)] ring-1 ring-white/15 flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5 shrink-0 drop-shadow-[0_0_6px_currentColor]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
                     Équipe sauvegardée
                   </div>
                 </div>
@@ -645,8 +755,15 @@
               <span class="hidden sm:inline text-2xl sm:text-3xl md:text-4xl font-title uppercase tracking-widest text-white/35 pb-1 md:pb-1.5 select-none">—</span>
               <span class="text-2xl sm:text-3xl md:text-4xl font-title uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-mcu-primary to-emerald-300 pb-1 md:pb-1.5 shrink-0 leading-tight">Jour {{ tournamentDay }}</span>
             </div>
-            <p v-if="isSavingName" class="mt-2 text-[11px] text-white/50 font-bold uppercase tracking-wider">Enregistrement…</p>
-            <p v-else-if="nameSaveSuccess" class="mt-2 text-[11px] text-mcu-primary font-bold uppercase tracking-wider">Nom enregistré</p>
+            <p v-if="isSavingName" class="relative z-[70] mt-2 text-[11px] text-white/50 font-bold uppercase tracking-wider">Enregistrement…</p>
+            <p
+              v-else-if="nameSaveSuccess"
+              class="relative z-[70] mt-3 inline-flex items-center gap-1.5 text-[11px] text-mcu-primary font-bold uppercase tracking-wider bg-mcu-primary/20 border border-mcu-primary/50 px-3 py-1.5 rounded-xl shadow-[0_4px_20px_rgba(34,197,94,0.35)] ring-1 ring-white/10"
+              role="status"
+            >
+              <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+              Nom enregistré
+            </p>
             <p v-if="error && team?.isLocked" class="mt-2 text-[11px] text-red-400">{{ error }}</p>
           </div>
           
@@ -810,8 +927,8 @@
   <!-- Rules Modal -->
   <Transition name="fade">
     <div v-if="showRules" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div class="absolute inset-0 bg-black/80 backdrop-blur-md" @click="showRules = false"></div>
-      <div class="relative bg-gradient-to-b from-[#1A1A1A] to-[#0B0F0C] backdrop-blur-2xl border border-[#22C55E]/25 rounded-[2rem] w-full max-w-3xl max-h-[90vh] flex flex-col shadow-[0_24px_70px_rgba(0,0,0,0.75)] overflow-hidden animate-scale-in">
+      <div class="absolute inset-0 cursor-pointer bg-black/80 backdrop-blur-md" aria-hidden="true" @click="showRules = false"></div>
+      <div class="relative cursor-default bg-gradient-to-b from-[#1A1A1A] to-[#0B0F0C] backdrop-blur-2xl border border-[#22C55E]/25 rounded-[2rem] w-full max-w-3xl max-h-[90vh] flex flex-col shadow-[0_24px_70px_rgba(0,0,0,0.75)] overflow-hidden animate-scale-in">
       <div class="flex justify-between items-center p-8 border-b border-[#2A2A2A] bg-black/25">
         <h2 class="text-3xl font-title uppercase tracking-widest text-white flex items-center gap-4 drop-shadow-lg">
           <svg class="w-8 h-8 text-mcu-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -874,7 +991,7 @@
             </li>
             <li class="flex items-start gap-4">
               <svg class="w-6 h-6 text-blue-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
-              <span>Tu as droit à <strong>2 transferts gratuits</strong> pour le Jour 2. Chaque transfert supplémentaire te coûtera une <strong>pénalité de 20 points</strong> sur ton score final du Jour 2.</span>
+              <span>Tu as droit à <strong>2 transferts gratuits</strong> pour le Jour 2. Chaque transfert supplémentaire coûte <strong>−20 points</strong> sur ton score final du Jour 2 <strong>et retire 20 points</strong> de ton <strong>budget mercato</strong> (budget potentiel).</span>
             </li>
           </ul>
         </section>
@@ -934,39 +1051,13 @@
     </div>
   </div>
   </Transition>
-  <!-- Score Reveal Modal -->
-  <FantasyScoreReveal
-    v-if="team"
-    v-model:show="showScoreReveal"
-    :team="team"
-    :player-scores="playerScores"
-    :old-total="oldTotalScore"
-    :new-total="newTotalScore"
-    :get-full-player="getFullPlayer"
-    :get-champion-splash="getChampionSplash"
-    :get-champion-splash-by-id="getChampionSplashById"
-    :get-role-icon="getRoleIcon"
-    :get-champion-square-by-id="getChampionSquareById"
-  />
-
-  <!-- Mercato Overlay -->
-  <MercatoTransitionOverlay
-    v-model:show="showMercatoOverlay"
-    :carried-over-budget="carriedOverBudget"
-    :previous-roster-value="previousRosterValue"
-    :previous-team="previousTeam"
-    :player-scores="playerScores"
-    :get-full-player="getFullPlayer"
-    :get-role-icon="getRoleIcon"
-    :get-price-change="getPriceChange"
-    :get-roster-card-splash-url="getRosterCardSplashUrl"
-  />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, onUnmounted } from 'vue';
+import { ref, computed, onMounted, watch, onUnmounted, nextTick } from 'vue';
 import { getPlayers, getChampions, fetchPlayoffMatches } from '../lib/queries';
+import { fantasyTournamentDayFromPlayoffs } from '../lib/fantasyPhase';
 import { useFantasyTeam } from '../composables/useFantasyTeam';
 import { mapDbPlayerToFantasy } from '../utils/fantasyMapper';
 import type { Database } from '../types/supabase';
@@ -1003,6 +1094,8 @@ const isCheckingReveal = ref(false);
 const hasPlayoffs = ref(false);
 
 let realtimeChannel: any = null;
+let playoffRealtimeChannel: any = null;
+let playoffPhaseDebounce: ReturnType<typeof setTimeout> | null = null;
 
 // Fantasy State
 const currentUserId = ref<string | null>(null);
@@ -1151,6 +1244,76 @@ const roleWeights: Record<string, number> = {
   'top': 1, 'jungle': 2, 'mid': 3, 'adc': 4, 'support': 5
 };
 
+/**
+ * Ouvre l'intro mercato une fois que le dashboard n'est plus sous loader / vérif reveal
+ * (évite une modale `fixed` cassée sous un ancêtre avec transform ou invisible pendant le fade-in).
+ */
+function scheduleMercatoIntroIfEligible(previousDayBefore: 1 | 2) {
+  if (previousDayBefore !== 1 || tournamentDay.value !== 2) return;
+  const uid = currentUserId.value;
+  if (!uid) return;
+  const mercatoSeenKey = `mcu_fantasy_mercato_seen_${uid}`;
+  if (localStorage.getItem(mercatoSeenKey)) return;
+
+  const maxPasses = 200;
+  let pass = 0;
+
+  void (async (): Promise<void> => {
+    while (pass++ < maxPasses) {
+      await nextTick();
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      if (!currentUserId.value || tournamentDay.value !== 2) return;
+      if (localStorage.getItem(mercatoSeenKey)) return;
+      if (!loading.value && !isCheckingReveal.value) {
+        if (localStorage.getItem(mercatoSeenKey)) return;
+        showMercatoOverlay.value = true;
+        return;
+      }
+    }
+    if (currentUserId.value && tournamentDay.value === 2 && !localStorage.getItem(mercatoSeenKey)) {
+      console.warn('[Fantasy] Mercato intro: attente idle dépassée, ouverture forcée');
+      showMercatoOverlay.value = true;
+    }
+  })();
+}
+
+/** Applique jour 1/jour 2 depuis les lignes playoffs (source de vérité : championship jouables tous terminés). */
+function applyPlayoffPhase(playoffRows: any[]) {
+  hasPlayoffs.value = playoffRows.length > 0;
+  if (!playoffRows.length) {
+    tournamentDay.value = 1;
+    return;
+  }
+
+  const previousDayBefore = tournamentDay.value;
+  const nextDay = fantasyTournamentDayFromPlayoffs(playoffRows);
+  tournamentDay.value = nextDay;
+  scheduleMercatoIntroIfEligible(previousDayBefore);
+}
+
+async function refreshPlayoffPhase() {
+  const { data, error } = await fetchPlayoffMatches();
+  if (error) {
+    console.warn('[Fantasy] refreshPlayoffPhase: échec chargement playoffs', error.message);
+    return;
+  }
+  applyPlayoffPhase(data ?? []);
+}
+
+function schedulePlayoffPhaseRefresh() {
+  if (playoffPhaseDebounce) clearTimeout(playoffPhaseDebounce);
+  playoffPhaseDebounce = setTimeout(() => {
+    playoffPhaseDebounce = null;
+    void refreshPlayoffPhase();
+  }, 400);
+}
+
+watch(showMercatoOverlay, (show, oldShow) => {
+  if (oldShow === true && show === false && currentUserId.value) {
+    localStorage.setItem(`mcu_fantasy_mercato_seen_${currentUserId.value}`, 'true');
+  }
+});
+
 onMounted(async () => {
   loading.value = true;
   
@@ -1168,35 +1331,19 @@ onMounted(async () => {
     getChampions(),
     fetchPlayoffMatches()
   ]);
-  
-  if (playoffsRes.data && playoffsRes.data.length > 0) {
-    hasPlayoffs.value = true;
-    const championshipMatches = playoffsRes.data.filter((m: any) => m.stage === 'championship');
-    const allChampionshipCompleted = championshipMatches.length > 0 && championshipMatches.every((m: any) => m.is_completed);
-    
-    if (allChampionshipCompleted) {
-      tournamentDay.value = 2;
-      if (currentUserId.value) {
-        const storageKey = `mcu_fantasy_mercato_seen_${currentUserId.value}`;
-        if (!localStorage.getItem(storageKey)) {
-          showMercatoOverlay.value = true;
-          localStorage.setItem(storageKey, 'true');
-        }
-      }
-    } else {
-      tournamentDay.value = 1;
-    }
-  } else {
-    hasPlayoffs.value = false;
-    tournamentDay.value = 1;
+
+  if (playoffsRes.error) {
+    console.warn('[Fantasy] fetchPlayoffMatches initial', playoffsRes.error.message);
   }
+  applyPlayoffPhase(playoffsRes.data ?? []);
   
   if (playersRes.data) {
+    const day = tournamentDay.value;
     players.value = playersRes.data
       .filter((p: any) => p.participation_type === 'joueur')
       .map((p: any) => ({
       ...p,
-      fantasy: mapDbPlayerToFantasy(p)
+      fantasy: mapDbPlayerToFantasy(p, day)
     })) as EnrichedPlayer[];
   }
   
@@ -1222,14 +1369,25 @@ onMounted(async () => {
           table: 'fantasy_teams',
           filter: `user_id=eq.${currentUserId.value}`
         },
-        (payload) => {
-          console.log('[Realtime] Team updated!', payload);
+        () => {
           // Relancer l'initDay rafraîchira les données et lancera l'animation si le score a changé
           initDay();
         }
       )
       .subscribe();
   }
+
+  if (playoffRealtimeChannel) {
+    supabase.removeChannel(playoffRealtimeChannel);
+  }
+  playoffRealtimeChannel = supabase
+    .channel(`fantasy_playoff_phase_${Date.now()}`)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'playoff_matches' },
+      () => schedulePlayoffPhaseRefresh()
+    )
+    .subscribe();
   
   loading.value = false;
 });
@@ -1237,6 +1395,14 @@ onMounted(async () => {
 onUnmounted(() => {
   if (realtimeChannel) {
     supabase.removeChannel(realtimeChannel);
+  }
+  if (playoffRealtimeChannel) {
+    supabase.removeChannel(playoffRealtimeChannel);
+    playoffRealtimeChannel = null;
+  }
+  if (playoffPhaseDebounce) {
+    clearTimeout(playoffPhaseDebounce);
+    playoffPhaseDebounce = null;
   }
 });
 
@@ -1302,7 +1468,17 @@ const replayAnimation = async () => {
   }
 };
 
+const remapPlayersFantasyForTournamentDay = () => {
+  if (!players.value.length) return;
+  const d = tournamentDay.value;
+  players.value = players.value.map((p) => ({
+    ...p,
+    fantasy: mapDbPlayerToFantasy(p as any, d)
+  })) as EnrichedPlayer[];
+};
+
 watch(tournamentDay, () => {
+  remapPlayersFantasyForTournamentDay();
   if (!loading.value && currentUserId.value) {
     initDay();
   }

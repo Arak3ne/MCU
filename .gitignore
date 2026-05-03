@@ -17,6 +17,9 @@ dist-ssr
 .env.*
 !.env.example
 
+# Lockfile sometimes generated at repo root by Deno tooling (not part of the Vite app)
+/deno.lock
+
 # Supabase CLI local state (project link, versions, etc.)
 supabase/.temp/
 

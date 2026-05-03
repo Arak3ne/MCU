@@ -1,5 +1,23 @@
 import { supabase } from '../lib/supabase'
 import type { FantasyTeam, FantasyLeaderboardEntry } from '../types/fantasy'
+import { fantasyPointsBreakdown } from '../utils/fantasyMatchPoints'
+
+/** Colonne numeric / string PostgREST → nombre fini uniquement si la valeur existe en base. */
+function parseCarriedOverBudget(raw: unknown): number | undefined {
+  if (raw == null || raw === '') return undefined
+  const n = typeof raw === 'string' ? parseFloat(raw.trim()) : Number(raw)
+  return Number.isFinite(n) ? n : undefined
+}
+
+/** Logs détail barème (console) : toujours en dev ; en prod ajoute localStorage.setItem('mcu_fantasy_log_last_match','1') */
+function shouldLogFantasyLastMatchBreakdown(): boolean {
+  if (import.meta.env.DEV) return true
+  try {
+    return globalThis.localStorage?.getItem('mcu_fantasy_log_last_match') === '1'
+  } catch {
+    return false
+  }
+}
 
 export const fantasyService = {
   /**
@@ -20,7 +38,10 @@ export const fantasyService = {
     }
 
     if (!teamDataList || teamDataList.length === 0) return null
-    const teamData = teamDataList[0]
+    const teamData = teamDataList[0] as any
+    const rawCarry =
+      teamData.carried_over_budget
+      ?? (teamData as Record<string, unknown>).carriedOverBudget
 
     const picks = teamData.fantasy_picks || []
     const playerIds = picks.map((p: any) => p.player_id)
@@ -38,7 +59,7 @@ export const fantasyService = {
       totalPoints: teamData.total_points || 0,
       transfersMade: teamData.transfers_made || 0,
       penaltyPoints: teamData.penalty_points || 0,
-      carriedOverBudget: teamData.carried_over_budget || 0,
+      carriedOverBudget: parseCarriedOverBudget(rawCarry),
       createdAt: teamData.created_at,
       updatedAt: teamData.updated_at
     }
@@ -61,7 +82,9 @@ export const fantasyService = {
     if (team.penaltyPoints !== undefined) {
       teamPayload.penalty_points = team.penaltyPoints
     }
-    if (team.carriedOverBudget !== undefined) {
+    // Ne pas réécrire le reliquat serveur à chaque save jour 2 (snapshot lock / initialize_day2_teams).
+    const isDay2Existing = team.tournamentDay === 2 && team.id
+    if (team.carriedOverBudget !== undefined && !isDay2Existing) {
       teamPayload.carried_over_budget = team.carriedOverBudget
     }
 
@@ -78,6 +101,9 @@ export const fantasyService = {
       console.error('Error saving fantasy team:', teamError)
       throw teamError
     }
+
+    const savedCarryRaw = (teamData as Record<string, unknown>).carried_over_budget
+      ?? (teamData as Record<string, unknown>).carriedOverBudget
 
     // Save picks
     if (team.playerIds) {
@@ -111,7 +137,7 @@ export const fantasyService = {
       totalPoints: teamData.total_points || 0,
       transfersMade: teamData.transfers_made || 0,
       penaltyPoints: teamData.penalty_points || 0,
-      carriedOverBudget: teamData.carried_over_budget || 0,
+      carriedOverBudget: parseCarriedOverBudget(savedCarryRaw),
       createdAt: teamData.created_at,
       updatedAt: teamData.updated_at
     }
@@ -166,13 +192,12 @@ export const fantasyService = {
   },
 
   /**
-   * Get match stats for players on a specific tournament day
-   * Returns only the most recent game for each player.
+   * Stats du dernier match connu par joueur (tri match_history.game_creation desc).
+   * Ajoute fantasyPoints et loggue le détail du barème si dev ou si localStorage `mcu_fantasy_log_last_match=1`.
    */
   async getPlayerMatchStats(playerIds: string[]): Promise<Record<string, any>> {
     if (!playerIds || playerIds.length === 0) return {}
 
-    // Fetch all match participants for these players
     const { data, error } = await supabase
       .from('match_participants')
       .select(`
@@ -181,10 +206,12 @@ export const fantasyService = {
         deaths,
         assists,
         win,
+        first_blood_kill,
         champion_id,
         total_minions_killed,
         vision_score,
         total_damage_dealt_to_champions,
+        gold_earned,
         match_history!inner(game_creation, game_duration)
       `)
       .in('player_id', playerIds)
@@ -195,38 +222,70 @@ export const fantasyService = {
     }
 
     const statsMap: Record<string, any> = {}
-    
-    if (data) {
-      // Sort data in JavaScript by game_creation descending to ensure we process the newest matches first
-      const sortedData = [...data].sort((a, b) => {
-        const dateA = new Date((a as any).match_history?.game_creation || 0).getTime();
-        const dateB = new Date((b as any).match_history?.game_creation || 0).getTime();
-        return dateB - dateA;
-      });
 
-      sortedData.forEach(row => {
+    if (data) {
+      const sortedData = [...data].sort((a, b) => {
+        const tA = new Date((a as any).match_history?.game_creation ?? 0).getTime()
+        const tB = new Date((b as any).match_history?.game_creation ?? 0).getTime()
+        return tB - tA
+      })
+
+      const shouldLogBreakdown = shouldLogFantasyLastMatchBreakdown()
+
+      sortedData.forEach((row: any) => {
         const pid = row.player_id
-        
-        // We only want the most recent game (the first one we encounter since we ordered desc)
-        if (!statsMap[pid]) {
-          const gameDurationSec =
-            typeof (row as any).match_history?.game_duration === 'number'
-              ? (row as any).match_history.game_duration
-              : 0
-          statsMap[pid] = {
-            kills: row.kills || 0,
-            deaths: row.deaths || 0,
-            assists: row.assists || 0,
-            wins: row.win ? 1 : 0,
-            losses: row.win ? 0 : 1,
-            games: 1,
-            total_minions_killed: row.total_minions_killed || 0,
-            vision_score: row.vision_score || 0,
-            damage_dealt: row.total_damage_dealt_to_champions || 0,
-            game_duration_sec: gameDurationSec,
-            championIds: row.champion_id ? [row.champion_id] : [],
-            kda: row.deaths === 0 ? (row.kills + row.assists) : ((row.kills + row.assists) / row.deaths).toFixed(2)
-          }
+        if (statsMap[pid]) return
+
+        const gameDurationSec =
+          typeof row.match_history?.game_duration === 'number'
+            ? row.match_history.game_duration
+            : 0
+
+        const breakdownInput = {
+          kills: row.kills,
+          deaths: row.deaths,
+          assists: row.assists,
+          total_minions_killed: row.total_minions_killed,
+          win: row.win,
+          first_blood_kill: row.first_blood_kill,
+          vision_score: row.vision_score,
+          total_damage_dealt_to_champions: row.total_damage_dealt_to_champions,
+          gold_earned: row.gold_earned
+        }
+        const { fantasyPoints: fp, lines } = fantasyPointsBreakdown(breakdownInput)
+
+        if (shouldLogBreakdown) {
+          const table = lines.map((l) => ({
+            critere: l.critere,
+            contribution:
+              Number.isInteger(l.contribution) || Math.abs(l.contribution) >= 100
+                ? l.contribution
+                : Number(l.contribution.toFixed(6))
+          }))
+          console.groupCollapsed(`[MCU fantasy] dernier match — joueur ${pid}`)
+          console.table(table)
+          const sumCheck = lines.reduce((acc, l) => acc + l.contribution, 0)
+          console.log('Total fantasyPoints', fp, '| somme lignes', sumCheck)
+          console.groupEnd()
+        }
+
+        statsMap[pid] = {
+          kills: row.kills || 0,
+          deaths: row.deaths || 0,
+          assists: row.assists || 0,
+          wins: row.win ? 1 : 0,
+          losses: row.win ? 0 : 1,
+          games: 1,
+          total_minions_killed: row.total_minions_killed || 0,
+          vision_score: row.vision_score || 0,
+          damage_dealt: row.total_damage_dealt_to_champions || 0,
+          game_duration_sec: gameDurationSec,
+          championIds: row.champion_id ? [row.champion_id] : [],
+          kda:
+            row.deaths === 0
+              ? row.kills + row.assists
+              : ((row.kills + row.assists) / row.deaths).toFixed(2),
+          fantasyPoints: fp
         }
       })
     }
@@ -238,6 +297,14 @@ export const fantasyService = {
    * Get global leaderboard (sum of all days)
    */
   async getGlobalLeaderboard(): Promise<FantasyLeaderboardEntry[]> {
+    const mapRowPicks = (rowPicks: unknown) =>
+      (Array.isArray(rowPicks) ? rowPicks : []).map((p: any) => ({
+        playerId: p.player_id,
+        isCaptain: p.is_captain,
+        score: 0,
+        pseudo: ''
+      }))
+
     // We fetch all teams and group them by user to sum their points
     const { data, error } = await supabase
       .from('fantasy_teams')
@@ -256,47 +323,53 @@ export const fantasyService = {
       throw error
     }
 
-    // Group by user_id to sum points across days
-    const userMap = new Map<string, FantasyLeaderboardEntry>()
-
-    for (const row of (data || [])) {
-      const userId = row.user_id
-      const points = row.total_points || 0
-      
-      if (userMap.has(userId)) {
-        const existing = userMap.get(userId)!
-        existing.totalPoints += points
-        // We keep the picks from the most recent day (or just any day, but let's say day 2 if available)
-        if (row.tournament_day === 2) {
-          existing.picks = (row.fantasy_picks || []).map((p: any) => ({
-            playerId: p.player_id,
-            isCaptain: p.is_captain,
-            score: 0,
-            pseudo: ''
-          }))
-          existing.teamName = row.name // Update to latest team name
-        }
-      } else {
-        userMap.set(userId, {
-          userId: row.user_id,
-          teamId: row.id,
-          teamName: row.name,
-          tournamentDay: row.tournament_day as 1 | 2,
-          totalPoints: points,
-          picks: (row.fantasy_picks || []).map((p: any) => ({
-            playerId: p.player_id,
-            isCaptain: p.is_captain,
-            score: 0,
-            pseudo: ''
-          }))
-        })
-      }
+    type TeamRow = {
+      id: string
+      user_id: string
+      name: string
+      total_points: number | null
+      tournament_day: number
+      fantasy_picks?: { player_id: string; is_captain: boolean }[]
     }
 
-    // Convert map to array and sort by total points
-    return Array.from(userMap.values())
-      .sort((a, b) => b.totalPoints - a.totalPoints)
-      .slice(0, 100)
+    type UserAgg = { totalPoints: number; day1?: TeamRow; day2?: TeamRow }
+    const byUser = new Map<string, UserAgg>()
+
+    for (const row of (data || []) as TeamRow[]) {
+      const userId = row.user_id
+      const points = row.total_points || 0
+      let agg = byUser.get(userId)
+      if (!agg) {
+        agg = { totalPoints: points }
+        byUser.set(userId, agg)
+      } else {
+        agg.totalPoints += points
+      }
+      if (row.tournament_day === 1) agg.day1 = row
+      if (row.tournament_day === 2) agg.day2 = row
+    }
+
+    const picksCount = (r: TeamRow | undefined) => r?.fantasy_picks?.length ?? 0
+
+    const entries: FantasyLeaderboardEntry[] = []
+    for (const [userId, agg] of byUser) {
+      // Avoid relying on row iteration order (global sort by points): pick roster explicitly.
+      const { day1, day2 } = agg
+      const rosterRow =
+        picksCount(day2) > 0 ? day2! : picksCount(day1) > 0 ? day1! : day2 ?? day1
+      if (!rosterRow) continue
+
+      entries.push({
+        userId,
+        teamId: rosterRow.id,
+        teamName: rosterRow.name,
+        tournamentDay: rosterRow.tournament_day as 1 | 2,
+        totalPoints: agg.totalPoints,
+        picks: mapRowPicks(rosterRow.fantasy_picks)
+      })
+    }
+
+    return entries.sort((a, b) => b.totalPoints - a.totalPoints).slice(0, 100)
   },
 
   /**

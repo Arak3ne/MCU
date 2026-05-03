@@ -1,10 +1,9 @@
-import { ref, computed, readonly } from 'vue'
+import { ref, computed, readonly, watch } from 'vue'
 import type { Ref } from 'vue'
 import type { FantasyTeam, FantasyPlayer } from '../types/fantasy'
-import { validateFantasyTeam } from '../utils/fantasyValidation'
+import { validateFantasyTeam, MAX_BUDGET } from '../utils/fantasyValidation'
 import { fantasyService } from '../services/fantasyService'
 import { calculateTeamPoints } from '../utils/fantasyLeaderboard'
-import { TIER_PRICES } from '../utils/fantasyMapper'
 
 export function useFantasyTeam(userId: Ref<string | null>, tournamentDay: Ref<1 | 2>) {
   const team = ref<FantasyTeam | null>(null)
@@ -59,20 +58,44 @@ export function useFantasyTeam(userId: Ref<string | null>, tournamentDay: Ref<1 
     return validationResult.value?.isValid ?? false
   })
 
+  const storedCarried = (t: FantasyTeam | null): number | undefined => {
+    if (!t?.id) return undefined
+    const raw = t.carriedOverBudget
+    if (raw === undefined || raw === null) return undefined
+    const n = Number(raw)
+    return Number.isFinite(n) ? n : undefined
+  }
+
+  /**
+   * Reliquat mercato : fusionne les sources car la ligne jour 2 peut avoir `carried_over_budget = 0`
+   * alors que le snapshot SQL ne met à jour que le jour 1 — on prend le max des valeurs cohérentes.
+   */
   const carriedOverBudget = computed(() => {
-    if (tournamentDay.value === 2) {
-      if (team.value && team.value.carriedOverBudget !== undefined && team.value.carriedOverBudget > 0) {
-        return team.value.carriedOverBudget
-      } else if (previousTeam.value) {
-        const day1Cost = previousTeam.value.playerIds.reduce((sum, id) => {
-          const p = knownPlayers.value.find(player => player.id === id)
-          const basePrice = p ? TIER_PRICES[p.rank] || 15 : 0
-          return sum + basePrice
-        }, 0)
-        return 100 - day1Cost
-      }
+    if (tournamentDay.value !== 2)
+      return 0
+
+    const candidates: number[] = []
+    const d1 = storedCarried(previousTeam.value)
+    const d2 = team.value?.id ? storedCarried(team.value) : undefined
+    if (d1 !== undefined)
+      candidates.push(d1)
+    if (d2 !== undefined)
+      candidates.push(d2)
+
+    if (
+      previousTeam.value?.playerIds?.length
+      && knownPlayers.value.length > 0
+    ) {
+      const day1Cost = previousTeam.value.playerIds.reduce((sum, id) => {
+        const p = knownPlayers.value.find(player => player.id === id)
+        return sum + (p?.fantasyPriceDay1 ?? 0)
+      }, 0)
+      candidates.push(Math.max(0, 100 - day1Cost))
     }
-    return 0
+
+    if (candidates.length === 0)
+      return 0
+    return Math.max(...candidates)
   })
 
   const validate = (allPlayers: FantasyPlayer[]) => {
@@ -136,8 +159,25 @@ export function useFantasyTeam(userId: Ref<string | null>, tournamentDay: Ref<1 
 
   // Budget info
   const budgetUsed = computed(() => validationResult.value?.totalCost ?? 0)
-  const budgetRemaining = computed(() => (validationResult.value?.maxBudget ?? 100) - budgetUsed.value)
-  const maxBudget = computed(() => validationResult.value?.maxBudget ?? 100)
+
+  /** Jour 2 : même formule que validate – pénalité transferts retire du plafond mercato (en plus du score final). */
+  const maxBudget = computed(() => {
+    if (tournamentDay.value === 2 && previousTeam.value) {
+      const base = carriedOverBudget.value + previousRosterValue.value
+      const pen = validationResult.value?.penaltyPoints ?? 0
+      return Math.max(0, base - pen)
+    }
+    return validationResult.value?.maxBudget ?? MAX_BUDGET
+  })
+
+  const budgetRemaining = computed(() => maxBudget.value - budgetUsed.value)
+
+  /** Resync validation quand carry ou valeur roster jour 2 changent sans mouvement d’effectif (évite max figé uniquement Σ prix joueurs). */
+  watch([carriedOverBudget, previousRosterValue, tournamentDay], () => {
+    if (knownPlayers.value.length === 0)
+      return
+    validate(knownPlayers.value)
+  })
   const transfersMade = computed(() => validationResult.value?.transfersMade ?? 0)
   const penaltyPoints = computed(() => validationResult.value?.penaltyPoints ?? 0)
 

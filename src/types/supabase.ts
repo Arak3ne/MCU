@@ -16,6 +16,8 @@ export type Database = {
           playstyle: string | null;
           mindset: string | null;
           created_at: string;
+          fantasy_cost?: number | null;
+          fantasy_cost_day2?: number | null;
         };
         Insert: {
           id?: string;
@@ -129,6 +131,35 @@ export type Database = {
           updated_at?: string | null;
         };
       };
+      player_avatar_config: {
+        Row: {
+          player_id: string;
+          dicebear_version: string;
+          style: string;
+          seed: string;
+          options: Record<string, unknown>;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          player_id: string;
+          dicebear_version?: string;
+          style?: string;
+          seed: string;
+          options?: Record<string, unknown>;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          player_id?: string;
+          dicebear_version?: string;
+          style?: string;
+          seed?: string;
+          options?: Record<string, unknown>;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
       playoff_matches: {
         Row: {
           id: string;
@@ -146,6 +177,7 @@ export type Database = {
           draft_url: string | null;
           draft_id: string | null;
           draft_picks: string[] | null;
+          draft_blue_team_id: string | null;
         };
         Insert: {
           id?: string;
@@ -161,8 +193,9 @@ export type Database = {
           created_at?: string | null;
           updated_at?: string | null;
           draft_url?: string | null;
-          draft_id?: string | null
+          draft_id?: string | null;
           draft_picks?: string[] | null;
+          draft_blue_team_id?: string | null;
         };
         Update: {
           id?: string;
@@ -178,8 +211,9 @@ export type Database = {
           created_at?: string | null;
           updated_at?: string | null;
           draft_url?: string | null;
-          draft_id?: string | null
+          draft_id?: string | null;
           draft_picks?: string[] | null;
+          draft_blue_team_id?: string | null;
         };
       };
     };

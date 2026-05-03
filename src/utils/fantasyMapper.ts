@@ -2,7 +2,11 @@ import type { Database } from '../types/supabase'
 import type { FantasyPlayer, Tier } from '../types/fantasy'
 
 type DbPlayer = Database['public']['Tables']['players']['Row'] & {
-  fantasy_cost?: number;
+  fantasy_cost?: number | null;
+  /** Ancien nom en base ; fallback lecture seule si migration pas encore rejouée. */
+  fantasy_price?: number | null;
+  fantasy_cost_day2?: number | null;
+  fantasy_price_day2?: number | null;
   fantasy_enabled?: boolean;
 }
 
@@ -15,10 +19,16 @@ export const TIER_PRICES: Record<string, number> = {
   'D': 10
 }
 
-export function mapDbPlayerToFantasy(dbPlayer: DbPlayer): FantasyPlayer {
+export function mapDbPlayerToFantasy(dbPlayer: DbPlayer, tournamentDay: 1 | 2 = 1): FantasyPlayer {
   const rank = (dbPlayer.rank || 'C').toUpperCase() as Tier
-  const price = dbPlayer.fantasy_cost ?? (TIER_PRICES[rank] || 15)
-  const isEnabled = dbPlayer.fantasy_enabled ?? true // Assume true if not specified, though rules say "only fantasy_enabled players"
+  const tierFallback = TIER_PRICES[rank] || 15
+  const fantasyPriceDay1 = Number(
+    dbPlayer.fantasy_cost ?? dbPlayer.fantasy_price ?? tierFallback,
+  )
+  const rawDay2 = dbPlayer.fantasy_cost_day2 ?? dbPlayer.fantasy_price_day2
+  const day2 = rawDay2 != null ? Number(rawDay2) : fantasyPriceDay1
+  const price = tournamentDay === 2 ? day2 : fantasyPriceDay1
+  const isEnabled = dbPlayer.fantasy_enabled ?? true
 
   return {
     id: dbPlayer.id,
@@ -26,7 +36,8 @@ export function mapDbPlayerToFantasy(dbPlayer: DbPlayer): FantasyPlayer {
     rank,
     roles: [dbPlayer.primary_role, dbPlayer.secondary_role].filter((r): r is string => Boolean(r)),
     price,
-    fantasyEnabled: isEnabled
+    fantasyPriceDay1,
+    fantasyEnabled: isEnabled,
   }
 }
 

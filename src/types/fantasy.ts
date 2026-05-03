@@ -5,7 +5,10 @@ export interface FantasyPlayer {
   pseudo: string;
   rank: Tier;
   roles: string[];
+  /** Prix actif affiché / mercato (jour 1 = fantasy_cost, jour 2 = fantasy_cost_day2 ou équivalent). */
   price: number;
+  /** Coût réel jour 1 en base (snap budget restant & init journée 2). */
+  fantasyPriceDay1: number;
   fantasyEnabled: boolean;
 }
 
@@ -20,7 +23,8 @@ export interface FantasyTeam {
   totalPoints?: number; // Calculated field
   transfersMade: number;
   penaltyPoints: number;
-  carriedOverBudget: number;
+  /** Snapshot lock jour 1 : absent si colonne DB null (≠ 0). */
+  carriedOverBudget?: number;
   createdAt: string;
   updatedAt: string;
 }

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
+import { nameToDrafterChampionId } from '../_shared/championKeys.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { matchId, blueName, redName, firstSelection, apiKey: clientApiKey } = await req.json()
+    const { matchId, blueName, redName, firstSelection } = await req.json()
 
     if (!matchId) {
       throw new Error("matchId is required");
@@ -22,10 +23,10 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // 1. Check if draft already exists for this match
+    // 1. Check if draft already exists for this match + read side config
     const { data: existingMatch, error: matchError } = await supabase
       .from('playoff_matches')
-      .select('draft_url, draft_id')
+      .select('draft_url, draft_id, draft_blue_team_id, team1_id, team2_id')
       .eq('id', matchId)
       .single()
 
@@ -38,6 +39,36 @@ serve(async (req) => {
         JSON.stringify({ draftUrl: existingMatch.draft_url, draftId: existingMatch.draft_id }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
       )
+    }
+
+    let resolvedBlueName = typeof blueName === 'string' && blueName.trim() ? blueName.trim() : 'Team 1'
+    let resolvedRedName = typeof redName === 'string' && redName.trim() ? redName.trim() : 'Team 2'
+
+    const t1id = existingMatch.team1_id as string | null
+    const t2id = existingMatch.team2_id as string | null
+    const blueTeamId = existingMatch.draft_blue_team_id as string | null
+
+    if (t1id && t2id) {
+      const { data: teamRows, error: teamsErr } = await supabase
+        .from('teams')
+        .select('id, name')
+        .in('id', [t1id, t2id])
+
+      if (teamsErr) {
+        throw new Error(`Failed to fetch teams: ${teamsErr.message}`)
+      }
+
+      const byId = new Map((teamRows ?? []).map((r) => [r.id, r.name as string]))
+      const n1 = byId.get(t1id)?.trim() || 'Team 1'
+      const n2 = byId.get(t2id)?.trim() || 'Team 2'
+
+      if (blueTeamId === t2id) {
+        resolvedBlueName = n2
+        resolvedRedName = n1
+      } else {
+        resolvedBlueName = n1
+        resolvedRedName = n2
+      }
     }
 
     // 2. Fetch disabled champions
@@ -55,29 +86,15 @@ serve(async (req) => {
     // The safest bet is to format the name by removing spaces and special characters, capitalizing properly,
     // or relying on how Drafter matches them. Usually, Drafter matches by the exact string ID from Data Dragon.
     const disabledChampions = (champions || []).map((c) => {
-      // Special cases for Drafter/Data Dragon
-      const name = c.name;
-      if (name === "Wukong") return "MonkeyKing";
-      if (name === "Renata Glasc") return "Renata";
-      if (name === "Nunu & Willump") return "Nunu";
-      if (name === "Kog'Maw") return "KogMaw";
-      if (name === "Rek'Sai") return "RekSai";
-      if (name === "K'Sante") return "KSante";
-      if (name === "Bel'Veth") return "Belveth";
-      if (name === "Kai'Sa") return "Kaisa";
-      if (name === "Kha'Zix") return "Khazix";
-      if (name === "Cho'Gath") return "Chogath";
-      if (name === "Vel'Koz") return "Velkoz";
-      if (name === "LeBlanc") return "Leblanc";
-      
-      // Default: remove spaces and special chars
-      return name.replace(/[^a-zA-Z0-9]/g, '');
-    });
+      if (c.ddragon_key?.trim()) return c.ddragon_key.trim()
+      return nameToDrafterChampionId(c.name)
+    })
 
-    console.log("Sending disabled champions to Drafter:", disabledChampions);
-
-    // 3. Create draft on Drafter
-    const apiKey = clientApiKey || Deno.env.get('DRAFTER_API_KEY') || '';
+    // 3. Create draft on Drafter (clé : secret `DRAFTER_API_KEY`, pas le client)
+    const apiKey = (Deno.env.get('DRAFTER_API_KEY') ?? '').trim()
+    if (!apiKey) {
+      throw new Error('DRAFTER_API_KEY is not configured (supabase secrets / local .env)')
+    }
     const drafterResponse = await fetch('https://api.drafter.lol/api/rooms', {
       method: 'POST',
       headers: {
@@ -85,8 +102,8 @@ serve(async (req) => {
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        blueName: blueName || "Team 1",
-        redName: redName || "Team 2",
+        blueName: resolvedBlueName,
+        redName: resolvedRedName,
         firstSelection: firstSelection ?? true,
         disabledChampions
       })

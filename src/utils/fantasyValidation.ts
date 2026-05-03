@@ -9,7 +9,8 @@ export interface FantasyValidationResult {
   totalCost: number
 }
 
-const MAX_BUDGET = 100
+/** Cap draft jour 1 ; jour 2 = reliquat + valeur roster veille aux prix jour 2. */
+export const MAX_BUDGET = 100
 const MAX_TEAM_SIZE = 5
 const MAX_S_TIER = 1
 const MAX_S_AND_A_TIER = 3
@@ -50,7 +51,8 @@ export function validateFantasyTeam(
       penaltyPoints = (transfersMade - 2) * 20
     }
 
-    maxBudget = carriedOverBudget + previousRosterValue
+    const baseMercatoBudget = carriedOverBudget + previousRosterValue
+    maxBudget = Math.max(0, baseMercatoBudget - penaltyPoints)
     if (totalCost > maxBudget) {
       errors.push(`Budget exceeded. Max is ${maxBudget}, used ${totalCost}`)
     }

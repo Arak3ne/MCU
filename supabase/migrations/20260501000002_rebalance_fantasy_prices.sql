@@ -22,7 +22,7 @@ SET fantasy_price = CASE
     WHEN UPPER(fantasy_tier) = 'C' THEN 12
     WHEN UPPER(fantasy_tier) = 'D' THEN 8
     ELSE 12
-END
+END;
 
 -- Update default values for future players
 ALTER TABLE public.players

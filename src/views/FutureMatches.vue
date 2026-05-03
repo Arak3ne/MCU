@@ -150,8 +150,8 @@
     <!-- Modal Popup for Draft -->
     <Transition name="fade">
       <div v-if="showModal" class="fixed inset-0 flex items-center justify-center z-50 p-4">
-        <div class="absolute inset-0 bg-black/80 backdrop-blur-md" @click="closeModal"></div>
-        <div class="relative bg-gradient-to-b from-[#1A1A1A] to-[#0B0F0C] backdrop-blur-2xl border border-mcu-primary/25 rounded-[2rem] w-full max-w-lg shadow-[0_24px_70px_rgba(0,0,0,0.75)] overflow-hidden animate-scale-in">
+        <div class="absolute inset-0 cursor-pointer bg-black/80 backdrop-blur-md" aria-hidden="true" @click="closeModal"></div>
+        <div class="relative cursor-default bg-gradient-to-b from-[#1A1A1A] to-[#0B0F0C] backdrop-blur-2xl border border-mcu-primary/25 rounded-[2rem] w-full max-w-lg shadow-[0_24px_70px_rgba(0,0,0,0.75)] overflow-hidden animate-scale-in">
           
           <!-- Close Button -->
           <button @click="closeModal" class="absolute top-6 right-6 text-white/40 hover:text-white hover:bg-white/10 transition-all p-2 rounded-full cursor-pointer z-10">
@@ -162,8 +162,43 @@
           
           <div class="p-8 relative">
             <h2 class="text-3xl font-title mb-2 text-center text-transparent bg-clip-text bg-gradient-to-r from-mcu-primary via-emerald-300 to-teal-200 tracking-wider uppercase drop-shadow-lg">Initialiser la Draft</h2>
+
+            <div v-if="awaitingSideChoice && sidePickMatch" class="space-y-4 mb-8">
+              <p class="text-white/50 text-center text-[11px] uppercase tracking-widest leading-relaxed px-1">
+                Le premier à ouvrir choisit quelle équipe sera <span class="text-sky-400 normal-case">blue side</span> sur Drafter — l’autre sera red side. Ce n’est pas l’ordre affiché sur le match.
+              </p>
+              <button
+                type="button"
+                :disabled="claimingSide"
+                @click="confirmDraftBlueSide(sidePickMatch.team1.id)"
+                class="w-full py-3.5 px-4 rounded-xl border border-sky-500/45 bg-sky-500/10 hover:bg-sky-500/20 text-sky-100 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed text-left"
+              >
+                <span class="flex items-center gap-3">
+                  <span class="shrink-0 w-2.5 h-2.5 rounded-full bg-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.75)]" aria-hidden="true" />
+                  <span class="min-w-0 flex flex-col gap-0.5">
+                    <span class="font-bold uppercase tracking-widest text-xs text-sky-50 truncate">{{ sidePickMatch.team1.name }}</span>
+                    <span class="text-[10px] uppercase tracking-widest text-sky-300/90">Blue side</span>
+                  </span>
+                </span>
+              </button>
+              <button
+                type="button"
+                :disabled="claimingSide"
+                @click="confirmDraftBlueSide(sidePickMatch.team2.id)"
+                class="w-full py-3.5 px-4 rounded-xl border border-sky-500/45 bg-sky-500/10 hover:bg-sky-500/20 text-sky-100 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed text-left"
+              >
+                <span class="flex items-center gap-3">
+                  <span class="shrink-0 w-2.5 h-2.5 rounded-full bg-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.75)]" aria-hidden="true" />
+                  <span class="min-w-0 flex flex-col gap-0.5">
+                    <span class="font-bold uppercase tracking-widest text-xs text-sky-50 truncate">{{ sidePickMatch.team2.name }}</span>
+                    <span class="text-[10px] uppercase tracking-widest text-sky-300/90">Blue side</span>
+                  </span>
+                </span>
+              </button>
+              <p v-if="claimingSide" class="text-center text-[10px] text-mcu-primary uppercase tracking-widest animate-pulse">Enregistrement…</p>
+            </div>
             
-            <div class="flex justify-center items-center gap-4 mb-8 text-sm font-bold uppercase tracking-widest">
+            <div v-else class="flex justify-center items-center gap-4 mb-8 text-sm font-bold uppercase tracking-widest">
               <span class="text-mcu-accent">{{ blueName }}</span>
               <span class="text-white/40 text-xs italic">vs</span>
               <span class="text-red-400">{{ redName }}</span>
@@ -210,7 +245,7 @@
               </div>
             </div>
             
-            <div v-else class="text-center py-8">
+            <div v-else-if="!awaitingSideChoice" class="text-center py-8">
               <p class="text-red-400 font-bold uppercase tracking-widest text-xs mb-6">{{ message || 'Erreur lors de la génération de la draft' }}</p>
               <button @click="generateDraft" class="px-8 py-3 bg-white/5 border border-white/10 hover:border-mcu-primary/50 hover:bg-white/10 rounded-xl text-white font-bold uppercase tracking-widest text-xs transition-all cursor-pointer hover:scale-105">
                 Réessayer
@@ -228,6 +263,11 @@ import { ref, onMounted, onUnmounted, computed } from "vue";
 import { supabase } from "../lib/supabase";
 import { fetchChampionshipMatchesHydrated } from "../lib/queries";
 import { subscribeToTable } from "../lib/realtime";
+import {
+  logDraftSyncClient,
+  type SyncDraftData,
+} from "../lib/logDraftSyncClient";
+import { claimOrRefreshDraftBlueTeam, resolveBlueRedNames } from "../lib/draftMatchSides";
 import type { Database } from "../types/supabase";
 
 type Team = Database["public"]["Tables"]["teams"]["Row"];
@@ -241,6 +281,7 @@ interface Match {
   team2_score?: number | null;
   draft_url?: string | null;
   draft_id?: string | null;
+  draft_blue_team_id?: string | null;
 }
 
 interface Round {
@@ -270,7 +311,8 @@ const rounds = computed<Round[]>(() => {
       team1_score: m.team1_score,
       team2_score: m.team2_score,
       draft_url: m.draft_url,
-      draft_id: m.draft_id
+      draft_id: m.draft_id,
+      draft_blue_team_id: m.draft_blue_team_id,
     });
   }
   
@@ -287,8 +329,6 @@ const showModal = ref(false);
 const currentMatchId = ref("");
 const blueName = ref("");
 const redName = ref("");
-const apiKey = ref("DRAFTER-59605981-E026-439E-BAFC-3C532CF18FB1");
-
 const drafting = ref(false);
 const draftUrl = ref("");
 const draftId = ref("");
@@ -296,7 +336,20 @@ const syncing = ref(false);
 const message = ref("");
 const linkCopied = ref(false);
 const globalError = ref("");
+const awaitingSideChoice = ref(false);
+const claimingSide = ref(false);
+const sidePickMatch = ref<{ team1: Team; team2: Team } | null>(null);
 let syncInterval: any = null;
+
+const applyDraftDisplayFromMatch = (m: { team1: Team; team2: Team; draft_blue_team_id?: string | null }) => {
+  const { blueName: b, redName: r } = resolveBlueRedNames({
+    team1: m.team1,
+    team2: m.team2,
+    draft_blue_team_id: m.draft_blue_team_id,
+  });
+  blueName.value = b;
+  redName.value = r;
+};
 
 const showError = (msg: string) => {
   globalError.value = msg;
@@ -397,14 +450,72 @@ const startDraftForMatch = async (match: Match, roundNumber?: number, allRounds?
   }
 
   currentMatchId.value = match.id || "";
-  blueName.value = match.team1.name;
-  redName.value = match.team2.name;
+  draftUrl.value = "";
+  draftId.value = "";
+  message.value = "";
+  sidePickMatch.value = { team1: match.team1, team2: match.team2 };
   showModal.value = true;
-  generateDraft();
+
+  if (match.draft_url) {
+    awaitingSideChoice.value = false;
+    applyDraftDisplayFromMatch(match);
+    void generateDraft();
+    return;
+  }
+  if (match.draft_blue_team_id) {
+    awaitingSideChoice.value = false;
+    applyDraftDisplayFromMatch(match);
+    void generateDraft();
+    return;
+  }
+  awaitingSideChoice.value = true;
+  blueName.value = "";
+  redName.value = "";
+};
+
+const confirmDraftBlueSide = async (blueTeamId: string) => {
+  if (!currentMatchId.value || claimingSide.value) return;
+  claimingSide.value = true;
+  message.value = "";
+  try {
+    const r = await claimOrRefreshDraftBlueTeam(supabase, currentMatchId.value, blueTeamId);
+    const idx = matches.value.findIndex((m: any) => m.id === currentMatchId.value);
+    if (idx !== -1) {
+      const cur = matches.value[idx];
+      matches.value[idx] = {
+        ...cur,
+        draft_blue_team_id: r.draft_blue_team_id ?? cur.draft_blue_team_id,
+        draft_url: r.draft_url ?? cur.draft_url,
+      };
+    }
+    if (!r.draft_blue_team_id && !r.draft_url) {
+      showError("Impossible d’enregistrer le côté bleu. Réessayez.");
+      return;
+    }
+    if (!r.claimed && r.draft_blue_team_id && r.draft_blue_team_id !== blueTeamId) {
+      showError("L’autre équipe a déjà choisi les côtés. Alignement sur leur choix.");
+    }
+    const fresh = matches.value.find((m: any) => m.id === currentMatchId.value);
+    if (fresh?.team1 && fresh?.team2) {
+      applyDraftDisplayFromMatch(fresh);
+    }
+    awaitingSideChoice.value = false;
+    await generateDraft();
+  } catch (e: unknown) {
+    message.value = e instanceof Error ? e.message : "Erreur lors du choix des côtés";
+  } finally {
+    claimingSide.value = false;
+  }
 };
 
 const closeModal = () => {
   showModal.value = false;
+  awaitingSideChoice.value = false;
+  sidePickMatch.value = null;
+  if (syncInterval) {
+    clearInterval(syncInterval);
+    syncInterval = null;
+  }
 };
 
 const generateDraft = async () => {
@@ -422,18 +533,22 @@ const generateDraft = async () => {
         
         draftUrl.value = match.draft_url;
         draftId.value = match.draft_id || "";
+        if (match.team1 && match.team2) {
+          applyDraftDisplayFromMatch(match);
+        }
         message.value = "Draft récupérée !";
         
         if (syncInterval) clearInterval(syncInterval);
         syncInterval = setInterval(() => {
           syncDraftPicks();
-        }, 5000);
+        }, 4000);
         return;
       }
   
       message.value = "Initialisation de la draft...";
   
-      const draftCacheKey = `draft_${currentMatchId.value}_${blueName.value}_${redName.value}`;
+      const sideKey = match?.draft_blue_team_id ?? "unset";
+      const draftCacheKey = `draft_${currentMatchId.value}_${sideKey}_${blueName.value}_${redName.value}`;
       const cachedDraft = localStorage.getItem(draftCacheKey);
   
       if (cachedDraft) {
@@ -456,7 +571,7 @@ const generateDraft = async () => {
         if (syncInterval) clearInterval(syncInterval);
         syncInterval = setInterval(() => {
           syncDraftPicks();
-        }, 5000);
+        }, 4000);
         return;
       }
   
@@ -465,7 +580,6 @@ const generateDraft = async () => {
           matchId: currentMatchId.value,
           blueName: blueName.value,
           redName: redName.value,
-          apiKey: apiKey.value
         }
       });
   
@@ -502,7 +616,7 @@ const generateDraft = async () => {
         if (syncInterval) clearInterval(syncInterval);
         syncInterval = setInterval(() => {
           syncDraftPicks();
-        }, 5000);
+        }, 4000);
       } else {
         throw new Error("Draft generated, but couldn't parse URL.");
       }
@@ -524,26 +638,43 @@ const copyDraftLink = () => {
 
 const syncDraftPicks = async () => {
   if (!draftId.value || syncing.value) return;
-  
+
+  syncing.value = true;
   try {
-    syncing.value = true;
-    
     const { data, error: funcError } = await supabase.functions.invoke("sync-draft", {
       body: {
         draftId: draftId.value,
-        apiKey: apiKey.value
-      }
+      },
     });
 
+    logDraftSyncClient(
+      "FutureMatches",
+      draftId.value,
+      data as SyncDraftData | undefined,
+      funcError ?? null,
+    );
     if (funcError) return;
 
-    // The Edge Function now handles updating the database directly when status is FINISHED
-    if (data?.status === "FINISHED") {
+    const d = data as SyncDraftData | undefined;
+    if (d?.success === false) {
+      if (d.code === "DRAFTER_PLAN_LIMIT") {
+        message.value =
+          d.hint ?? "Accès Drafter limité : passer au plan Full API pour les drafts terminées.";
+      }
+      return;
+    }
+
+    const finished =
+      d?.status === "FINISHED" ||
+      d?.status === "finished" ||
+      d?.status === "COMPLETED";
+
+    if (finished) {
       if (syncInterval) {
         clearInterval(syncInterval);
         syncInterval = null;
       }
-      message.value = "Draft terminée ! Champions désactivés.";
+      message.value = "Draft terminée ! Champions à jour.";
       setTimeout(() => {
         closeModal();
       }, 3000);

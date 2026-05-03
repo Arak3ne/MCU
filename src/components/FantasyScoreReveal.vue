@@ -227,11 +227,10 @@
             <div class="relative bg-gradient-to-b from-[#1A1A1A] to-[#0B0F0C] border border-[#22C55E]/25 backdrop-blur-2xl rounded-lg md:rounded-xl px-4 sm:px-6 md:px-10 py-1.5 sm:py-2 md:py-3 shadow-[0_20px_50px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(74,222,128,0.08)]">
               
               <p class="text-white/40 text-[7px] sm:text-[8px] md:text-[10px] font-bold uppercase tracking-[0.4em] mb-0.5 sm:mb-1">
-                Score Total
+                Total équipe (barème dernier match)
               </p>
               
               <div class="flex items-center justify-center gap-2 sm:gap-3">
-                <!-- Massive Number -->
                 <span
                   class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-title text-transparent bg-clip-text drop-shadow-[0_0_20px_currentColor]"
                   :class="displayTotal > 0
@@ -241,25 +240,6 @@
                       : 'bg-gradient-to-b from-white to-white/70'">
                   {{ displayTotal.toFixed(1) }}
                 </span>
-                
-                <!-- Diff Indicator -->
-                <div v-if="newTotal !== oldTotal" 
-                     class="flex flex-col items-center justify-center rounded-lg md:rounded-xl px-2 sm:px-3 md:px-4 py-1 sm:py-2 transition-all duration-700 delay-1000"
-                     :class="[
-                       step >= 6 ? 'opacity-100 scale-100' : 'opacity-0 scale-50',
-                       newTotal > oldTotal ? 'bg-mcu-primary/10 border border-mcu-primary/35' : 'bg-red-500/10 border border-red-500/30'
-                     ]">
-                  <svg v-if="newTotal > oldTotal" class="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 text-mcu-primary drop-shadow-[0_0_10px_currentColor]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                  </svg>
-                  <svg v-else class="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 text-red-500 drop-shadow-[0_0_10px_currentColor]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                  </svg>
-                  <span class="font-bold text-xs sm:text-sm md:text-lg drop-shadow-[0_0_10px_currentColor]"
-                        :class="newTotal > oldTotal ? 'text-mcu-primary' : 'text-red-500'">
-                    {{ newTotal > oldTotal ? '+' : '' }}{{ (newTotal - oldTotal).toFixed(1) }}
-                  </span>
-                </div>
               </div>
             </div>
           </div>
@@ -294,6 +274,7 @@
 import { ref, watch, onUnmounted, computed } from 'vue';
 import type { FantasyTeam } from '../types/fantasy';
 import { fantasyService } from '../services/fantasyService';
+import { calculateTeamPoints } from '../utils/fantasyLeaderboard';
 
 const props = defineProps<{
   show: boolean;
@@ -431,7 +412,7 @@ const orderedPlayerIds = computed(() => {
 
 const startAnimationSequence = async () => {
   step.value = 0;
-  displayTotal.value = props.oldTotal;
+  displayTotal.value = 0;
   flippedCards.value = {};
   props.team.playerIds.forEach(id => {
     displayScores.value[id] = 0;
@@ -446,14 +427,20 @@ const startAnimationSequence = async () => {
     console.error('Failed to fetch player stats', e);
   }
 
+  const matchScoreByPlayer: Record<string, number> = {}
+  props.team.playerIds.forEach((id) => {
+    const fp = playerStats.value[id]?.fantasyPoints
+    matchScoreByPlayer[id] = typeof fp === 'number' ? fp : 0
+  })
+  const lastMatchTeamTotal = calculateTeamPoints(props.team, matchScoreByPlayer)
+
   orderedPlayerIds.value.forEach((playerId, index) => {
     const t = window.setTimeout(() => {
       step.value = index + 1;
-      
-      let finalScore = props.playerScores[playerId] || 0;
-      // Note: We show the raw match score here as requested, 
-      // the captain multiplier is only applied to the total team score.
-      
+
+      // Aligner avec getPlayerMatchStats / fantasyMatchPoints (pas les scores cumulés DB).
+      const finalScore = matchScoreByPlayer[playerId] ?? 0
+
       animateValue(0, finalScore, 1200, (val) => {
         displayScores.value[playerId] = val;
       });
@@ -465,7 +452,7 @@ const startAnimationSequence = async () => {
   const totalDelay = 800 + props.team.playerIds.length * 400 + 800;
   const tTotal = window.setTimeout(() => {
     step.value = 6;
-    animateValue(props.oldTotal, props.newTotal, 2000, (val) => {
+    animateValue(0, lastMatchTeamTotal, 2000, (val) => {
       displayTotal.value = val;
     });
   }, totalDelay);

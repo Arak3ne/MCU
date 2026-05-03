@@ -1,11 +1,53 @@
 <template>
   <div class="min-h-screen bg-[#0B0F0C] text-[#F0FDF4] p-4 md:p-8 relative">
+    <Transition
+      enter-active-class="transition duration-300 ease-out"
+      enter-from-class="opacity-0 -translate-y-4"
+      enter-to-class="opacity-100 translate-y-0"
+      leave-active-class="transition duration-200 ease-in"
+      leave-from-class="opacity-100 translate-y-0"
+      leave-to-class="opacity-0 -translate-y-4">
+      <div v-if="toast" class="fixed top-24 left-1/2 -translate-x-1/2 z-[110] w-full max-w-md px-4 pointer-events-none">
+        <div
+          class="pointer-events-auto bg-[#111111] rounded-lg p-4 flex items-center gap-4 backdrop-blur-xl border"
+          :class="
+            toast.type === 'success'
+              ? 'border-emerald-500/50 shadow-[0_0_30px_rgba(34,197,94,0.35)]'
+              : 'border-red-500/50 shadow-[0_0_30px_rgba(239,68,68,0.4)]'
+          ">
+          <div
+            class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center"
+            :class="toast.type === 'success' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'">
+            <svg v-if="toast.type === 'success'" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p
+              class="font-bold uppercase tracking-widest text-xs"
+              :class="toast.type === 'success' ? 'text-emerald-500' : 'text-red-500'">
+              {{ toast.type === 'success' ? 'Succès' : 'Erreur' }}
+            </p>
+            <p class="text-[#F0FDF4] text-sm break-words">{{ toast.message }}</p>
+          </div>
+          <button type="button" @click="dismissToast" class="text-[#A1A1AA] hover:text-white transition-colors shrink-0 cursor-pointer">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </Transition>
+
     <div class="flex justify-between items-center mb-6">
       <div class="flex items-center gap-4">
         <img src="../../assets/mcu_logo.png" alt="MCU Logo" class="w-10 h-10 object-contain drop-shadow-[0_0_10px_rgba(34,197,94,0.3)]" />
         <h1 class="text-2xl md:text-4xl font-title text-[#22C55E]">Admin Dashboard</h1>
       </div>
-      <button @click="handleLogout" class="px-4 py-2 bg-[#1A1A1A] border border-[#2A2A2A] hover:border-[#EF4444] hover:text-[#EF4444] text-xs font-bold uppercase tracking-widest rounded transition-colors" cursor-pointer>
+      <button @click="handleLogout" class="cursor-pointer px-4 py-2 bg-[#1A1A1A] border border-[#2A2A2A] hover:border-[#EF4444] hover:text-[#EF4444] text-xs font-bold uppercase tracking-widest rounded transition-colors">
         Logout
       </button>
     </div>
@@ -122,10 +164,10 @@
           </p>
         </div>
         <div class="flex gap-2">
-          <button @click="handleRecalculateStandings" class="text-xs px-4 py-2 border border-[#22C55E] text-[#22C55E] hover:bg-[#22C55E]/10 rounded font-bold transition-colors" cursor-pointer>
+          <button @click="handleRecalculateStandings" class="cursor-pointer text-xs px-4 py-2 border border-[#22C55E] text-[#22C55E] hover:bg-[#22C55E]/10 rounded font-bold transition-colors">
             Recalculate Standings
           </button>
-          <button @click="loadMatches" class="text-xs px-4 py-2 bg-[#1A1A1A] border border-[#2A2A2A] hover:bg-[#2A2A2A] rounded font-bold transition-colors" cursor-pointer>
+          <button @click="loadMatches" class="cursor-pointer text-xs px-4 py-2 bg-[#1A1A1A] border border-[#2A2A2A] hover:bg-[#2A2A2A] rounded font-bold transition-colors">
             Refresh Matches
           </button>
         </div>
@@ -150,19 +192,29 @@
           <div v-for="round in bracketGroup.rounds" :key="round.number" class="mb-4 pl-3 border-l-2 transition-colors duration-300"
                :class="isRoundExpanded(bracketGroup.name, round.number) ? 'border-[#22C55E]' : 'border-[#2A2A2A]'">
             
-            <button @click="toggleRound(bracketGroup.name, round.number)" 
-                    class="flex items-center gap-2 w-full text-left mb-3 cursor-pointer group">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-[#A1A1AA] group-hover:text-[#22C55E] transition-transform" 
-                   :class="isRoundExpanded(bracketGroup.name, round.number) ? 'rotate-90 text-[#22C55E]' : ''" 
-                   fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-              </svg>
-              <h4 class="text-xs font-bold text-[#A1A1AA] uppercase tracking-widest group-hover:text-[#F0FDF4] transition-colors"
-                  :class="isRoundExpanded(bracketGroup.name, round.number) ? 'text-[#F0FDF4]' : ''">
-                {{ getRoundName(bracketGroup.name, round.number) }}
-                <span class="ml-2 text-[10px] font-normal opacity-50">({{ round.matches.length }} matchs)</span>
-              </h4>
-            </button>
+            <div class="flex flex-wrap items-center gap-2 justify-between mb-3">
+              <button type="button" @click="toggleRound(bracketGroup.name, round.number)" 
+                      class="flex items-center gap-2 flex-1 min-w-0 text-left cursor-pointer group">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 text-[#A1A1AA] group-hover:text-[#22C55E] transition-transform" 
+                     :class="isRoundExpanded(bracketGroup.name, round.number) ? 'rotate-90 text-[#22C55E]' : ''" 
+                     fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+                <h4 class="text-xs font-bold text-[#A1A1AA] uppercase tracking-widest group-hover:text-[#F0FDF4] transition-colors"
+                    :class="isRoundExpanded(bracketGroup.name, round.number) ? 'text-[#F0FDF4]' : ''">
+                  {{ getRoundName(bracketGroup.name, round.number) }}
+                  <span class="ml-2 text-[10px] font-normal opacity-50">({{ round.matches.length }} matchs)</span>
+                </h4>
+              </button>
+              <button
+                v-if="roundHasSaveTourButton(round.matches)"
+                type="button"
+                @click.stop="handleSaveRound(bracketGroup.name, round.number, round.matches)"
+                :disabled="savingRoundKey === roundSaveKey(bracketGroup.name, round.number)"
+                class="shrink-0 text-[10px] px-3 py-1.5 font-bold uppercase bg-[#2A2A2A] border border-[#3F3F46] hover:bg-[#22C55E] hover:text-[#0B0F0C] hover:border-[#4ADE80] rounded transition-colors disabled:opacity-40 disabled:cursor-wait cursor-pointer">
+                {{ savingRoundKey === roundSaveKey(bracketGroup.name, round.number) ? 'Enregistrement…' : 'Sauvegarder le tour' }}
+              </button>
+            </div>
             
             <div v-show="isRoundExpanded(bracketGroup.name, round.number)" 
                  class="grid grid-cols-1 gap-3 mb-2"
@@ -175,8 +227,8 @@
                   <span v-if="match.is_completed" class="text-green-500 px-1.5 py-0.5 bg-green-500/10 rounded">DONE</span>
                 </div>
                 
-                <div class="flex items-stretch justify-between gap-2 w-full">
-                  <div class="flex-1 flex flex-col gap-1">
+                <div class="flex items-stretch gap-2 w-full">
+                  <div class="flex-1 flex flex-col gap-1 min-w-0">
                     <!-- Team 1 -->
                     <div class="flex items-center justify-between bg-[#0B0F0C] p-1.5 rounded border transition-colors"
                          :class="getWinnerStatusClass(match, 1)">
@@ -218,18 +270,6 @@
                       </template>
                     </div>
                   </div>
-                  
-                  <!-- Save Button -->
-                  <div v-if="saveMatchVisible(match)" class="flex flex-col justify-center w-14">
-                    <button @click="handleUpdateMatch(match)" 
-                            :disabled="!match.team1_id || !match.team2_id" 
-                            class="h-full w-full flex flex-col items-center justify-center gap-1 text-[10px] font-bold uppercase bg-[#2A2A2A] hover:bg-[#22C55E] hover:text-[#0B0F0C] text-[#F0FDF4] transition-colors rounded disabled:opacity-30 disabled:cursor-not-allowed border border-transparent hover:border-[#4ADE80]" cursor-pointer title="Save Score">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                      </svg>
-                      SAVE
-                    </button>
-                  </div>
                 </div>
 
                 <p v-if="scoreInputsLocked(match)" class="text-[9px] text-[#A1A1AA] leading-tight text-center mt-1">
@@ -245,7 +285,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, reactive } from 'vue';
+import { ref, computed, onMounted, onUnmounted, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { supabase } from '../../lib/supabase';
 import { generateGroupMatches, generateSingleEliminationBracket, generateChampionship } from '../../lib/bracket';
@@ -271,8 +311,38 @@ const knockoutSetup = ref({
 
 const matches = ref<any[]>([]);
 const loadingMatches = ref(true);
+const savingRoundKey = ref('');
+
+type AdminToast = { message: string; type: 'success' | 'error' };
+const toast = ref<AdminToast | null>(null);
+let toastHideTimer: ReturnType<typeof setTimeout> | null = null;
+
+const dismissToast = () => {
+  if (toastHideTimer) {
+    clearTimeout(toastHideTimer);
+    toastHideTimer = null;
+  }
+  toast.value = null;
+};
+
+const showToast = (message: string, type: 'success' | 'error') => {
+  if (toastHideTimer) {
+    clearTimeout(toastHideTimer);
+    toastHideTimer = null;
+  }
+  toast.value = { message, type };
+  toastHideTimer = setTimeout(() => {
+    toastHideTimer = null;
+    toast.value = null;
+  }, 5000);
+};
 
 const expandedRounds = reactive(new Set<string>());
+
+const roundSaveKey = (stage: string, roundNum: number) => `${stage}-${roundNum}`;
+
+/** Scores présents pour ce match ? (null / '-' sur les selects exclus) */
+const scoreFilled = (raw: unknown) => raw != null && raw !== '' && !Number.isNaN(Number(raw));
 
 const toggleRound = (stage: string, roundNumber: number) => {
   const key = `${stage}-${roundNumber}`;
@@ -293,6 +363,10 @@ onMounted(async () => {
   await loadMatches();
 });
 
+onUnmounted(() => {
+  dismissToast();
+});
+
 const handleLogout = () => {
   localStorage.removeItem('admin_auth');
   router.push('/admin/login');
@@ -303,7 +377,7 @@ const loadMatches = async () => {
   const { data, error } = await fetchPlayoffMatches();
   if (error) {
     console.error(error);
-    alert('Erreur chargement des matchs: ' + error.message);
+    showToast('Erreur chargement des matchs : ' + error.message, 'error');
     matches.value = [];
     loadingMatches.value = false;
     return;
@@ -317,42 +391,43 @@ const scoreInputsLocked = (m: any) =>
 
 const saveMatchVisible = (m: any) => !scoreInputsLocked(m);
 
+const roundHasSaveTourButton = (roundMatches: any[]) => roundMatches.some((x) => saveMatchVisible(x));
+
 const isBO3 = (m: any) => m?.stage === 'knockout' && m?.round === 2;
 
 
 const handleGenerateChampionship = async () => {
   if (allTeams.value.length === 0) {
-    return alert('Aucune équipe trouvée en base de données.');
+    showToast('Aucune équipe trouvée en base de données.', 'error');
+    return;
   }
 
   const teamIds = allTeams.value.map(t => t.id);
-
-  if (!confirm('Generate Championship Matches? This will overwrite existing championship matches.')) return;
 
   const rawMatches = generateChampionship(teamIds);
   
   const { error } = await generatePlayoffMatches(rawMatches, 'championship');
   
   if (error) {
-    alert('Error generating championship: ' + error.message);
+    showToast('Erreur lors de la génération championship : ' + error.message, 'error');
   } else {
     await loadMatches();
-    alert('Championship Matches Generated!');
+    showToast('Matchs championship générés.', 'success');
   }
 };
 
 const handleGenerateGroups = async () => {
   if (groupSetup.value.groupA.some(t => !t) || groupSetup.value.groupB.some(t => !t)) {
-    return alert('Please select exactly 3 teams for both Group A and Group B.');
+    showToast('Sélectionne exactement 3 équipes dans le groupe A et 3 dans le groupe B.', 'error');
+    return;
   }
 
   const allIds = [...groupSetup.value.groupA, ...groupSetup.value.groupB];
   const uniqueIds = new Set(allIds);
   if (uniqueIds.size !== 6) {
-    return alert('You have selected duplicate teams. Each spot must be filled by a distinct team.');
+    showToast('Équipes en double : chaque slot doit être une équipe distincte.', 'error');
+    return;
   }
-
-  if (!confirm('Generate Group Matches? This will overwrite existing group matches.')) return;
 
   const rawMatchesA = generateGroupMatches(groupSetup.value.groupA as string[], 'group_a');
   const rawMatchesB = generateGroupMatches(groupSetup.value.groupB as string[], 'group_b');
@@ -361,7 +436,7 @@ const handleGenerateGroups = async () => {
   await generatePlayoffMatches(rawMatchesB, 'group_b');
   
   await loadMatches();
-  alert('Group Matches Generated!');
+  showToast('Matchs de groupes générés.', 'success');
   showGroupsSetup.value = false;
 };
 
@@ -369,61 +444,81 @@ const handleGenerateKnockout = async () => {
   const { groupA1, groupA2, groupB1, groupB2 } = knockoutSetup.value;
   
   if (!groupA1 || !groupA2 || !groupB1 || !groupB2) {
-    return alert('Please select all 4 advancing teams.');
+    showToast('Sélectionne les 4 équipes qualifiées.', 'error');
+    return;
   }
 
   const selectedIds = [groupA1, groupA2, groupB1, groupB2];
   const uniqueIds = new Set(selectedIds);
   if (uniqueIds.size !== 4) {
-    return alert('You have selected duplicate teams. Each spot must be filled by a distinct team.');
+    showToast('Équipes en double : chaque slot doit être une équipe distincte.', 'error');
+    return;
   }
 
-  if (!confirm('Are you sure? This will delete the current knockout bracket and generate a new one.')) return;
-  
   const rawMatches = generateSingleEliminationBracket(selectedIds);
   const { error } = await generatePlayoffMatches(rawMatches, 'knockout');
   if (error) {
-    alert('Error generating knockout: ' + error.message);
+    showToast('Erreur génération knockout : ' + error.message, 'error');
   } else {
     await loadMatches();
-    alert('Knockout Bracket Generated!');
+    showToast('Tableau knockout généré.', 'success');
     showKnockoutSetup.value = false;
   }
 };
 
-const handleUpdateMatch = async (match: any) => {
-  const advances = !!match.winner_to_match_id;
-  const confirmMsg = advances
-    ? 'Enregistrer les scores et faire avancer le gagnant vers le match suivant ?'
-    : 'Enregistrer les scores pour ce match ?';
+const handleSaveRound = async (_stage: string, roundNum: number, roundMatches: any[]) => {
+  const key = roundSaveKey(_stage, roundNum);
+  const candidates = roundMatches
+    .filter((m) => saveMatchVisible(m) && m.team1_id && m.team2_id)
+    .slice()
+    .sort((a, b) => (a.match_order ?? 0) - (b.match_order ?? 0));
 
-  if (!confirm(confirmMsg)) return;
+  type Row = { m: any; s1: number; s2: number };
+  const toSave: Row[] = [];
 
-  const score1 = Number(match.team1_score) || 0;
-  const score2 = Number(match.team2_score) || 0;
-
-  let winnerId = null;
-
-  if (score1 > score2) {
-    winnerId = match.team1_id;
-  } else if (score2 > score1) {
-    winnerId = match.team2_id;
-  } else {
-    return alert('Égalités interdites.');
+  for (const m of candidates) {
+    if (!scoreFilled(m.team1_score) || !scoreFilled(m.team2_score)) continue;
+    const s1 = Number(m.team1_score);
+    const s2 = Number(m.team2_score);
+    if (s1 === s2) {
+      showToast(`Égalité interdite (M#${m.match_order}). Corrige le score puis réessaie.`, 'error');
+      return;
+    }
+    toSave.push({ m, s1, s2 });
   }
 
-  const { error } = await updatePlayoffMatch(
-    match.id,
-    { team1_score: score1, team2_score: score2, is_completed: true },
-    winnerId,
-    match.winner_to_match_id
-  );
+  if (toSave.length === 0) {
+    showToast(
+      'Aucun match prêt : deux équipes et un score gagnant par ligne à enregistrer (les lignes vides sont ignorées).',
+      'error'
+    );
+    return;
+  }
 
-  if (error) {
-    alert('Erreur: ' + error.message);
-  } else {
+  savingRoundKey.value = key;
+  try {
+    for (const { m, s1, s2 } of toSave) {
+      const winnerId = s1 > s2 ? m.team1_id : m.team2_id;
+      const { error } = await updatePlayoffMatch(
+        m.id,
+        { team1_score: s1, team2_score: s2, is_completed: true },
+        winnerId,
+        m.winner_to_match_id
+      );
+      if (error) {
+        showToast(`Erreur M#${m.match_order} : ` + error.message, 'error');
+        await loadMatches();
+        return;
+      }
+    }
     await loadMatches();
     await recalculateStandingsSilent();
+    showToast(
+      toSave.length === 1 ? '1 match enregistré.' : `${toSave.length} matchs enregistrés.`,
+      'success'
+    );
+  } finally {
+    savingRoundKey.value = '';
   }
 };
 
@@ -453,10 +548,8 @@ const recalculateStandingsSilent = async () => {
 };
 
 const handleRecalculateStandings = async () => {
-  if (!confirm('Recalculate all team standings based on match results?')) return;
-  
   await recalculateStandingsSilent();
-  alert('Standings recalculated successfully!');
+  showToast('Classements recalculés.', 'success');
 };
 
 const formatBracketName = (name: string) => {

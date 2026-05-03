@@ -1,6 +1,6 @@
 <template>
   <Transition name="fade-modal">
-    <div v-if="show" class="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto overflow-x-hidden bg-[#0B0F0C]/96 backdrop-blur-2xl font-sans text-[#F0FDF4]">
+    <div v-if="show" class="fixed inset-0 z-[110] flex items-center justify-center overflow-y-auto overflow-x-hidden bg-[#0B0F0C]/96 backdrop-blur-2xl font-sans text-[#F0FDF4]">
       
       <!-- Premium Animated Background -->
       <div class="absolute inset-0 pointer-events-none overflow-hidden fixed">
@@ -125,8 +125,14 @@
               <div class="text-xl md:text-2xl text-mcu-primary font-bold">=</div>
               <div class="flex flex-col items-center relative">
                 <div class="absolute inset-0 bg-mcu-primary/20 blur-xl rounded-full"></div>
-                <span class="text-[10px] md:text-xs text-mcu-primary uppercase tracking-widest mb-1 font-bold">Budget Total</span>
-                <span class="text-4xl md:text-5xl font-title text-transparent bg-clip-text bg-gradient-to-b from-white to-mcu-primary drop-shadow-[0_0_15px_rgba(34,197,94,0.5)]">{{ carriedOverBudget + previousRosterValue }}</span>
+                <span class="text-[10px] md:text-xs text-mcu-primary uppercase tracking-widest mb-1 font-bold">Budget mercato max</span>
+                <span class="text-4xl md:text-5xl font-title text-transparent bg-clip-text bg-gradient-to-b from-white to-mcu-primary drop-shadow-[0_0_15px_rgba(34,197,94,0.5)]">{{ mercatoPlafond }}</span>
+                <span
+                  v-if="mercatoBudgetPenaltyDeduction > 0"
+                  class="mt-2 text-[10px] md:text-[11px] text-red-300/90 font-bold uppercase tracking-wide"
+                >
+                  −{{ mercatoBudgetPenaltyDeduction }} pts transferts hors quota
+                </span>
               </div>
             </div>
           </div>
@@ -184,12 +190,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onUnmounted } from 'vue';
+import { ref, computed, watch, onUnmounted } from 'vue';
 
 const props = defineProps<{
   show: boolean;
   carriedOverBudget: number;
   previousRosterValue: number;
+  /** Plafond effectif jour 2 (reliquat + valeur équipe − pénalité transferts si besoin). */
+  maxMercatoBudget?: number;
   previousTeam: any | null;
   playerScores: Record<string, number>;
   getFullPlayer: (id: string) => any;
@@ -197,6 +205,21 @@ const props = defineProps<{
   getPriceChange: (player: any) => number;
   getRosterCardSplashUrl: (playerId: string) => string;
 }>();
+
+const mercatoBudgetBrut = computed(
+  () => props.carriedOverBudget + props.previousRosterValue,
+)
+
+const mercatoPlafond = computed(() =>
+  props.maxMercatoBudget != null && Number.isFinite(props.maxMercatoBudget)
+    ? Math.max(0, props.maxMercatoBudget)
+    : mercatoBudgetBrut.value,
+)
+
+/** Même valeur que penaltyPoints lorsque ces points retirent aussi du budget mercato. */
+const mercatoBudgetPenaltyDeduction = computed(() =>
+  Math.max(0, mercatoBudgetBrut.value - mercatoPlafond.value),
+)
 
 const emit = defineEmits(['update:show']);
 

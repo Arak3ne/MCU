@@ -27,4 +27,31 @@
     font-family: var(--font-title);
     letter-spacing: 0.05em;
   }
+
+  /* Curseur main sur les contrôles cliquables (complète les classes utilitaires au besoin) */
+  button:not(:disabled),
+  input[type="button"]:not(:disabled),
+  input[type="submit"]:not(:disabled),
+  input[type="reset"]:not(:disabled),
+  input[type="checkbox"]:enabled,
+  input[type="radio"]:enabled,
+  [role="button"]:not([aria-disabled="true"]),
+  [role="tab"],
+  summary {
+    cursor: pointer;
+  }
+
+  a[href] {
+    cursor: pointer;
+  }
+
+  select:enabled {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  input:disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
 }

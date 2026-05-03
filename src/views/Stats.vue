@@ -114,7 +114,7 @@
               <div class="relative z-10 flex flex-col items-center transition-transform duration-500 group-hover:-translate-y-6">
                 <div class="absolute -top-10 md:-top-14 text-4xl md:text-6xl animate-bounce drop-shadow-[0_0_15px_rgba(234,179,8,0.6)] z-20">👑</div>
                 <div class="relative">
-                  <img :src="`https://api.dicebear.com/7.x/avataaars/svg?seed=${top4[0].playerName}&backgroundColor=transparent`" 
+                  <img :src="resolveStatAvatarUrl(top4[0].playerId, top4[0].playerName)" 
                        class="w-20 h-20 md:w-32 md:h-32 rounded-full border-[4px] border-[#FBBF24] bg-gradient-to-b from-[#78350F] to-[#451A03] shadow-[0_0_30px_rgba(251,191,36,0.4)] object-cover" />
                   <div class="absolute -bottom-2 -right-2 bg-gradient-to-br from-[#FDE047] to-[#EAB308] text-[#451A03] font-bold text-lg md:text-2xl w-9 h-9 md:w-12 md:h-12 rounded-full flex items-center justify-center border-[3px] border-[#0B0F0C] shadow-[0_0_15px_rgba(234,179,8,0.5)]">1</div>
                 </div>
@@ -137,7 +137,7 @@
             <div v-if="top4[1]" class="flex flex-col items-center w-[25%] max-w-[160px] relative group h-full justify-end">
               <div class="relative z-10 flex flex-col items-center transition-transform duration-500 group-hover:-translate-y-4">
                 <div class="relative">
-                  <img :src="`https://api.dicebear.com/7.x/avataaars/svg?seed=${top4[1].playerName}&backgroundColor=transparent`" 
+                  <img :src="resolveStatAvatarUrl(top4[1].playerId, top4[1].playerName)" 
                        class="w-16 h-16 md:w-24 md:h-24 rounded-full border-[3px] border-[#94A3B8] bg-gradient-to-b from-[#334155] to-[#0F172A] shadow-[0_0_20px_rgba(148,163,184,0.3)] object-cover" />
                   <div class="absolute -bottom-2 -right-2 bg-gradient-to-br from-[#CBD5E1] to-[#94A3B8] text-[#0F172A] font-bold text-sm md:text-lg w-7 h-7 md:w-9 md:h-9 rounded-full flex items-center justify-center border-2 border-[#0B0F0C] shadow-lg">2</div>
                 </div>
@@ -159,7 +159,7 @@
             <div v-if="top4[2]" class="flex flex-col items-center w-[25%] max-w-[160px] relative group h-full justify-end">
               <div class="relative z-10 flex flex-col items-center transition-transform duration-500 group-hover:-translate-y-4">
                 <div class="relative">
-                  <img :src="`https://api.dicebear.com/7.x/avataaars/svg?seed=${top4[2].playerName}&backgroundColor=transparent`" 
+                  <img :src="resolveStatAvatarUrl(top4[2].playerId, top4[2].playerName)" 
                        class="w-14 h-14 md:w-20 md:h-20 rounded-full border-[3px] border-[#B45309] bg-gradient-to-b from-[#451A03] to-[#1A0E06] shadow-[0_0_20px_rgba(180,83,9,0.3)] object-cover" />
                   <div class="absolute -bottom-2 -right-2 bg-gradient-to-br from-[#D97706] to-[#B45309] text-[#FFFBEB] font-bold text-sm md:text-lg w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center border-2 border-[#0B0F0C] shadow-lg">3</div>
                 </div>
@@ -181,7 +181,7 @@
             <div v-if="top4[3]" class="flex flex-col items-center w-[20%] max-w-[140px] relative group h-full justify-end">
               <div class="relative z-10 flex flex-col items-center transition-transform duration-500 group-hover:-translate-y-3">
                 <div class="relative">
-                  <img :src="`https://api.dicebear.com/7.x/avataaars/svg?seed=${top4[3].playerName}&backgroundColor=transparent`" 
+                  <img :src="resolveStatAvatarUrl(top4[3].playerId, top4[3].playerName)" 
                        class="w-12 h-12 md:w-16 md:h-16 rounded-full border-[2px] border-[#475569] bg-gradient-to-b from-[#1E293B] to-[#0F172A] shadow-[0_0_15px_rgba(71,85,105,0.3)] object-cover" />
                   <div class="absolute -bottom-2 -right-2 bg-gradient-to-br from-[#64748B] to-[#475569] text-white font-bold text-xs md:text-sm w-6 h-6 md:w-7 md:h-7 rounded-full flex items-center justify-center border-2 border-[#0B0F0C] shadow-lg">4</div>
                 </div>
@@ -323,7 +323,7 @@
                     class="group hover:bg-[#22C55E]/5 transition-all duration-300">
                   <td class="p-4 sticky left-0 bg-[#111111] group-hover:bg-[#141C16] transition-colors z-10 shadow-[4px_0_10px_rgba(0,0,0,0.1)]">
                     <div class="flex items-center gap-3">
-                      <img :src="`https://api.dicebear.com/7.x/avataaars/svg?seed=${stat.playerName}&backgroundColor=transparent`" 
+                      <img :src="resolveStatAvatarUrl(stat.playerId, stat.playerName)" 
                            class="w-10 h-10 rounded-full bg-[#1A1A1A] border border-[#2A2A2A] group-hover:border-[#22C55E]/50 transition-colors object-cover" />
                       <span class="font-bold text-[#F0FDF4] uppercase tracking-wide group-hover:text-[#22C55E] transition-colors text-sm">{{ stat.playerName }}</span>
                     </div>
@@ -394,9 +394,8 @@
               </tbody>
             </table>
           </div>
-          <div v-if="sortedStats.length === 0" class="p-20 text-center">
-            <div class="text-6xl mb-6 opacity-20">📊</div>
-            <p class="text-[#A1A1AA] uppercase tracking-[0.3em] font-bold">No match data recorded yet</p>
+          <div v-if="sortedStats.length === 0" class="p-12 text-center border-t border-[#2A2A2A]/50">
+            <p class="text-[#A1A1AA] uppercase tracking-[0.2em] text-xs font-bold">Aucun joueur pour ce filtre de rôle</p>
           </div>
         </div>
       </div>
@@ -421,6 +420,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { supabase } from '../lib/supabase';
+import { dicebearPortraitUrl, defaultSeedOnlyAvatarUrl } from '../lib/dicebear';
+import { fetchPlayerAvatarConfigsByIds } from '../services/playerAvatarService';
 
 import topIcon from '../assets/top.png';
 import jglIcon from '../assets/jgl.png';
@@ -527,6 +528,51 @@ const scrollToRawData = () => {
   }
 };
 
+function createEmptyPlayerStats(playerId: string, playerName: string, primaryRole: string): PlayerStats {
+  return {
+    playerId,
+    playerName,
+    primaryRole,
+    gamesPlayed: 0,
+    totalKills: 0,
+    totalDeaths: 0,
+    totalAssists: 0,
+    kda: 0,
+    avgKills: 0,
+    avgDeaths: 0,
+    avgAssists: 0,
+    killParticipation: 0,
+    totalDamageToChampions: 0,
+    totalDamageTaken: 0,
+    totalGoldEarned: 0,
+    totalVisionScore: 0,
+    totalMinionsKilled: 0,
+    totalGameDurationMinutes: 0,
+    dpm: 0,
+    gpm: 0,
+    cspm: 0,
+    dtpm: 0,
+    dmgPerGold: 0,
+    avgVisionScore: 0,
+    dmgShare: 0,
+    goldShare: 0,
+    firstBloods: 0,
+    firstBloodRate: 0,
+    largestKillingSpree: 0,
+    totalGameDurationSeconds: 0,
+    avgGameDuration: 0,
+    pacifistScore: 0,
+    feederScore: 0,
+    wardDispenserScore: 0,
+    blindScore: 0,
+    survivorScore: 0,
+    totalDamageSelfMitigated: 0,
+    totalWardsPlaced: 0,
+    maxDeathsInGame: 0,
+    minDamageInGame: Infinity,
+  };
+}
+
 interface PlayerStats {
   playerId: string;
   playerName: string;
@@ -579,6 +625,10 @@ interface PlayerStats {
 const loading = ref(true);
 const error = ref<string | null>(null);
 const stats = ref<PlayerStats[]>([]);
+const avatarUrlByPlayerId = ref(new Map<string, string>());
+
+const resolveStatAvatarUrl = (playerId: string, playerName: string) =>
+  avatarUrlByPlayerId.value.get(playerId) ?? dicebearPortraitUrl(undefined, playerName);
 
 const tabs = [
   { id: 'classic', label: 'Classique' },
@@ -867,8 +917,8 @@ const fetchStats = async () => {
       .from('match_participants')
       .select(`
         *,
-        match_history!inner(game_duration),
-        players!inner(pseudo, riot_id, primary_role)
+        match_history(game_duration),
+        players(pseudo, riot_id, primary_role)
       `);
 
     if (fetchError) throw fetchError;
@@ -894,7 +944,47 @@ const fetchStats = async () => {
     }
 
     if (!data || data.length === 0) {
-      stats.value = [];
+      const { data: roster, error: rosterError } = await supabase
+        .from('players')
+        .select('id, pseudo, riot_id, primary_role')
+        .order('pseudo', { ascending: true });
+
+      if (rosterError) throw rosterError;
+
+      let finalStats: PlayerStats[];
+      const urlMap = new Map<string, string>();
+
+      if (roster && roster.length > 0) {
+        finalStats = roster.map((row) =>
+          createEmptyPlayerStats(
+            row.id,
+            row.pseudo?.trim() || row.riot_id?.trim() || 'Joueur',
+            row.primary_role?.trim() || 'Unknown'
+          )
+        );
+        try {
+          const ids = finalStats.map((s) => s.playerId);
+          const rows = await fetchPlayerAvatarConfigsByIds(ids);
+          const byPid = new Map(rows.map((r) => [r.player_id, r]));
+          for (const s of finalStats) {
+            urlMap.set(s.playerId, dicebearPortraitUrl(byPid.get(s.playerId), s.playerName));
+          }
+        } catch (e) {
+          console.warn('Avatar URL cache:', e);
+        }
+      } else {
+        const seed =
+          typeof crypto !== 'undefined' && crypto.randomUUID
+            ? crypto.randomUUID()
+            : `mcu-${Date.now()}`;
+        const placeholderId = '__stats_empty_placeholder__';
+        finalStats = [createEmptyPlayerStats(placeholderId, '—', 'mid')];
+        urlMap.set(placeholderId, defaultSeedOnlyAvatarUrl(seed));
+      }
+
+      stats.value = finalStats;
+      avatarUrlByPlayerId.value = urlMap;
+      setTimeout(checkScroll, 100);
       return;
     }
 
@@ -902,7 +992,8 @@ const fetchStats = async () => {
 
     for (const row of data) {
       const playerId = row.player_id;
-      const playerName = row.players?.pseudo || row.players?.riot_id || 'Unknown';
+      if (!playerId) continue;
+      const playerName = row.players?.pseudo || row.players?.riot_id || 'Joueur inconnu';
       const primaryRole = row.players?.primary_role || 'Unknown';
       const gameDurationSecs = row.match_history?.game_duration || 0;
       const gameDurationMins = gameDurationSecs / 60;
@@ -1026,7 +1117,43 @@ const fetchStats = async () => {
       finalStats.push(p);
     }
 
+    const seenPlayerIds = new Set(finalStats.map((s) => s.playerId));
+    const { data: rosterRows, error: rosterMergeError } = await supabase
+      .from('players')
+      .select('id, pseudo, riot_id, primary_role')
+      .order('pseudo', { ascending: true });
+
+    if (!rosterMergeError && rosterRows) {
+      for (const row of rosterRows) {
+        const id = row.id;
+        if (!id || seenPlayerIds.has(id)) continue;
+        seenPlayerIds.add(id);
+        finalStats.push(
+          createEmptyPlayerStats(
+            id,
+            row.pseudo?.trim() || row.riot_id?.trim() || 'Joueur',
+            row.primary_role?.trim() || 'Unknown'
+          )
+        );
+      }
+    }
+
     stats.value = finalStats;
+
+    try {
+      const ids = [...new Set(finalStats.map((s) => s.playerId))];
+      const rows = await fetchPlayerAvatarConfigsByIds(ids);
+      const byPid = new Map(rows.map((r) => [r.player_id, r]));
+      const urlMap = new Map<string, string>();
+      for (const s of finalStats) {
+        urlMap.set(s.playerId, dicebearPortraitUrl(byPid.get(s.playerId), s.playerName));
+      }
+      avatarUrlByPlayerId.value = urlMap;
+    } catch (e) {
+      console.warn('Avatar URL cache:', e);
+      avatarUrlByPlayerId.value = new Map();
+    }
+
     setTimeout(checkScroll, 100);
   } catch (err: any) {
     console.error('Error fetching stats:', err);

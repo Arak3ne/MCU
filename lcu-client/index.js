@@ -330,7 +330,7 @@ function createTray() {
 }
 
 function sendLog(msg) {
-  console.log(msg); // Ajout du log dans le terminal pour mieux débugger
+  console.log(msg);
   if (mainWindow) {
     mainWindow.webContents.send('debug-log', msg);
   }

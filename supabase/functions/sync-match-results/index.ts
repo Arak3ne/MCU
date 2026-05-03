@@ -93,8 +93,6 @@ Deno.serve(async (req) => {
       })
     }
 
-    console.log(`Received match data for game: ${gameId}`)
-
     // On vérifie si le match existe déjà (.maybeSingle: pas d'erreur si 0 ligne)
     const { data: existingMatch } = await supabase
       .from('match_history')
@@ -107,6 +105,9 @@ Deno.serve(async (req) => {
       const { error: lockError } = await supabase.from('fantasy_teams').update({ locked: true }).eq('tournament_day', 1)
       if (lockError) {
         console.error(`Failed to lock fantasy teams for existing match: ${lockError.message}`)
+      } else {
+        const { error: snapErr } = await supabase.rpc('snapshot_day1_carryover_budget')
+        if (snapErr) console.error(`snapshot_day1_carryover_budget: ${snapErr.message}`)
       }
 
       return new Response(
@@ -209,11 +210,6 @@ Deno.serve(async (req) => {
       const gold = Number(s.goldEarned) || 0
       const timeDead = readTotalTimeSpentDead(s as Record<string, unknown>, participantRow)
       
-      if (playerId) {
-        console.log(`[POINTS_CALC] Found match for player. Riot ID: ${riotId}, Pseudo: ${gameName}, DB ID: ${playerId}`)
-        console.log(`[POINTS_CALC] Stats raw: Kills=${kills}, Deaths=${deaths}, Assists=${assists}, CS=${cs}, Win=${win}, FB=${firstBlood}, Vision=${vision}, Damage=${damage}, Gold=${gold}`)
-      }
-
       let points = 
         (kills * 3) + 
         (assists * 2) - 
@@ -238,10 +234,6 @@ Deno.serve(async (req) => {
       
       if (kills >= 10) {
         points += 3; // "Carry" bonus
-      }
-
-      if (playerId) {
-        console.log(`[POINTS_CALC] Final computed points for ${playerId}: ${points}`)
       }
 
       const participantRecord = {
@@ -329,6 +321,9 @@ Deno.serve(async (req) => {
 
     if (lockError) {
       console.error(`Failed to lock fantasy teams: ${lockError.message}`)
+    } else {
+      const { error: snapErr } = await supabase.rpc('snapshot_day1_carryover_budget')
+      if (snapErr) console.error(`snapshot_day1_carryover_budget: ${snapErr.message}`)
     }
 
     return new Response(
