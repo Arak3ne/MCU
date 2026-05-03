@@ -1,5 +1,5 @@
 -- 1. Add user_id to players
-ALTER TABLE players ADD COLUMN user_id UUID REFERENCES auth.users(id);
+ALTER TABLE players ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id);
 
 -- Enable pgcrypto extension if not already enabled (needed for gen_salt and crypt)
 CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;

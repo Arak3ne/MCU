@@ -6,7 +6,7 @@ ALTER TABLE public.players
     ADD COLUMN IF NOT EXISTS fantasy_tier text DEFAULT 'C';
 
 ALTER TABLE public.players
-    ADD COLUMN IF NOT EXISTS fantasy_price integer DEFAULT 15;
+    ADD COLUMN IF NOT EXISTS fantasy_cost integer DEFAULT 15;
 
 -- Mettre C par défaut pour les joueurs existants sans tier
 UPDATE public.players
@@ -15,7 +15,7 @@ WHERE fantasy_tier IS NULL;
 
 -- Recalcul des prix basé sur le tier
 UPDATE public.players
-SET fantasy_price = CASE
+SET fantasy_cost = CASE
     WHEN UPPER(fantasy_tier) = 'S' THEN 28
     WHEN UPPER(fantasy_tier) = 'A' THEN 22
     WHEN UPPER(fantasy_tier) = 'B' THEN 18
@@ -29,4 +29,4 @@ ALTER TABLE public.players
     ALTER COLUMN fantasy_tier SET DEFAULT 'C';
 
 ALTER TABLE public.players
-    ALTER COLUMN fantasy_price SET DEFAULT 12;
+    ALTER COLUMN fantasy_cost SET DEFAULT 12;

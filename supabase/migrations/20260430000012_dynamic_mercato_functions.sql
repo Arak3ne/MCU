@@ -26,7 +26,7 @@ BEGIN
     WITH ranked_players AS (
         SELECT 
             fps.player_id,
-            p.fantasy_price,
+            COALESCE(p.fantasy_cost, 15) AS base_cost,
             fps.score,
             ROW_NUMBER() OVER (ORDER BY fps.score DESC) as rank_desc,
             ROW_NUMBER() OVER (ORDER BY fps.score ASC) as rank_asc
@@ -35,19 +35,19 @@ BEGIN
         WHERE fps.tournament_day = 1 AND fps.validated = true
     )
     UPDATE public.players p
-    SET fantasy_price_day2 = 
+    SET fantasy_cost_day2 = 
         CASE
-            WHEN rp.rank_desc <= top_20_threshold THEN COALESCE(p.fantasy_price, 15) + 5
-            WHEN rp.rank_asc <= bottom_20_threshold THEN GREATEST(5, COALESCE(p.fantasy_price, 15) - 5)
-            ELSE COALESCE(p.fantasy_price, 15)
+            WHEN rp.rank_desc <= top_20_threshold THEN rp.base_cost + 5
+            WHEN rp.rank_asc <= bottom_20_threshold THEN GREATEST(5, rp.base_cost - 5)
+            ELSE rp.base_cost
         END
     FROM ranked_players rp
     WHERE p.id = rp.player_id;
 
     -- For players without Day 1 scores, just copy their Day 1 price
     UPDATE public.players
-    SET fantasy_price_day2 = COALESCE(fantasy_price, 15)
-    WHERE fantasy_price_day2 IS NULL;
+    SET fantasy_cost_day2 = COALESCE(fantasy_cost, 15)
+    WHERE fantasy_cost_day2 IS NULL;
 
 END;
 $$ LANGUAGE plpgsql;
@@ -70,7 +70,7 @@ BEGIN
         END IF;
 
         -- Calculate total cost of Day 1 roster
-        SELECT COALESCE(SUM(p.fantasy_price), 0) INTO total_day1_cost
+        SELECT COALESCE(SUM(COALESCE(p.fantasy_cost, 15)), 0) INTO total_day1_cost
         FROM public.fantasy_picks fp
         JOIN public.players p ON p.id = fp.player_id
         WHERE fp.fantasy_team_id = day1_team.id;
