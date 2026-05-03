@@ -293,7 +293,8 @@
                   <span class="shrink-0 w-2.5 h-2.5 rounded-full bg-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.75)]" aria-hidden="true" />
                   <span class="min-w-0 flex flex-col gap-0.5">
                     <span class="font-bold uppercase tracking-widest text-xs text-sky-50 truncate">{{ sidePickMatch.team2.name }}</span>
-                    <span class="text-[10px] uppercase tracking-widest text-sky-300/90">Blue side
+                    <span class="text-[10px] uppercase tracking-widest text-sky-300/90">Blue side</span>
+                  </span>
                 </span>
               </button>
               <p v-if="claimingSide" class="text-center text-[10px] text-[#22C55E] uppercase tracking-widest animate-pulse">Enregistrement…</p>
@@ -323,8 +324,8 @@
                 </a>
                 <button
                   @click="copyDraftLink"
-                  class="w-full py-4 bg-[#1A1A1A] hover:bg-[#282d33] border border-[#2A2A2A] hover:border-[#22C55E]/50 rounded-sm font-bold transition-all flex items-center justify-center gap-2 text-[#A1A1AA] hover:text-[#F0FDF4] uppercase tracking-widest text-xs"
-                 cursor-pointer>
+                  class="w-full py-4 bg-[#1A1A1A] hover:bg-[#282d33] border border-[#2A2A2A] hover:border-[#22C55E]/50 rounded-sm font-bold transition-all flex items-center justify-center gap-2 text-[#A1A1AA] hover:text-[#F0FDF4] uppercase tracking-widest text-xs cursor-pointer"
+                >
                   <svg v-if="!linkCopied" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   </svg>
