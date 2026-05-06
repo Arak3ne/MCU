@@ -47,9 +47,18 @@
         <img src="../../assets/mcu_logo.png" alt="MCU Logo" class="w-10 h-10 object-contain drop-shadow-[0_0_10px_rgba(34,197,94,0.3)]" />
         <h1 class="text-2xl md:text-4xl font-title text-[#22C55E]">Admin Dashboard</h1>
       </div>
-      <button @click="handleLogout" class="cursor-pointer px-4 py-2 bg-[#1A1A1A] border border-[#2A2A2A] hover:border-[#EF4444] hover:text-[#EF4444] text-xs font-bold uppercase tracking-widest rounded transition-colors">
-        Logout
-      </button>
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          @click="router.push('/admin/power-ranking')"
+          class="cursor-pointer px-4 py-2 bg-[#1A1A1A] border border-[#2A2A2A] hover:border-[#22C55E] hover:text-[#22C55E] text-xs font-bold uppercase tracking-widest rounded transition-colors"
+        >
+          Power Ranking
+        </button>
+        <button @click="handleLogout" class="cursor-pointer px-4 py-2 bg-[#1A1A1A] border border-[#2A2A2A] hover:border-[#EF4444] hover:text-[#EF4444] text-xs font-bold uppercase tracking-widest rounded transition-colors">
+          Logout
+        </button>
+      </div>
     </div>
 
     <!-- Generators Grid -->

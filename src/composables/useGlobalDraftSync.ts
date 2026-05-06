@@ -17,11 +17,16 @@ export function useGlobalDraftSync() {
       let user = JSON.parse(userStr);
       const now = Date.now();
       if (now - lastUserFetch > 60000) {
-        const { data: latestUser } = await supabase
+        const { data: latestUser, error: latestUserError } = await supabase
           .from("players")
           .select("team_id")
           .eq("id", user.id)
-          .single();
+          .maybeSingle();
+        if (latestUserError) {
+          // If the player row doesn't exist yet (or RLS blocks), don't spam errors.
+          lastUserFetch = now;
+          return;
+        }
         if (latestUser && latestUser.team_id !== user.team_id) {
           user.team_id = latestUser.team_id;
           localStorage.setItem("mcu_user", JSON.stringify(user));

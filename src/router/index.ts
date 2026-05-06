@@ -70,6 +70,12 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: "/admin/power-ranking",
+      name: "admin-power-ranking",
+      component: () => import("../views/admin/PowerRanking.vue"),
+      meta: { requiresAuth: true },
+    },
+    {
       path: "/overlay",
       name: "overlay",
       component: () => import("../views/Overlay.vue"),

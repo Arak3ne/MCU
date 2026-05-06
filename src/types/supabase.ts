@@ -18,6 +18,12 @@ export type Database = {
           created_at: string;
           fantasy_cost?: number | null;
           fantasy_cost_day2?: number | null;
+          tier_skill?: string | null;
+          tier_champion_pool?: string | null;
+          tier_game_knowledge?: string | null;
+          tier_teamplay?: string | null;
+          tier_mental?: string | null;
+          power_ranking_tags?: string[] | null;
         };
         Insert: {
           id?: string;
@@ -33,6 +39,12 @@ export type Database = {
           playstyle?: string | null;
           mindset?: string | null;
           created_at?: string;
+          tier_skill?: string | null;
+          tier_champion_pool?: string | null;
+          tier_game_knowledge?: string | null;
+          tier_teamplay?: string | null;
+          tier_mental?: string | null;
+          power_ranking_tags?: string[] | null;
         };
         Update: {
           id?: string;
@@ -48,6 +60,12 @@ export type Database = {
           playstyle?: string | null;
           mindset?: string | null;
           created_at?: string;
+          tier_skill?: string | null;
+          tier_champion_pool?: string | null;
+          tier_game_knowledge?: string | null;
+          tier_teamplay?: string | null;
+          tier_mental?: string | null;
+          power_ranking_tags?: string[] | null;
         };
       };
       live_match: {
