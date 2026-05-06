@@ -80,6 +80,12 @@ const router = createRouter({
       name: "overlay",
       component: () => import("../views/Overlay.vue"),
     },
+    {
+      path: "/admin/auction",
+      name: "admin-auction-overlay",
+      component: () => import("../views/AuctionOverlay.vue"),
+      meta: { requiresAuth: true },
+    },
   ],
 });
 

@@ -55,6 +55,13 @@
         >
           Power Ranking
         </button>
+        <button
+          type="button"
+          @click="router.push('/admin/auction')"
+          class="cursor-pointer px-4 py-2 bg-[#1A1A1A] border border-[#2A2A2A] hover:border-[#22C55E] hover:text-[#22C55E] text-xs font-bold uppercase tracking-widest rounded transition-colors"
+        >
+          Overlay Enchères
+        </button>
         <button @click="handleLogout" class="cursor-pointer px-4 py-2 bg-[#1A1A1A] border border-[#2A2A2A] hover:border-[#EF4444] hover:text-[#EF4444] text-xs font-bold uppercase tracking-widest rounded transition-colors">
           Logout
         </button>
