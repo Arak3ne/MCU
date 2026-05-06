@@ -258,7 +258,6 @@ type TierLetter = 'S' | 'A' | 'B' | 'C' | 'D';
 const loading = ref(true);
 const isSaving = ref(false);
 const players = ref<Player[]>([]);
-const champions = ref<any[]>([]);
 const avatarUrlByPlayerId = ref<Map<string, string>>(new Map());
 
 const roleIconById: Record<string, string> = {
@@ -334,14 +333,7 @@ onUnmounted(() => {
 
 const loadData = async () => {
   loading.value = true;
-  const [playersRes, champsRes] = await Promise.all([
-    getPlayers(),
-    supabase.from('champions').select('*').order('name', { ascending: true })
-  ]);
-  
-  if (champsRes.data) {
-    champions.value = champsRes.data as any[];
-  }
+  const [playersRes] = await Promise.all([getPlayers()]);
   
   if (playersRes.data) {
     // Only keep participants who are players
@@ -581,16 +573,6 @@ const toggleTag = (tag: string) => {
   }
 };
 
-// Helpers
-const getChampionSplash = (name: string) => {
-  const champ = champions.value.find(c => c.name === name);
-  return champ?.splash_url || champ?.image_url || '';
-};
-
-const getChampionSquare = (name: string) => {
-  const champ = champions.value.find(c => c.name === name);
-  return champ?.image_url || '';
-};
 </script>
 
 <style scoped>
