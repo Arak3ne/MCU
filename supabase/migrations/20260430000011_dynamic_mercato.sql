@@ -1,9 +1,9 @@
 -- Migration: Dynamic Mercato Schema Updates
 -- Adds columns to support Day 2 dynamic pricing and transfer limits
 
--- 1. Add Day 2 price to players table
+-- 1. Add Day 2 price to players table (nom aligné sur players_rows.sql)
 ALTER TABLE public.players
-ADD COLUMN IF NOT EXISTS fantasy_price_day2 INT;
+ADD COLUMN IF NOT EXISTS fantasy_cost_day2 INT;
 
 -- 2. Add transfer and budget tracking to fantasy_teams table
 ALTER TABLE public.fantasy_teams

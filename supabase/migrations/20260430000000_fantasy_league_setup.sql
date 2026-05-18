@@ -1,35 +1,40 @@
--- Add Fantasy League columns to the existing players table if not present
+-- Colonnes fantasy sur players (fantasy_cost défini dans 20260424000000 ; ici uniquement ce qui peut manquer sur d’anciennes DB)
 ALTER TABLE players
-    ADD COLUMN IF NOT EXISTS fantasy_price integer DEFAULT 15,
     ADD COLUMN IF NOT EXISTS fantasy_enabled boolean DEFAULT true;
 
--- Create fantasy_teams table
+-- Create fantasy_teams table (colonnes alignées sur fantasy_teams_rows.sql ; roster via fantasy_picks)
 CREATE TABLE IF NOT EXISTS fantasy_teams (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     tournament_day integer NOT NULL CHECK (tournament_day IN (1, 2)),
     name text NOT NULL,
-    players uuid[] NOT NULL DEFAULT '{}',
-    captain_id uuid REFERENCES players(id) ON DELETE SET NULL,
-    total_points integer DEFAULT 0,
-    locked boolean DEFAULT false,
+    total_points numeric DEFAULT 0,
+    is_locked boolean DEFAULT false,
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now(),
+    transfers_made integer NOT NULL DEFAULT 0,
+    penalty_points integer NOT NULL DEFAULT 0,
+    carried_over_budget integer NOT NULL DEFAULT 0,
     CONSTRAINT unique_user_tournament_day UNIQUE (user_id, tournament_day)
 );
 
 CREATE INDEX IF NOT EXISTS idx_fantasy_teams_user_id ON fantasy_teams(user_id);
 CREATE INDEX IF NOT EXISTS idx_fantasy_teams_tournament_day ON fantasy_teams(tournament_day);
 
--- Create fantasy_player_scores table
+-- Create fantasy_player_scores table (colonnes alignées sur fantasy_player_scores_rows.sql)
 CREATE TABLE IF NOT EXISTS fantasy_player_scores (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     player_id uuid NOT NULL REFERENCES players(id) ON DELETE CASCADE,
     tournament_day integer NOT NULL CHECK (tournament_day IN (1, 2)),
-    score numeric DEFAULT 0,
+    base_points integer NOT NULL DEFAULT 0,
+    bonus_points integer NOT NULL DEFAULT 0,
+    penalty_points integer NOT NULL DEFAULT 0,
+    total_points numeric,
+    reason text,
     validated boolean DEFAULT false,
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now(),
+    score numeric DEFAULT 0,
     CONSTRAINT unique_player_tournament_day UNIQUE (player_id, tournament_day)
 );
 
@@ -48,11 +53,11 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN
-    CREATE POLICY "Users update own unlocked teams" ON fantasy_teams FOR UPDATE USING (auth.uid() = user_id AND locked = false);
+    CREATE POLICY "Users update own unlocked teams" ON fantasy_teams FOR UPDATE USING (auth.uid() = user_id AND is_locked = false);
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN
-    CREATE POLICY "Users delete own unlocked teams" ON fantasy_teams FOR DELETE USING (auth.uid() = user_id AND locked = false);
+    CREATE POLICY "Users delete own unlocked teams" ON fantasy_teams FOR DELETE USING (auth.uid() = user_id AND is_locked = false);
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN

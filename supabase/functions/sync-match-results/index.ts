@@ -102,7 +102,7 @@ Deno.serve(async (req) => {
 
     if (existingMatch) {
       // S'assurer que les équipes sont verrouillées même si le match existait déjà
-      const { error: lockError } = await supabase.from('fantasy_teams').update({ locked: true }).eq('tournament_day', 1)
+      const { error: lockError } = await supabase.from('fantasy_teams').update({ is_locked: true }).eq('tournament_day', 1)
       if (lockError) {
         console.error(`Failed to lock fantasy teams for existing match: ${lockError.message}`)
       } else {
@@ -316,7 +316,7 @@ Deno.serve(async (req) => {
     // Verrouiller toutes les équipes pour ce jour (puisqu'un match a été joué)
     const { error: lockError } = await supabase
       .from('fantasy_teams')
-      .update({ locked: true })
+      .update({ is_locked: true })
       .eq('tournament_day', 1) // Defaulting to 1 for now
 
     if (lockError) {

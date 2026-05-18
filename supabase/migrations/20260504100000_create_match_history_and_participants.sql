@@ -11,16 +11,17 @@ CREATE TABLE IF NOT EXISTS public.match_history (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Colonnes et ordre logique alignés sur match_participants_rows.sql
 CREATE TABLE IF NOT EXISTS public.match_participants (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   match_id UUID REFERENCES public.match_history(id) ON DELETE CASCADE,
   player_id UUID REFERENCES public.players(id) ON DELETE CASCADE,
-  champion_id UUID REFERENCES public.champions(id) ON DELETE SET NULL,
   kills INT,
   deaths INT,
   assists INT,
   total_damage_dealt_to_champions INT,
   win BOOLEAN,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
   first_blood_kill BOOLEAN DEFAULT false,
   total_time_spent_dead INT DEFAULT 0,
   total_damage_dealt INT DEFAULT 0,
@@ -33,7 +34,7 @@ CREATE TABLE IF NOT EXISTS public.match_participants (
   total_minions_killed INT DEFAULT 0,
   largest_killing_spree INT DEFAULT 0,
   team_id INT DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
+  champion_id UUID REFERENCES public.champions(id) ON DELETE SET NULL,
   UNIQUE(match_id, player_id)
 );
 

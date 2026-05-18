@@ -1,3 +1,7 @@
+# Remote Supabase project ref — must match `VITE_SUPABASE_URL` (https://<ref>.supabase.co).
+# If `supabase db push` says "up to date" while migrations are missing on the dashboard DB,
+# run `supabase link --project-ref <same_ref>` after pulling.
+project_id = "habjlxqsepiphdyazrcd"
 
 [functions.sync-draft]
 enabled = true
