@@ -78,8 +78,8 @@
                     <!-- Fantasy Points Earned -->
                     <div class="mt-0.5 text-[9px] md:text-[10px] font-bold flex flex-col items-center justify-center leading-tight" :class="(playerScores[playerId] || 0) > 0 ? 'text-mcu-primary' : (playerScores[playerId] || 0) < 0 ? 'text-red-400' : 'text-white/50'">
                       <span>{{ (playerScores[playerId] || 0) > 0 ? '+' : '' }}{{ Math.round(playerScores[playerId] || 0) }} pts</span>
-                      <span v-if="getFullPlayer(playerId)?.fantasy?.price > 0" class="text-white/40 font-normal text-[8px] md:text-[9px] -mt-0.5" title="Rentabilité (Points / Prix)">
-                        (x{{ ((playerScores[playerId] || 0) / getFullPlayer(playerId)!.fantasy.price).toFixed(1) }})
+                      <span v-if="getFullPlayer(playerId)?.fantasy?.fantasyPriceDay1 > 0" class="text-white/40 font-normal text-[8px] md:text-[9px] -mt-0.5" title="Rentabilité J1 (score / prix d'achat)">
+                        (x{{ ((playerScores[playerId] || 0) / getFullPlayer(playerId)!.fantasy.fantasyPriceDay1).toFixed(1) }})
                       </span>
                     </div>
                     

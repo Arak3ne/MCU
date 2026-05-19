@@ -27,7 +27,7 @@
         :previous-roster-value="previousRosterValue"
         :max-mercato-budget="maxBudget"
         :previous-team="previousTeam"
-        :player-scores="playerScores"
+        :player-scores="playerScoresDay1"
         :get-full-player="getFullPlayer"
         :get-role-icon="getRoleIcon"
         :get-price-change="getPriceChange"
@@ -884,17 +884,19 @@
 
                   <!-- Match Stats if available -->
                 <div v-if="playerStats[getPlayerByRole(roleObj.value)!.id]" class="bg-[#111111]/70 border border-[#2A2A2A] rounded-xl p-2.5 flex flex-col gap-2.5 shadow-inner backdrop-blur-sm">
-                  <div class="flex items-center justify-between p-2.5 rounded-lg bg-black/40 border border-white/5 relative overflow-hidden group/renta transition-all hover:scale-[1.02] hover:bg-black/60 hover:border-white/10" title="Points gagnés par rapport au prix d'achat">
-                    <div class="absolute inset-0 opacity-10 transition-opacity duration-300 group-hover/renta:opacity-20"
-                         :class="((playerScores[getPlayerByRole(roleObj.value)!.id] || 0) / getDisplayPrice(getPlayerByRole(roleObj.value)!)) >= 1 ? 'bg-mcu-primary' : 'bg-red-500'"></div>
+                  <div class="flex items-center justify-between p-2.5 rounded-lg bg-black/40 border border-white/5 relative overflow-hidden group/renta transition-all hover:scale-[1.02] hover:bg-black/60 hover:border-white/10" title="Score J1 / prix d'achat (sans bonus capitaine)">
+                    <div
+                      class="absolute inset-0 opacity-10 transition-opacity duration-300 group-hover/renta:opacity-20"
+                      :class="getMatchRentability(getPlayerByRole(roleObj.value)!.id, getPlayerByRole(roleObj.value)!.fantasyPriceDay1) >= 1 ? 'bg-mcu-primary' : 'bg-red-500'"
+                    />
                     <div class="flex flex-col relative z-10">
-                      <span class="text-[8px] uppercase text-white/40 font-bold tracking-widest">Rentabilité</span>
+                      <span class="text-[8px] uppercase text-white/40 font-bold tracking-widest">Rentabilité J1</span>
                     </div>
                     <div class="flex items-center gap-1.5 relative z-10">
-                      <span class="text-lg font-title transition-colors" :class="((playerScores[getPlayerByRole(roleObj.value)!.id] || 0) / getDisplayPrice(getPlayerByRole(roleObj.value)!)) >= 1 ? 'text-mcu-primary drop-shadow-[0_0_10px_rgba(34,197,94,0.4)] group-hover/renta:text-emerald-300' : 'text-red-400 drop-shadow-[0_0_10px_rgba(248,113,113,0.4)] group-hover/renta:text-red-300'">
-                        {{ ((playerScores[getPlayerByRole(roleObj.value)!.id] || 0) / getDisplayPrice(getPlayerByRole(roleObj.value)!)).toFixed(2) }}x
+                      <span class="text-lg font-title transition-colors" :class="getMatchRentability(getPlayerByRole(roleObj.value)!.id, getPlayerByRole(roleObj.value)!.fantasyPriceDay1) >= 1 ? 'text-mcu-primary drop-shadow-[0_0_10px_rgba(34,197,94,0.4)] group-hover/renta:text-emerald-300' : 'text-red-400 drop-shadow-[0_0_10px_rgba(248,113,113,0.4)] group-hover/renta:text-red-300'">
+                        {{ getMatchRentability(getPlayerByRole(roleObj.value)!.id, getPlayerByRole(roleObj.value)!.fantasyPriceDay1).toFixed(2) }}x
                       </span>
-                      <svg v-if="((playerScores[getPlayerByRole(roleObj.value)!.id] || 0) / getDisplayPrice(getPlayerByRole(roleObj.value)!)) >= 1" class="w-4 h-4 text-mcu-primary group-hover/renta:text-emerald-300 transition-transform duration-300 group-hover/renta:-translate-y-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+                      <svg v-if="getMatchRentability(getPlayerByRole(roleObj.value)!.id, getPlayerByRole(roleObj.value)!.fantasyPriceDay1) >= 1" class="w-4 h-4 text-mcu-primary group-hover/renta:text-emerald-300 transition-transform duration-300 group-hover/renta:-translate-y-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
                       <svg v-else class="w-4 h-4 text-red-400 group-hover/renta:text-red-300 transition-transform duration-300 group-hover/renta:translate-y-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>
                     </div>
                   </div>
@@ -979,7 +981,7 @@
           <ul class="space-y-4 text-base text-white/70">
             <li class="flex items-start gap-4">
               <svg class="w-6 h-6 text-blue-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
-              <span>Les prix des joueurs évoluent pour le Jour 2 en fonction de leurs performances du Jour 1. Le top 20% prend <strong>+5 pts</strong>, le flop 20% perd <strong>-5 pts</strong>.</span>
+              <span>Les prix J2 = <strong>prix J1 × rentabilité</strong> (score J1 ÷ prix J1), bornés entre <strong>5 et 35 pts</strong> — en pratique le prix suit le score du match.</span>
             </li>
             <li class="flex items-start gap-4">
               <svg class="w-6 h-6 text-blue-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -1064,6 +1066,11 @@ import { fantasyService } from '../services/fantasyService';
 import { supabase } from '../lib/supabase';
 import { getRankIconUrl } from '../utils/rankIcon';
 import { getFantasyTierBadgeClass as getTierColor, getFantasyTierGlowClass as getTierGlow } from '../utils/tierStyles';
+import {
+  getMercatoPriceChange,
+  matchRentability,
+  withMercatoDay2Price,
+} from '../utils/fantasyMercato';
 
 import mcuCoinsIcon from '../assets/mcu_coins.png';
 import topIcon from '../assets/top.png';
@@ -1104,6 +1111,8 @@ const showMercatoOverlay = ref(false);
 
 const showScoreReveal = ref(false);
 const playerScores = ref<Record<string, number>>({});
+/** Scores J1 pour prix mercato et rentabilité affichée en phase jour 2. */
+const playerScoresDay1 = ref<Record<string, number>>({});
 const playerStats = ref<Record<string, any>>({});
 const oldTotalScore = ref(0);
 const newTotalScore = ref(0);
@@ -1411,10 +1420,17 @@ const initDay = async () => {
     hydratePlayers(players.value.map(p => p.fantasy));
   }
   
-  // Toujours charger les scores pour l'affichage (utilisé par le mercato et le dashboard)
   try {
-    const scores = await fantasyService.getPlayerScores('all');
+    const day = tournamentDay.value;
+    const [scores, scoresDay1] = await Promise.all([
+      fantasyService.getPlayerScores(day),
+      day === 2 ? fantasyService.getPlayerScores(1) : Promise.resolve({} as Record<string, number>),
+    ]);
     playerScores.value = scores;
+    playerScoresDay1.value = scoresDay1;
+    if (day === 2) {
+      applyMercatoDay2PricesFromScores(scoresDay1);
+    }
   } catch (err) {
     console.error('Failed to load player scores', err);
   }
@@ -1465,13 +1481,25 @@ const replayAnimation = async () => {
   }
 };
 
+const applyMercatoDay2PricesFromScores = (scoresDay1: Record<string, number>) => {
+  if (!players.value.length) return;
+  players.value = players.value.map((p) => ({
+    ...p,
+    fantasy: withMercatoDay2Price(p.fantasy, scoresDay1[p.id]),
+  })) as EnrichedPlayer[];
+  hydratePlayers(players.value.map((p) => p.fantasy));
+};
+
 const remapPlayersFantasyForTournamentDay = () => {
   if (!players.value.length) return;
   const d = tournamentDay.value;
   players.value = players.value.map((p) => ({
     ...p,
-    fantasy: mapDbPlayerToFantasy(p as any, d)
+    fantasy: mapDbPlayerToFantasy(p as any, d),
   })) as EnrichedPlayer[];
+  if (d === 2 && Object.keys(playerScoresDay1.value).length > 0) {
+    applyMercatoDay2PricesFromScores(playerScoresDay1.value);
+  }
 };
 
 watch(tournamentDay, () => {
@@ -1560,8 +1588,18 @@ const getDisplayPrice = (player: FantasyPlayer) => {
   return player.price;
 };
 
-const getPriceChange = (_player: FantasyPlayer) => {
-  return 0; // Price changes are no longer used
+const getPriceChange = (player: FantasyPlayer) => {
+  if (tournamentDay.value !== 2) return 0;
+  return getMercatoPriceChange(player.price, player.fantasyPriceDay1);
+};
+
+const getMatchRentability = (playerId: string, priceDay1: number) => {
+  const score =
+    tournamentDay.value === 2
+      ? playerScoresDay1.value[playerId]
+      : playerScores.value[playerId];
+  if (score === undefined) return 0;
+  return matchRentability(score, priceDay1);
 };
 
 const getFullPlayer = (id: string) => {

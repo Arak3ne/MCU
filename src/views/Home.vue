@@ -9,7 +9,7 @@
       leave-from-class="opacity-100 translate-y-0"
       leave-to-class="opacity-0 -translate-y-4"
     >
-      <div v-if="globalError" class="fixed top-24 left-1/2 -translate-x-1/2 z-[110] w-full max-w-md px-4">
+      <div v-if="globalError" class="fixed top-20 sm:top-24 left-1/2 -translate-x-1/2 z-[110] w-full max-w-md px-4">
         <div class="bg-[#111111] border border-red-500/50 rounded-lg p-4 shadow-[0_0_30px_rgba(239,68,68,0.4)] flex items-center gap-4 backdrop-blur-xl">
           <div class="flex-shrink-0 w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center text-red-500">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -37,11 +37,11 @@
     </div>
 
     <!-- Main Content -->
-    <main class="relative z-10 max-w-5xl mx-auto px-6 py-16">
+    <main class="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-16">
       <!-- Hero Header -->
-      <div class="text-center mb-16 relative">
-        <div class="inline-block relative">
-          <h1 class="text-5xl md:text-7xl font-title uppercase tracking-wider mb-4 text-transparent bg-clip-text bg-gradient-to-b from-[#F0FDF4] to-[#22C55E] drop-shadow-2xl">
+      <div class="text-center mb-8 sm:mb-16 relative">
+        <div class="inline-block relative max-w-full">
+          <h1 class="text-3xl sm:text-5xl md:text-7xl font-title uppercase tracking-wider mb-4 text-transparent bg-clip-text bg-gradient-to-b from-[#F0FDF4] to-[#22C55E] drop-shadow-2xl">
             Tournament Standings
           </h1>
           <div class="absolute -inset-x-16 top-1/2 -translate-y-1/2 h-[1px] bg-gradient-to-r from-transparent via-[#22C55E]/30 to-transparent -z-10"></div>
@@ -51,9 +51,9 @@
 
       <!-- Ranking Board -->
       <div class="bg-[#0B0F0C]/60 backdrop-blur-sm border border-[#22C55E]/30 p-1 shadow-[0_0_40px_rgba(0,0,0,0.8)] relative before:absolute before:-inset-[1px] before:bg-gradient-to-b before:from-[#22C55E]/50 before:to-[#22C55E]/10 before:-z-10 before:rounded-sm rounded-sm">
-        <div class="bg-[#111111] p-6 md:p-10 rounded-sm h-full w-full">
+        <div class="bg-[#111111] p-4 sm:p-6 md:p-10 rounded-sm h-full w-full">
           <!-- Table Header -->
-          <div class="grid grid-cols-[auto_1fr_auto] gap-6 mb-6 px-6 py-3 border-b border-[#2A2A2A] text-[#A1A1AA] text-xs font-bold uppercase tracking-widest">
+          <div class="hidden sm:grid grid-cols-[auto_1fr_auto] gap-6 mb-6 px-4 sm:px-6 py-3 border-b border-[#2A2A2A] text-[#A1A1AA] text-xs font-bold uppercase tracking-widest">
             <div class="w-16 text-center">Rang</div>
             <div>Équipe</div>
             <div class="flex gap-10 md:gap-20 text-center">
@@ -94,9 +94,9 @@
               v-for="(team, index) in teams"
               :key="team.id"
               @click="selectTeam(team)"
-              class="group relative grid grid-cols-[auto_1fr_auto] gap-6 items-center px-6 py-5 bg-gradient-to-r from-[#1A1A1A] to-[#111111] border border-[#2A2A2A] hover:border-[#22C55E]/60 transition-all duration-300 rounded-sm overflow-hidden cursor-pointer"
+              class="group relative flex flex-col gap-3 sm:grid sm:grid-cols-[auto_1fr_auto] sm:gap-6 sm:items-center px-4 py-4 sm:px-6 sm:py-5 bg-gradient-to-r from-[#1A1A1A] to-[#111111] border border-[#2A2A2A] hover:border-[#22C55E]/60 transition-all duration-300 rounded-sm overflow-hidden cursor-pointer"
               :class="{
-                'from-[#1A1A1A] via-[#22C55E]/10 to-[#111111] border-[#22C55E]/50 shadow-[0_0_20px_rgba(200,170,110,0.15)] scale-[1.02] z-10': index === 0,
+                'from-[#1A1A1A] via-[#22C55E]/10 to-[#111111] border-[#22C55E]/50 shadow-[0_0_20px_rgba(200,170,110,0.15)] sm:scale-[1.02] z-10': index === 0,
                 'from-[#1A1A1A] via-[#A1A1AA]/5 to-[#111111] border-[#A1A1AA]/30': index === 1,
                 'from-[#1A1A1A] via-[#F59E0B]/5 to-[#111111] border-[#F59E0B]/30': index === 2
               }"
@@ -104,9 +104,10 @@
               <!-- Hover effect highlight -->
               <div class="absolute inset-y-0 left-0 w-1 bg-[#22C55E] opacity-0 group-hover:opacity-100 transition-opacity"></div>
               
+              <div class="flex items-center gap-3 sm:contents min-w-0">
               <!-- Rank -->
-              <div class="w-16 flex justify-center">
-                <div class="relative flex items-center justify-center w-12 h-12">
+              <div class="w-12 sm:w-16 flex justify-center shrink-0">
+                <div class="relative flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12">
                   <span class="absolute inset-0 rotate-45 border border-[#2A2A2A] group-hover:border-[#22C55E] transition-colors"
                         :class="{ 'border-[#22C55E] bg-[#22C55E]/10': index === 0, 'border-[#A1A1AA] bg-[#A1A1AA]/10': index === 1, 'border-[#F59E0B] bg-[#F59E0B]/10': index === 2 }"></span>
                   <span class="relative z-10 font-title text-xl"
@@ -117,31 +118,32 @@
               </div>
 
               <!-- Team Info -->
-              <div class="flex items-center gap-6">
-                <div class="relative w-14 h-14 flex items-center justify-center bg-[#0B0F0C] border border-[#2A2A2A] group-hover:border-[#22C55E]/50 transition-colors shadow-inner">
-                  <span class="font-title text-lg uppercase text-[#F0FDF4] group-hover:text-[#22C55E] transition-colors tracking-wider">{{ team.name.substring(0, 2) }}</span>
-                  <div v-if="index === 0" class="absolute -top-3 -right-3 text-2xl drop-shadow-[0_0_5px_rgba(200,170,110,0.8)]">👑</div>
+              <div class="flex items-center gap-3 sm:gap-6 min-w-0 flex-1">
+                <div class="relative w-11 h-11 sm:w-14 sm:h-14 flex items-center justify-center bg-[#0B0F0C] border border-[#2A2A2A] group-hover:border-[#22C55E]/50 transition-colors shadow-inner shrink-0">
+                  <span class="font-title text-base sm:text-lg uppercase text-[#F0FDF4] group-hover:text-[#22C55E] transition-colors tracking-wider">{{ team.name.substring(0, 2) }}</span>
+                  <div v-if="index === 0" class="absolute -top-2 -right-2 sm:-top-3 sm:-right-3 text-lg sm:text-2xl drop-shadow-[0_0_5px_rgba(200,170,110,0.8)]">👑</div>
                 </div>
-                <div>
-                  <h3 class="text-2xl font-bold tracking-wide text-[#F0FDF4] group-hover:text-[#22C55E] transition-colors uppercase">
+                <div class="min-w-0">
+                  <h3 class="text-lg sm:text-2xl font-bold tracking-wide text-[#F0FDF4] group-hover:text-[#22C55E] transition-colors uppercase truncate">
                     {{ team.name }}
                   </h3>
-                  <p class="text-xs text-[#A1A1AA] uppercase tracking-widest mt-1.5 flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full" :class="(team.wins ?? 0) > 0 ? 'bg-green-500 shadow-[0_0_5px_#22c55e]' : 'bg-gray-600'"></span>
-                    {{ (team.wins ?? 0) > 0 || (team.losses ?? 0) > 0 ? (((team.wins ?? 0) / ((team.wins ?? 0) + (team.losses ?? 0))) * 100).toFixed(0) + '% Win Rate' : 'Aucun match joué' }}
+                  <p class="text-[10px] sm:text-xs text-[#A1A1AA] uppercase tracking-widest mt-1 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full shrink-0" :class="(team.wins ?? 0) > 0 ? 'bg-green-500 shadow-[0_0_5px_#22c55e]' : 'bg-gray-600'"></span>
+                    <span class="truncate">{{ (team.wins ?? 0) > 0 || (team.losses ?? 0) > 0 ? (((team.wins ?? 0) / ((team.wins ?? 0) + (team.losses ?? 0))) * 100).toFixed(0) + '% Win Rate' : 'Aucun match joué' }}</span>
                   </p>
                 </div>
               </div>
+              </div>
 
               <!-- Stats -->
-              <div class="flex gap-10 md:gap-20 items-center">
-                <div class="w-20 flex justify-center items-center gap-3">
-                  <span class="text-[#4ADE80] font-bold text-xl">{{ team.wins ?? 0 }}W</span>
-                  <span class="text-[#2A2A2A] font-title text-xl">-</span>
-                  <span class="text-[#EF4444] font-bold text-xl">{{ team.losses ?? 0 }}L</span>
+              <div class="flex items-center justify-between sm:contents border-t border-[#2A2A2A]/70 pt-3 sm:border-0 sm:pt-0">
+                <div class="flex justify-center items-center gap-2 sm:gap-3 sm:w-20">
+                  <span class="text-[#4ADE80] font-bold text-base sm:text-xl">{{ team.wins ?? 0 }}W</span>
+                  <span class="text-[#2A2A2A] font-title text-lg sm:text-xl">-</span>
+                  <span class="text-[#EF4444] font-bold text-base sm:text-xl">{{ team.losses ?? 0 }}L</span>
                 </div>
-                <div class="w-20 flex justify-center">
-                  <span class="font-title text-4xl text-[#22C55E] drop-shadow-[0_0_15px_rgba(200,170,110,0.4)]">{{ team.points }}</span>
+                <div class="flex justify-center sm:w-20">
+                  <span class="font-title text-3xl sm:text-4xl text-[#22C55E] drop-shadow-[0_0_15px_rgba(200,170,110,0.4)]">{{ team.points }}</span>
                 </div>
               </div>
             </div>

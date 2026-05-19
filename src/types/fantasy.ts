@@ -9,6 +9,8 @@ export interface FantasyPlayer {
   price: number;
   /** Coût réel jour 1 en base (snap budget restant & init journée 2). */
   fantasyPriceDay1: number;
+  /** Prix mercato J2 (fantasy_cost_day2 ou calcul rentabilité). */
+  fantasyPriceDay2?: number;
   fantasyEnabled: boolean;
 }
 

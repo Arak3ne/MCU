@@ -37,11 +37,11 @@
     </div>
 
     <!-- Main Content -->
-    <main class="relative z-10 w-full px-6 py-12">
+    <main class="relative z-10 w-full px-4 sm:px-6 py-8 sm:py-12">
       <!-- Header -->
       <div class="text-center mb-16 relative">
         <div class="inline-block relative">
-          <h1 class="text-5xl md:text-7xl font-title uppercase tracking-wider mb-4 text-transparent bg-clip-text bg-gradient-to-b from-[#F0FDF4] to-[#22C55E] drop-shadow-2xl">
+          <h1 class="text-3xl sm:text-5xl md:text-7xl font-title uppercase tracking-wider mb-4 text-transparent bg-clip-text bg-gradient-to-b from-[#F0FDF4] to-[#22C55E] drop-shadow-2xl">
             Playoffs
           </h1>
           <div class="absolute -inset-x-16 top-1/2 -translate-y-1/2 h-[1px] bg-gradient-to-r from-transparent via-[#22C55E]/30 to-transparent -z-10"></div>

@@ -26,8 +26,8 @@ export function mapDbPlayerToFantasy(dbPlayer: DbPlayer, tournamentDay: 1 | 2 = 
     dbPlayer.fantasy_cost ?? dbPlayer.fantasy_price ?? tierFallback,
   )
   const rawDay2 = dbPlayer.fantasy_cost_day2 ?? dbPlayer.fantasy_price_day2
-  const day2 = rawDay2 != null ? Number(rawDay2) : fantasyPriceDay1
-  const price = tournamentDay === 2 ? day2 : fantasyPriceDay1
+  const fantasyPriceDay2 = rawDay2 != null ? Number(rawDay2) : fantasyPriceDay1
+  const price = tournamentDay === 2 ? fantasyPriceDay2 : fantasyPriceDay1
   const isEnabled = dbPlayer.fantasy_enabled ?? true
 
   return {
@@ -37,6 +37,7 @@ export function mapDbPlayerToFantasy(dbPlayer: DbPlayer, tournamentDay: 1 | 2 = 
     roles: [dbPlayer.primary_role, dbPlayer.secondary_role].filter((r): r is string => Boolean(r)),
     price,
     fantasyPriceDay1,
+    fantasyPriceDay2,
     fantasyEnabled: isEnabled,
   }
 }

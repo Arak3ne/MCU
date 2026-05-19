@@ -15,12 +15,20 @@
 }
 
 @layer base {
+  html {
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+  }
+
   body {
     background-color: var(--color-mcu-bg);
     color: var(--color-mcu-text);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     margin: 0;
+    overflow-x: hidden;
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
   }
   
   h1, h2, h3, h4, h5, h6, .font-title {

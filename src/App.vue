@@ -14,7 +14,7 @@ useGlobalDraftSync();
 </script>
 
 <template>
-  <div>
+  <div class="min-h-screen overflow-x-hidden">
     <Navbar v-if="showNavbar" />
     <router-view />
   </div>

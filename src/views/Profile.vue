@@ -35,7 +35,7 @@
       <!-- Bandeau aperçu mobile : suit le scroll sous la navbar (h-20) -->
       <div
         v-if="player && !loading"
-        class="lg:hidden sticky top-20 z-30 -mx-4 sm:-mx-6 px-4 sm:px-6 py-2.5 mb-4 flex items-center gap-3 border-y border-[#2A2A2A]/80 bg-[#0B0F0C]/92 backdrop-blur-lg shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
+        class="lg:hidden sticky top-16 lg:top-20 z-30 -mx-4 sm:-mx-6 px-4 sm:px-6 py-2.5 mb-4 flex items-center gap-3 border-y border-[#2A2A2A]/80 bg-[#0B0F0C]/92 backdrop-blur-lg shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
       >
         <div
           class="shrink-0 rounded-full border-[3px] border-[#22C55E]/55 shadow-[0_0_20px_rgba(34,197,94,0.2)] overflow-hidden bg-[#1A1A1A] w-[4.25rem] h-[4.25rem]"
