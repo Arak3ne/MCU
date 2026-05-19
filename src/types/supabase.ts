@@ -6,6 +6,7 @@ export type Database = {
           id: string;
           pseudo: string;
           discord: string;
+          riot_id: string | null;
           primary_role: string | null;
           secondary_role: string | null;
           champion_pool: string[] | null;
@@ -27,6 +28,7 @@ export type Database = {
           id?: string;
           pseudo: string;
           discord: string;
+          riot_id?: string | null;
           primary_role?: string | null;
           secondary_role?: string | null;
           champion_pool?: string[] | null;
@@ -46,6 +48,7 @@ export type Database = {
           id?: string;
           pseudo?: string;
           discord?: string;
+          riot_id?: string | null;
           primary_role?: string | null;
           secondary_role?: string | null;
           champion_pool?: string[] | null;

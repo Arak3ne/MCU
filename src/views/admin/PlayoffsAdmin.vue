@@ -376,9 +376,9 @@ onUnmounted(() => {
   dismissToast();
 });
 
-const handleLogout = () => {
-  localStorage.removeItem('admin_auth');
-  router.push('/admin/login');
+const handleLogout = async () => {
+  await supabase.auth.signOut();
+  void router.push('/admin/login');
 };
 
 const loadMatches = async () => {

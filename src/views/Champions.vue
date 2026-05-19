@@ -164,6 +164,8 @@ import { ref, computed, onMounted, onUnmounted } from "vue";
 import { getChampions, toggleChampion } from "../lib/queries";
 import { subscribeToTable } from "../lib/realtime";
 import type { Database } from "../types/supabase";
+import { supabase } from "../lib/supabase";
+import { isMcuAdminUser } from "../lib/adminAuth";
 
 import topIcon from "../assets/top.png";
 import jglIcon from "../assets/jgl.png";
@@ -179,8 +181,15 @@ const loading = ref(true);
 const searchQuery = ref("");
 const selectedRole = ref<string | null>(null);
 const showOnlyAvailable = ref(false);
-const isAdmin = ref(localStorage.getItem("admin_auth") === "true");
+const isAdmin = ref(false);
 let subscription: any = null;
+let authSubscription: { unsubscribe: () => void } | null = null;
+
+function syncAdminFromSession() {
+  void supabase.auth.getSession().then(({ data: { session } }) => {
+    isAdmin.value = isMcuAdminUser(session?.user);
+  });
+}
 
 // League of Legends Positions mapping with imported icons
 const roles = [
@@ -288,6 +297,12 @@ const toggleAvailability = async (champ: Champion) => {
 
 // Lifecycle
 onMounted(() => {
+  syncAdminFromSession();
+  const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+    isAdmin.value = isMcuAdminUser(session?.user);
+  });
+  authSubscription = data.subscription;
+
   loadChampions();
 
   // Setup Realtime
@@ -307,6 +322,7 @@ onUnmounted(() => {
   if (subscription) {
     subscription.unsubscribe();
   }
+  authSubscription?.unsubscribe();
 });
 </script>
 

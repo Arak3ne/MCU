@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 import Home from "../views/Home.vue";
+import { getMcuAdminSession } from "../lib/adminAuth";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -83,21 +84,25 @@ const router = createRouter({
   ],
 });
 
-router.beforeEach((to, _from, next) => {
-  const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
-  const isAuthenticated = localStorage.getItem('admin_auth') === 'true';
-  const isRegistered = localStorage.getItem('mcu_user') !== null;
-  const isPublicRoute = ['/admin/login', '/overlay', '/register'].includes(to.path) || to.path.startsWith('/admin');
+router.beforeEach(async (to) => {
+  const requiresAuth = to.matched.some((record) => record.meta.requiresAuth);
+  const adminSession = await getMcuAdminSession();
+  const isAuthenticated = !!adminSession;
+  const isRegistered = localStorage.getItem("mcu_user") !== null;
+  const isPublicRoute =
+    ["/admin/login", "/overlay", "/register"].includes(to.path) ||
+    to.path.startsWith("/admin");
 
   if (requiresAuth && !isAuthenticated) {
-    next('/admin/login');
-  } else if (!isRegistered && !isPublicRoute) {
-    next('/register');
-  } else if (isRegistered && to.path === '/register') {
-    next('/');
-  } else {
-    next();
+    return { path: "/admin/login", query: { redirect: to.fullPath } };
   }
+  if (!isRegistered && !isPublicRoute) {
+    return "/register";
+  }
+  if (isRegistered && to.path === "/register") {
+    return "/";
+  }
+  return true;
 });
 
 export default router;

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="min-h-screen bg-[#0B0F0C] text-[#F0FDF4] font-sans selection:bg-[#22C55E] selection:text-[#0B0F0C] flex items-center justify-center p-6 relative overflow-hidden">
     <!-- Background accents -->
     <div class="fixed inset-0 pointer-events-none z-0">
@@ -27,13 +27,13 @@
 
       <form @submit.prevent="handleLogin" class="space-y-6">
         <div class="space-y-2">
-          <label class="block text-xs font-bold tracking-widest text-[#A1A1AA] uppercase">Username</label>
+          <label class="block text-xs font-bold tracking-widest text-[#A1A1AA] uppercase">Email</label>
           <input 
-            v-model="username" 
-            type="text" 
+            v-model="email" 
+            type="email" 
             class="w-full bg-[#0B0F0C] border border-[#2A2A2A] focus:border-[#22C55E] rounded-sm px-4 py-3 focus:outline-none focus:ring-1 focus:ring-[#22C55E] text-[#F0FDF4] transition-colors font-medium"
             required
-            autocomplete="username"
+            autocomplete="email"
           />
         </div>
 
@@ -54,9 +54,10 @@
 
         <button 
           type="submit" 
-          class="w-full py-4 mt-4 bg-gradient-to-r from-[#22C55E] to-[#14532D] hover:from-[#d9b876] hover:to-[#8a6831] text-[#0B0F0C] rounded-sm font-title text-center transition-all shadow-[0_0_15px_rgba(34,197,94,0.3)] uppercase tracking-widest text-sm border border-[#22C55E] cursor-pointer"
+          :disabled="submitting"
+          class="w-full py-4 mt-4 bg-gradient-to-r from-[#22C55E] to-[#14532D] hover:from-[#d9b876] hover:to-[#8a6831] text-[#0B0F0C] rounded-sm font-title text-center transition-all shadow-[0_0_15px_rgba(34,197,94,0.3)] uppercase tracking-widest text-sm border border-[#22C55E] cursor-pointer disabled:opacity-50 disabled:cursor-wait"
         >
-          Access Terminal
+          {{ submitting ? "ConnexionÔÇª" : "Access Terminal" }}
         </button>
       </form>
     </div>
@@ -64,23 +65,48 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { supabase } from '../../lib/supabase';
+import { isMcuAdminUser } from '../../lib/adminAuth';
 
 const router = useRouter();
-const username = ref('');
+const email = ref('');
 const password = ref('');
 const error = ref('');
+const submitting = ref(false);
 
-const handleLogin = () => {
+onMounted(async () => {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (session?.user && isMcuAdminUser(session.user)) {
+    void router.replace('/admin');
+  }
+});
+
+const handleLogin = async () => {
   error.value = '';
-  
-  if (username.value === 'Arak' && password.value === '@CLveppotja35') {
-    localStorage.setItem('admin_auth', 'true');
-    router.push('/admin');
-  } else {
-    error.value = 'Invalid Credentials';
-    password.value = '';
+  submitting.value = true;
+  try {
+    const { data, error: signError } = await supabase.auth.signInWithPassword({
+      email: email.value.trim(),
+      password: password.value,
+    });
+    if (signError) {
+      error.value = signError.message || 'Invalid Credentials';
+      password.value = '';
+      return;
+    }
+    if (!data.user || !isMcuAdminUser(data.user)) {
+      await supabase.auth.signOut();
+      error.value = 'Ce compte nÔÇÖa pas les droits administrateur MCU.';
+      password.value = '';
+      return;
+    }
+    void router.push('/admin');
+  } finally {
+    submitting.value = false;
   }
 };
 </script>
