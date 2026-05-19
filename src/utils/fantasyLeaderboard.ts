@@ -23,11 +23,6 @@ export function calculateTeamPoints(
     totalPoints += pointsToAdd
   }
 
-  // Deduct penalty points
-  if (team.penaltyPoints) {
-    totalPoints -= team.penaltyPoints
-  }
-
   // Use Math.round to avoid floating point issues if necessary,
   // or return the raw decimal if the fantasy league uses fractional points.
   return Math.round(totalPoints * 10) / 10 

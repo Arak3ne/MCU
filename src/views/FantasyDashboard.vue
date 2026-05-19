@@ -548,7 +548,7 @@
               </div>
               
               <p v-if="transfersMade > 2" class="text-[9px] text-red-400/80 italic leading-tight">
-                Ces {{ penaltyPoints }} pts retirent aussi le même montant à ton budget potentiel mercato ; tu les perds en plus sur le score classement jour 2.
+                Ces {{ penaltyPoints }} pts sont retirés de ton budget mercato uniquement (pas de malus sur le score de match).
               </p>
             </div>
 
@@ -957,15 +957,11 @@
             </li>
             <li class="flex items-start gap-4">
               <svg class="w-6 h-6 text-mcu-primary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-              <span>Tu disposes d'un <strong>budget maximum de 100 points</strong>. Chaque joueur a un coût basé sur son rang (S: 30, A: 25, B: 20, C: 15, D: 10).</span>
+              <span>Tu disposes d'un <strong>budget maximum de 100 points</strong>. Chaque joueur a un coût selon son tier Morue-verse (S: 28, A: 22, B: 18, C: 12, D: 8).</span>
             </li>
             <li class="flex items-start gap-4">
               <svg class="w-6 h-6 text-mcu-primary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
               <span>Tu dois obligatoirement choisir <strong>un Capitaine</strong>. Le score de ce joueur comptera <strong>x1.5</strong>.</span>
-            </li>
-            <li class="flex items-start gap-4">
-              <svg class="w-6 h-6 text-mcu-primary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-              <span>Restriction de rangs : Maximum <strong>1 joueur de rang S</strong>, et un maximum de <strong>3 joueurs de rang S ou A</strong> au total.</span>
             </li>
             <li class="flex items-start gap-4">
               <svg class="w-6 h-6 text-mcu-primary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
@@ -991,7 +987,7 @@
             </li>
             <li class="flex items-start gap-4">
               <svg class="w-6 h-6 text-blue-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
-              <span>Tu as droit à <strong>2 transferts gratuits</strong> pour le Jour 2. Chaque transfert supplémentaire coûte <strong>−20 points</strong> sur ton score final du Jour 2 <strong>et retire 20 points</strong> de ton <strong>budget mercato</strong> (budget potentiel).</span>
+              <span>Tu as droit à <strong>2 transferts gratuits</strong> pour le Jour 2. Chaque transfert supplémentaire retire <strong>20 points</strong> de ton <strong>budget mercato</strong> (budget potentiel), sans impact sur le score de match de tes joueurs.</span>
             </li>
           </ul>
         </section>

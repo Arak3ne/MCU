@@ -12,8 +12,6 @@ export interface FantasyValidationResult {
 /** Cap draft jour 1 ; jour 2 = reliquat + valeur roster veille aux prix jour 2. */
 export const MAX_BUDGET = 100
 const MAX_TEAM_SIZE = 5
-const MAX_S_TIER = 1
-const MAX_S_AND_A_TIER = 3
 
 export function validateFantasyTeam(
   selectedPlayers: FantasyPlayer[],
@@ -96,27 +94,6 @@ export function validateFantasyTeam(
       errors.push(`Maximum 1 player allowed for role: ${role.toUpperCase()}. Currently: ${count}`)
     }
   })
-
-  // Rule: Max 1 S tier, Max 3 S/A tier
-  let sCount = 0
-  let saCount = 0
-
-  selectedPlayers.forEach(p => {
-    if (p.rank === 'S') {
-      sCount++
-      saCount++
-    } else if (p.rank === 'A') {
-      saCount++
-    }
-  })
-
-  if (sCount > MAX_S_TIER) {
-    errors.push(`Maximum ${MAX_S_TIER} S-tier player allowed. Currently: ${sCount}`)
-  }
-
-  if (saCount > MAX_S_AND_A_TIER) {
-    errors.push(`Maximum ${MAX_S_AND_A_TIER} S/A-tier players allowed. Currently: ${saCount}`)
-  }
 
   return {
     isValid: errors.length === 0,

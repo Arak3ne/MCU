@@ -12,11 +12,11 @@ type DbPlayer = Database['public']['Tables']['players']['Row'] & {
 
 // Default prices if not provided in DB
 export const TIER_PRICES: Record<string, number> = {
-  'S': 30,
-  'A': 25,
-  'B': 20,
-  'C': 15,
-  'D': 10
+  'S': 28,
+  'A': 22,
+  'B': 18,
+  'C': 12,
+  'D': 8
 }
 
 export function mapDbPlayerToFantasy(dbPlayer: DbPlayer, tournamentDay: 1 | 2 = 1): FantasyPlayer {

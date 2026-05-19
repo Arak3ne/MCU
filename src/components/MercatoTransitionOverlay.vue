@@ -153,7 +153,7 @@
               </div>
               <div class="flex-1 bg-red-500/10 border border-red-500/20 rounded-xl p-2 md:p-3 text-center">
                 <div class="text-xl md:text-2xl font-title text-red-400 mb-0.5">-20 pts</div>
-                <div class="text-[9px] md:text-xs text-red-300/80 font-bold uppercase tracking-widest">Par transfert supp.</div>
+                <div class="text-[9px] md:text-xs text-red-300/80 font-bold uppercase tracking-widest">Budget mercato / transfert supp.</div>
               </div>
             </div>
           </div>
