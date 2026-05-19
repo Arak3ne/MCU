@@ -258,7 +258,7 @@
               <!-- Fantasy Price Badge -->
               <div class="absolute top-3 right-3 z-20 bg-black/60 backdrop-blur-xl px-2.5 py-1 rounded-full border border-white/10 font-title text-mcu-primary drop-shadow-[0_0_10px_rgba(var(--color-mcu-primary),0.4)] flex items-center gap-1 group-hover:scale-105 transition-transform duration-300 shadow-lg text-sm"
                    :class="{ 'border-mcu-primary/50 bg-mcu-primary/10': isMercatoMode && getPriceChange(player.fantasy) < 0, 'border-red-500/50 bg-red-500/10 text-red-400': isMercatoMode && getPriceChange(player.fantasy) > 0 }">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <img :src="mcuCoinsIcon" alt="" class="w-3.5 h-3.5 opacity-90 drop-shadow-[0_0_8px_rgba(34,197,94,0.35)]" />
                 {{ getDisplayPrice(player.fantasy) }}
                 <div v-if="tournamentDay === 2 && getPriceChange(player.fantasy) !== 0" 
                      class="flex items-center text-[10px] font-sans ml-1 px-1.5 py-0.5 rounded-full bg-black/60 border shadow-inner"
@@ -1069,6 +1069,7 @@ import { supabase } from '../lib/supabase';
 import { getRankIconUrl } from '../utils/rankIcon';
 import { getFantasyTierBadgeClass as getTierColor, getFantasyTierGlowClass as getTierGlow } from '../utils/tierStyles';
 
+import mcuCoinsIcon from '../assets/mcu_coins.png';
 import topIcon from '../assets/top.png';
 import jglIcon from '../assets/jgl.png';
 import midIcon from '../assets/mid.png';

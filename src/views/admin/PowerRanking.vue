@@ -292,7 +292,7 @@ const categories = [
   { id: 'champion_pool', label: 'Champion Pool', column: 'tier_champion_pool' },
   { id: 'game_knowledge', label: 'Game Knowledge', column: 'tier_game_knowledge' },
   { id: 'teamplay', label: 'Teamplay', column: 'tier_teamplay' },
-  { id: 'mental', label: 'Mental / Clutch', column: 'tier_mental' },
+  { id: 'mental', label: 'Mental', column: 'tier_mental' },
   { id: 'global', label: 'Global', column: 'fantasy_tier' },
 ];
 const activeCategory = ref(categories[0].id);

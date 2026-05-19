@@ -24,15 +24,16 @@
     </div>
 
     <!-- Filters -->
-    <div class="bg-mcu-surface/50 border border-mcu-border rounded-2xl p-4 md:p-6 mb-8 flex flex-col gap-6 md:flex-row md:items-end">
-      <div class="flex-1">
+    <div class="bg-mcu-surface/50 border border-mcu-border rounded-2xl p-4 md:p-6 mb-8">
+      <div class="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_10rem_8.5rem_auto] gap-4 md:gap-3 items-end">
+      <div class="min-w-0">
         <label class="block text-xs font-medium text-mcu-text-muted mb-3 uppercase tracking-widest">Filtrer par Rôle</label>
-        <div class="flex flex-wrap gap-2">
+        <div class="flex flex-nowrap gap-2 overflow-x-auto pb-0.5 [scrollbar-width:thin]">
           <button 
             v-for="role in roles" 
             :key="role.value"
             @click="toggleRoleFilter(role.value)"
-            class="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 border"
+            class="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 border shrink-0"
             :class="selectedRole === role.value ? 'bg-mcu-primary/20 border-mcu-primary text-mcu-primary' : 'bg-mcu-surface border-mcu-border text-mcu-text-muted hover:border-mcu-text-muted'"
           >
             <img :src="role.icon" class="w-4 h-4" :class="selectedRole === role.value ? 'invert-[.5] sepia-[1] hue-rotate-[90deg] saturate-[5]' : 'grayscale opacity-60'" />
@@ -41,14 +42,14 @@
           <button 
             v-if="selectedRole"
             @click="selectedRole = null"
-            class="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all bg-mcu-surface border border-mcu-border text-red-400 hover:bg-red-500/10 hover:border-red-500/50"
+            class="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all bg-mcu-surface border border-mcu-border text-red-400 hover:bg-red-500/10 hover:border-red-500/50 shrink-0"
           >
             Reset
           </button>
         </div>
       </div>
       
-      <div class="flex-1 md:max-w-xs">
+      <div class="w-full md:w-auto shrink-0">
         <label class="block text-xs font-medium text-mcu-text-muted mb-3 uppercase tracking-widest">Filtrer par Rang</label>
         <div class="relative">
           <select v-model="selectedRank" class="w-full bg-mcu-surface border border-mcu-border rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-mcu-primary focus:ring-1 focus:ring-mcu-primary transition-colors appearance-none cursor-pointer">
@@ -63,7 +64,7 @@
         </div>
       </div>
       
-      <div class="flex-1 md:max-w-[200px]">
+      <div class="w-full md:w-auto shrink-0">
         <label class="block text-xs font-medium text-mcu-text-muted mb-3 uppercase tracking-widest">Trier par</label>
         <div class="relative">
           <select v-model="sortBy" class="w-full bg-mcu-surface border border-mcu-border rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-mcu-primary focus:ring-1 focus:ring-mcu-primary transition-colors appearance-none cursor-pointer">
@@ -79,13 +80,14 @@
         </div>
       </div>
 
-      <div class="shrink-0">
-        <div class="inline-flex rounded-xl border border-mcu-border bg-mcu-surface p-1 gap-0.5">
+      <div class="shrink-0 justify-self-start md:justify-self-end">
+        <label class="block text-xs font-medium text-mcu-text-muted mb-3 uppercase tracking-widest md:invisible md:h-0 md:mb-0">Vue</label>
+        <div class="inline-flex rounded-xl border border-mcu-border bg-mcu-surface p-0.5 gap-0.5">
           <button
             type="button"
             title="Vue cartes"
             @click="setPlayerView('cards')"
-            class="rounded-lg p-2.5 transition-colors"
+            class="rounded-lg p-2 transition-colors"
             :class="playerView === 'cards' ? 'bg-mcu-primary/20 text-mcu-primary' : 'text-mcu-text-muted hover:text-white hover:bg-mcu-surface-light/50'"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -96,7 +98,7 @@
             type="button"
             title="Vue tableau"
             @click="setPlayerView('table')"
-            class="rounded-lg p-2.5 transition-colors"
+            class="rounded-lg p-2 transition-colors"
             :class="playerView === 'table' ? 'bg-mcu-primary/20 text-mcu-primary' : 'text-mcu-text-muted hover:text-white hover:bg-mcu-surface-light/50'"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -104,7 +106,20 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9h18M3 14h18M9 4v16" />
             </svg>
           </button>
+          <button
+            type="button"
+            title="Tier liste (Power Ranking)"
+            @click="setPlayerView('tierlist')"
+            class="rounded-lg p-2 transition-colors"
+            :class="playerView === 'tierlist' ? 'bg-mcu-primary/20 text-mcu-primary' : 'text-mcu-text-muted hover:text-white hover:bg-mcu-surface-light/50'"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h10M4 18h6" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 6v12M14 12v6M20 18V6" />
+            </svg>
+          </button>
         </div>
+      </div>
       </div>
     </div>
 
@@ -120,80 +135,22 @@
 
       <!-- Players Grid -->
       <div v-else-if="!loading && filteredPlayers.length > 0 && playerView === 'cards'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-fade-in-up">
-      <div 
-        v-for="player in filteredPlayers" 
-        :key="player.id"
-        class="relative bg-mcu-surface-light/80 backdrop-blur-xl rounded-2xl border border-mcu-border/70 overflow-hidden transition-all duration-300 group shadow-[0_10px_40px_rgba(0,0,0,0.55)] hover:shadow-[0_20px_70px_rgba(0,0,0,0.65)] hover:border-mcu-primary/40 hover:-translate-y-0.5"
-      >
-        <!-- Full-card splash background -->
-        <img
-          :src="getChampionSplash(player.champion_signature)"
-          class="absolute inset-0 w-full h-full object-cover object-top opacity-60 scale-[1.06] transition-transform duration-700 group-hover:scale-[1.10]"
-          alt=""
+        <DraftablePlayerCard
+          v-for="player in filteredPlayers"
+          :key="player.id"
+          :player="player"
+          :champions="champions"
+          :team-name="getPlayerTeam(player)"
+          :flipped="!!flippedCards[player.id]"
+          @flip="toggleCardFlip(player.id)"
         />
-        <div class="absolute inset-0 bg-gradient-to-b from-black/15 via-mcu-surface-light/25 to-mcu-surface-light/95"></div>
-
-        <!-- Card Header (Avatar + Info) -->
-        <div class="relative h-40 overflow-hidden">
-          <div class="absolute bottom-3 left-4 right-4 z-20 flex justify-between items-end">
-            <div>
-              <h3 class="text-xl font-title tracking-wider text-white drop-shadow-md">{{ player.pseudo }}</h3>
-              <div class="flex items-center gap-2 mt-1">
-                <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-black/50 text-mcu-primary border border-mcu-primary/30 backdrop-blur-sm shadow-inner" :title="player.rank">
-                  <img :src="getRankIconUrl(player.rank)" class="w-4 h-4 drop-shadow-[0_0_5px_rgba(34,197,94,0.4)]" :alt="player.rank" />
-                  <span class="text-[10px] font-bold uppercase tracking-wider">{{ player.rank }}</span>
-                </div>
-                <span v-if="player.fantasy_tier" class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-black/50 border backdrop-blur-sm" :class="getFantasyTierBadgeClass(player.fantasy_tier)">
-                  Tier {{ player.fantasy_tier }}
-                </span>
-                <span v-if="getPlayerTeam(player)" class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-black/50 text-white border border-white/30 backdrop-blur-sm truncate max-w-[100px]" :title="getPlayerTeam(player)">
-                  {{ getPlayerTeam(player) }}
-                </span>
-              </div>
-            </div>
-            
-            <div class="flex gap-1">
-              <div class="w-8 h-8 rounded-full bg-black/60 border border-mcu-border flex items-center justify-center backdrop-blur-sm" title="Rôle Principal">
-                <img :src="getRoleIcon(player.primary_role)" class="w-5 h-5 invert-[.5] sepia-[1] hue-rotate-[90deg] saturate-[5]" />
-              </div>
-              <div v-if="player.secondary_role" class="w-8 h-8 rounded-full bg-black/60 border border-mcu-border flex items-center justify-center backdrop-blur-sm" title="Rôle Secondaire">
-                <img :src="getRoleIcon(player.secondary_role)" class="w-5 h-5 invert-[.5] sepia-[1] hue-rotate-[190deg] saturate-[5]" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Card Body -->
-        <div class="relative p-4 space-y-4">
-          <div class="grid grid-cols-2 gap-2 text-xs">
-            <div class="bg-black/35 rounded-lg p-2 border border-mcu-border/70 backdrop-blur-md">
-              <span class="text-white/75 block mb-1 uppercase text-[10px] tracking-wider font-bold">Style</span>
-              <span class="font-extrabold text-white">{{ player.playstyle }}</span>
-            </div>
-            <div class="bg-black/35 rounded-lg p-2 border border-mcu-border/70 backdrop-blur-md">
-              <span class="text-white/75 block mb-1 uppercase text-[10px] tracking-wider font-bold">Mindset</span>
-              <span class="font-extrabold text-white">{{ player.mindset }}</span>
-            </div>
-          </div>
-
-          <div>
-            <span class="text-white/80 block mb-2 uppercase text-[10px] tracking-wider font-bold">Champion Pool</span>
-            <div class="flex gap-2">
-              <div 
-                v-for="champ in player.champion_pool" 
-                :key="champ"
-                class="w-8 h-8 rounded-full overflow-hidden border border-mcu-border/80 relative group/champ shadow-[0_6px_18px_rgba(0,0,0,0.6)] cursor-default"
-              >
-                <img :src="getChampionSquare(champ)" class="w-full h-full object-cover" :title="champ" />
-                <div class="absolute inset-0 bg-black/60 opacity-0 group-hover/champ:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[1px] pointer-events-none">
-                  <span class="text-[8px] font-bold text-white truncate px-1">{{ champ.substring(0, 3) }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
+
+    <!-- Power Ranking Tier List (read-only) -->
+    <PowerRankingTierListReadonly
+      v-else-if="!loading && filteredPlayers.length > 0 && playerView === 'tierlist'"
+      :players="filteredPlayers"
+    />
 
     <!-- Players Table -->
     <div v-else-if="!loading && filteredPlayers.length > 0 && playerView === 'table'" class="rounded-2xl border border-mcu-border bg-mcu-surface/40 overflow-hidden">
@@ -276,6 +233,8 @@ import { getPlayers, getChampions } from '../lib/queries';
 import { supabase } from '../lib/supabase';
 import { getRankIconUrl } from '../utils/rankIcon';
 import { getFantasyTierBadgeClass } from '../utils/tierStyles';
+import PowerRankingTierListReadonly from '../components/PowerRankingTierListReadonly.vue';
+import DraftablePlayerCard from '../components/DraftablePlayerCard.vue';
 import type { Database } from '../types/supabase';
 
 import topIcon from '../assets/top.png';
@@ -293,6 +252,10 @@ type Player = Database['public']['Tables']['players']['Row'] & {
   champion_pool: string[];
   champion_signature: string;
   fantasy_tier?: string;
+  tier_skill?: string | null;
+  tier_champion_pool?: string | null;
+  tier_teamplay?: string | null;
+  tier_mental?: string | null;
   team?: any;
   team_id?: string;
 };
@@ -308,18 +271,28 @@ const selectedRole = ref<string | null>(null);
 const selectedRank = ref<string | null>(null);
 const sortBy = ref('rank');
 
-type PlayerViewMode = 'cards' | 'table';
+type PlayerViewMode = 'cards' | 'table' | 'tierlist';
 const PLAYERS_VIEW_STORAGE_KEY = 'mcu_players_view';
 
 const readStoredPlayerView = (): PlayerViewMode => {
   const raw = localStorage.getItem(PLAYERS_VIEW_STORAGE_KEY);
-  if (!raw) return 'cards';
-  return raw === 'table' ? 'table' : 'cards';
+  if (raw === 'table') return 'table';
+  if (raw === 'tierlist') return 'tierlist';
+  return 'cards';
 };
 
 const playerView = ref<PlayerViewMode>(readStoredPlayerView());
+const flippedCards = ref<Record<string, boolean>>({});
+
+const toggleCardFlip = (playerId: string) => {
+  flippedCards.value = {
+    ...flippedCards.value,
+    [playerId]: !flippedCards.value[playerId],
+  };
+};
 
 const setPlayerView = (mode: PlayerViewMode) => {
+  flippedCards.value = {};
   playerView.value = mode;
   localStorage.setItem(PLAYERS_VIEW_STORAGE_KEY, mode);
 };
@@ -389,19 +362,9 @@ const toggleRoleFilter = (role: string) => {
   }
 };
 
-const getRoleIcon = (roleName: string) => {
-  const role = roles.find(r => r.value === roleName);
-  return role ? role.icon : '';
-};
-
 const getChampionSquare = (name: string) => {
   const champ = champions.value.find(c => c.name === name);
   return champ?.image_url || '';
-};
-
-const getChampionSplash = (name: string) => {
-  const champ = champions.value.find(c => c.name === name);
-  return champ?.splash_url || champ?.image_url || '';
 };
 
 const getPlayerTeam = (player: any) => {
