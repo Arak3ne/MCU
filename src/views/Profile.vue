@@ -109,10 +109,10 @@
           <div
             class="flex gap-1 overflow-x-auto pb-1 -mx-1 px-1 scroll-smooth [scrollbar-width:thin] [scrollbar-color:#2a2a2a_#0b0f0c]"
             role="tablist"
-            aria-label="Sections avatar"
+            aria-label="Sections profil"
           >
             <button
-              v-for="tab in editorTabs"
+              v-for="tab in visibleTabs"
               :key="tab.id"
               type="button"
               role="tab"
@@ -244,6 +244,36 @@
             </div>
           </div>
 
+          <div v-show="activeTab === 'account'" class="space-y-4">
+            <div class="space-y-1.5">
+              <label for="profile-riot-id" class="block text-[10px] font-bold uppercase tracking-[0.2em] text-[#A1A1AA]">
+                Riot ID (Pseudo#TAG)
+              </label>
+              <input
+                id="profile-riot-id"
+                v-model="riotIdForm"
+                type="text"
+                autocomplete="off"
+                spellcheck="false"
+                placeholder="Ex: Faker#EUW"
+                class="w-full max-w-xl bg-[#0B0F0C] border border-[#2A2A2A] rounded-lg px-3 py-2 text-sm focus:border-[#22C55E] focus:ring-1 focus:ring-[#22C55E] outline-none"
+              />
+              <p class="text-[10px] text-[#71717A]">
+                Identifiant League of Legends utilisé pour synchroniser tes statistiques de match.
+              </p>
+            </div>
+            <p v-if="riotIdSaveError" class="text-red-400 text-[10px] font-bold uppercase tracking-widest">{{ riotIdSaveError }}</p>
+            <p v-if="riotIdSaveOk" class="text-[#22C55E] text-[10px] font-bold uppercase tracking-widest">Riot ID enregistré ✓</p>
+            <button
+              type="button"
+              :disabled="riotIdSaving"
+              class="py-2.5 px-5 bg-gradient-to-r from-[#22C55E] to-[#14532D] text-[#0B0F0C] font-title uppercase tracking-widest text-xs rounded-sm border border-[#22C55E] disabled:opacity-50 disabled:cursor-not-allowed"
+              @click="saveRiotId"
+            >
+              {{ riotIdSaving ? 'Enregistrement…' : 'Enregistrer le Riot ID' }}
+            </button>
+          </div>
+
           <div v-show="activeTab === 'outfit'" class="space-y-4">
             <DicebearPickGrid
               label="Tenue"
@@ -333,6 +363,7 @@ import {
   previewAccessories,
 } from '../lib/avataaarsPreviewUrls'
 import { fetchPlayerAvatarConfig, upsertPlayerAvatarConfig } from '../services/playerAvatarService'
+import { supabase } from '../lib/supabase'
 import DicebearPickGrid from '../components/DicebearPickGrid.vue'
 import DicebearColorPicker from '../components/DicebearColorPicker.vue'
 
@@ -342,22 +373,34 @@ type FormDraft = Omit<AvataaarsFormState, 'frameStyle'> & {
 
 const probChoices = [0, 25, 50, 75, 100] as const
 
-type EditorTabId = 'head' | 'face' | 'outfit'
+type EditorTabId = 'head' | 'face' | 'outfit' | 'account'
 
 const editorTabs: ReadonlyArray<{ id: EditorTabId; label: string }> = [
+  { id: 'account', label: 'Compte' },
   { id: 'head', label: 'Tête' },
   { id: 'face', label: 'Visage' },
   { id: 'outfit', label: 'Tenue' },
 ]
 
-const activeTab = ref<EditorTabId>('head')
+const activeTab = ref<EditorTabId>('account')
 
 const loading = ref(true)
 const loadError = ref('')
 const saving = ref(false)
 const saveError = ref('')
 const saveOk = ref(false)
-const player = ref<{ id: string; pseudo: string } | null>(null)
+const player = ref<{ id: string; pseudo: string; participation_type?: string } | null>(null)
+const riotIdForm = ref('')
+const riotIdSaving = ref(false)
+const riotIdSaveError = ref('')
+const riotIdSaveOk = ref(false)
+
+const isJoueur = computed(
+  () => !player.value?.participation_type || player.value.participation_type === 'joueur',
+)
+const visibleTabs = computed(() =>
+  isJoueur.value ? editorTabs : editorTabs.filter((t) => t.id !== 'account'),
+)
 
 function toFormDraft(base: AvataaarsFormState): FormDraft {
   return {
@@ -425,6 +468,45 @@ function resetDefaults() {
   Object.assign(form, toFormDraft(defaultAvataaarsForm(player.value.pseudo)))
 }
 
+const RIOT_ID_REGEX = /^.+#.+$/
+
+async function saveRiotId() {
+  if (!player.value) return
+  riotIdSaveError.value = ''
+  riotIdSaveOk.value = false
+  const trimmed = riotIdForm.value.trim()
+  if (!RIOT_ID_REGEX.test(trimmed)) {
+    riotIdSaveError.value = 'Format invalide : Pseudo#TAG (ex. Faker#EUW).'
+    return
+  }
+  riotIdSaving.value = true
+  try {
+    const { data, error } = await supabase
+      .from('players')
+      .update({ riot_id: trimmed })
+      .eq('id', player.value.id)
+      .select()
+      .single()
+    if (error) throw error
+
+    const raw = localStorage.getItem('mcu_user')
+    if (raw) {
+      const u = JSON.parse(raw) as Record<string, unknown>
+      localStorage.setItem('mcu_user', JSON.stringify({ ...u, riot_id: data?.riot_id ?? trimmed }))
+    }
+
+    riotIdSaveOk.value = true
+    setTimeout(() => {
+      riotIdSaveOk.value = false
+    }, 2500)
+  } catch (e: unknown) {
+    const err = e as { message?: string }
+    riotIdSaveError.value = err?.message || 'Échec de la mise à jour du Riot ID.'
+  } finally {
+    riotIdSaving.value = false
+  }
+}
+
 async function save() {
   if (!player.value) return
   saveError.value = ''
@@ -471,13 +553,35 @@ onMounted(async () => {
     return
   }
   try {
-    const u = JSON.parse(raw) as { id?: string; pseudo?: string }
+    const u = JSON.parse(raw) as {
+      id?: string
+      pseudo?: string
+      riot_id?: string | null
+      participation_type?: string
+    }
     if (!u.id || !u.pseudo) {
       loadError.value = 'Profil invalide. Réinscris-toi.'
       loading.value = false
       return
     }
-    player.value = { id: u.id, pseudo: u.pseudo }
+
+    const { data: playerRow } = await supabase
+      .from('players')
+      .select('riot_id, participation_type')
+      .eq('id', u.id)
+      .single()
+
+    const participationType =
+      (playerRow as { participation_type?: string } | null)?.participation_type ??
+      u.participation_type
+
+    player.value = { id: u.id, pseudo: u.pseudo, participation_type: participationType }
+    if (participationType === 'drafter') activeTab.value = 'head'
+    riotIdForm.value =
+      (playerRow as { riot_id?: string | null } | null)?.riot_id?.trim() ||
+      u.riot_id?.trim() ||
+      ''
+
     const row = await fetchPlayerAvatarConfig(u.id)
     if (row?.seed) {
       const opts =
