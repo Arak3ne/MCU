@@ -1,0 +1,30 @@
+-- Mercato J2 : prix = prix J1 × rentabilité J1 (score brut / fantasy_cost), borné [5, 35].
+-- Score négatif → traité comme 0 pour le prix.
+
+CREATE OR REPLACE FUNCTION public.calculate_day2_prices()
+RETURNS void AS $$
+BEGIN
+    UPDATE public.players p
+    SET fantasy_cost_day2 = sub.day2_price
+    FROM (
+        SELECT
+            fps.player_id,
+            GREATEST(
+                5,
+                LEAST(
+                    35,
+                    ROUND(GREATEST(0, fps.score::numeric))::integer
+                )
+            ) AS day2_price
+        FROM public.fantasy_player_scores fps
+        JOIN public.players pl ON pl.id = fps.player_id
+        WHERE fps.tournament_day = 1
+          AND fps.validated = true
+    ) sub
+    WHERE p.id = sub.player_id;
+
+    UPDATE public.players
+    SET fantasy_cost_day2 = COALESCE(fantasy_cost, 15)
+    WHERE fantasy_cost_day2 IS NULL;
+END;
+$$ LANGUAGE plpgsql;
