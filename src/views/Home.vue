@@ -96,9 +96,9 @@
               @click="selectTeam(team)"
               class="group relative flex flex-col gap-3 sm:grid sm:grid-cols-[auto_1fr_auto] sm:gap-6 sm:items-center px-4 py-4 sm:px-6 sm:py-5 bg-gradient-to-r from-[#1A1A1A] to-[#111111] border border-[#2A2A2A] hover:border-[#22C55E]/60 transition-all duration-300 rounded-sm overflow-hidden cursor-pointer"
               :class="{
-                'from-[#1A1A1A] via-[#22C55E]/10 to-[#111111] border-[#22C55E]/50 shadow-[0_0_20px_rgba(200,170,110,0.15)] sm:scale-[1.02] z-10': index === 0,
-                'from-[#1A1A1A] via-[#A1A1AA]/5 to-[#111111] border-[#A1A1AA]/30': index === 1,
-                'from-[#1A1A1A] via-[#F59E0B]/5 to-[#111111] border-[#F59E0B]/30': index === 2
+                'from-[#1A1A1A] via-[#FBBF24]/10 to-[#111111] border-[#FBBF24]/50 shadow-[0_0_20px_rgba(251,191,36,0.15)] sm:scale-[1.02] z-10': index === 0,
+                'from-[#1A1A1A] via-[#94A3B8]/10 to-[#111111] border-[#94A3B8]/50 shadow-[0_0_15px_rgba(148,163,184,0.12)] sm:scale-[1.01] z-[5]': index === 1,
+                'from-[#1A1A1A] via-[#B45309]/10 to-[#111111] border-[#B45309]/50 shadow-[0_0_12px_rgba(180,83,9,0.12)]': index === 2
               }"
             >
               <!-- Hover effect highlight -->
@@ -109,9 +109,9 @@
               <div class="w-12 sm:w-16 flex justify-center shrink-0">
                 <div class="relative flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12">
                   <span class="absolute inset-0 rotate-45 border border-[#2A2A2A] group-hover:border-[#22C55E] transition-colors"
-                        :class="{ 'border-[#22C55E] bg-[#22C55E]/10': index === 0, 'border-[#A1A1AA] bg-[#A1A1AA]/10': index === 1, 'border-[#F59E0B] bg-[#F59E0B]/10': index === 2 }"></span>
+                        :class="{ 'border-[#FBBF24] bg-[#FBBF24]/10': index === 0, 'border-[#94A3B8] bg-[#94A3B8]/10': index === 1, 'border-[#B45309] bg-[#B45309]/10': index === 2 }"></span>
                   <span class="relative z-10 font-title text-xl"
-                        :class="{ 'text-[#22C55E] drop-shadow-[0_0_5px_#22C55E]': index === 0, 'text-[#E2E8F0]': index === 1, 'text-[#F59E0B]': index === 2, 'text-[#A1A1AA]': index > 2 }">
+                        :class="{ 'text-[#FBBF24] drop-shadow-[0_0_5px_#FBBF24]': index === 0, 'text-[#94A3B8] drop-shadow-[0_0_5px_#94A3B8]': index === 1, 'text-[#D97706] drop-shadow-[0_0_5px_#D97706]': index === 2, 'text-[#A1A1AA]': index > 2 }">
                     {{ index + 1 }}
                   </span>
                 </div>
@@ -121,7 +121,9 @@
               <div class="flex items-center gap-3 sm:gap-6 min-w-0 flex-1">
                 <div class="relative w-11 h-11 sm:w-14 sm:h-14 flex items-center justify-center bg-[#0B0F0C] border border-[#2A2A2A] group-hover:border-[#22C55E]/50 transition-colors shadow-inner shrink-0">
                   <span class="font-title text-base sm:text-lg uppercase text-[#F0FDF4] group-hover:text-[#22C55E] transition-colors tracking-wider">{{ team.name.substring(0, 2) }}</span>
-                  <div v-if="index === 0" class="absolute -top-2 -right-2 sm:-top-3 sm:-right-3 text-lg sm:text-2xl drop-shadow-[0_0_5px_rgba(200,170,110,0.8)]">👑</div>
+                  <div v-if="index === 0" class="absolute -top-2 -right-2 sm:-top-3 sm:-right-3 text-lg sm:text-2xl drop-shadow-[0_0_5px_rgba(251,191,36,0.8)]">👑</div>
+                  <div v-else-if="index === 1" class="absolute -top-2 -right-2 sm:-top-3 sm:-right-3 text-lg sm:text-2xl drop-shadow-[0_0_5px_rgba(148,163,184,0.8)]">🥈</div>
+                  <div v-else-if="index === 2" class="absolute -top-2 -right-2 sm:-top-3 sm:-right-3 text-lg sm:text-2xl drop-shadow-[0_0_5px_rgba(180,83,9,0.8)]">🥉</div>
                 </div>
                 <div class="min-w-0">
                   <h3 class="text-lg sm:text-2xl font-bold tracking-wide text-[#F0FDF4] group-hover:text-[#22C55E] transition-colors uppercase truncate">
@@ -136,13 +138,13 @@
               </div>
 
               <!-- Stats -->
-              <div class="flex items-center justify-between sm:contents border-t border-[#2A2A2A]/70 pt-3 sm:border-0 sm:pt-0">
-                <div class="flex justify-center items-center gap-2 sm:gap-3 sm:w-20">
+              <div class="flex items-center justify-between sm:justify-end gap-10 md:gap-20 border-t border-[#2A2A2A]/70 pt-3 sm:border-0 sm:pt-0">
+                <div class="flex justify-center items-center gap-2 sm:gap-3 w-20">
                   <span class="text-[#4ADE80] font-bold text-base sm:text-xl">{{ team.wins ?? 0 }}W</span>
                   <span class="text-[#2A2A2A] font-title text-lg sm:text-xl">-</span>
                   <span class="text-[#EF4444] font-bold text-base sm:text-xl">{{ team.losses ?? 0 }}L</span>
                 </div>
-                <div class="flex justify-center sm:w-20">
+                <div class="flex justify-center w-20">
                   <span class="font-title text-3xl sm:text-4xl text-[#22C55E] drop-shadow-[0_0_15px_rgba(200,170,110,0.4)]">{{ team.points }}</span>
                 </div>
               </div>
