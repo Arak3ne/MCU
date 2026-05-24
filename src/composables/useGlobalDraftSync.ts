@@ -10,6 +10,7 @@ export function useGlobalDraftSync() {
   const syncActiveDrafts = async () => {
     try {
       if (locked) return;
+      if (window.location.pathname.startsWith("/draft")) return;
 
       const userStr = localStorage.getItem("mcu_user");
       if (!userStr) return;

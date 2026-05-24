@@ -71,6 +71,10 @@
 
         <div class="h-8 w-px bg-[#2A2A2A] mx-2 shrink-0"></div>
 
+        <router-link to="/draft/setup" class="px-6 py-2.5 text-xs font-bold tracking-widest uppercase transition-all rounded cursor-pointer shrink-0 mr-2" :class="route.path.startsWith('/draft') ? 'text-[#0B0F0C] border border-[#22C55E] bg-[#22C55E] shadow-[0_0_15px_rgba(34,197,94,0.4)]' : 'text-[#22C55E] border border-[#22C55E]/30 hover:border-[#22C55E] hover:bg-[#22C55E]/10 shadow-[inset_0_0_20px_rgba(34,197,94,0.0)] hover:shadow-[inset_0_0_20px_rgba(34,197,94,0.2)]'">
+          Draft
+        </router-link>
+
         <!-- Playoffs button -->
         <router-link to="/playoffs" class="px-6 py-2.5 text-xs font-bold tracking-widest uppercase transition-all rounded cursor-pointer shrink-0" :class="route.path === '/playoffs' ? 'text-[#0B0F0C] border border-[#22C55E] bg-[#22C55E] shadow-[0_0_15px_rgba(34,197,94,0.4)]' : 'text-[#22C55E] border border-[#22C55E]/30 hover:border-[#22C55E] hover:bg-[#22C55E]/10 shadow-[inset_0_0_20px_rgba(34,197,94,0.0)] hover:shadow-[inset_0_0_20px_rgba(34,197,94,0.2)]'">
           Playoffs

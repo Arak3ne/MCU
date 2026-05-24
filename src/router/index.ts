@@ -59,6 +59,16 @@ const router = createRouter({
       component: () => import("../views/Playoffs.vue"),
     },
     {
+      path: "/draft/setup",
+      name: "draft-setup",
+      component: () => import("../views/DraftSetup.vue"),
+    },
+    {
+      path: "/draft/:sessionId",
+      name: "draft-room",
+      component: () => import("../views/DraftRoom.vue"),
+    },
+    {
       path: "/admin/login",
       name: "admin-login",
       component: () => import("../views/admin/Login.vue"),

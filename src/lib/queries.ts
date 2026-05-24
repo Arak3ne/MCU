@@ -62,6 +62,47 @@ export async function updateTeamStats(teamId: string, updates: { wins: number; l
   return { data, error };
 }
 
+export async function fetchDraftSetupTeams() {
+  const { data: teamRows, error: teamError } = await supabase
+    .from("teams")
+    .select("id,name")
+    .order("name", { ascending: true });
+
+  if (teamError) {
+    return { data: null, error: teamError };
+  }
+
+  const { data: playerRows, error: playerError } = await supabase
+    .from("players")
+    .select("id,pseudo,team_id")
+    .not("team_id", "is", null)
+    .order("pseudo", { ascending: true });
+
+  if (playerError) {
+    return { data: null, error: playerError };
+  }
+
+  const playersByTeam = new Map<string, { id: string; pseudo: string; team_id: string | null }[]>();
+  for (const p of playerRows ?? []) {
+    if (!p.team_id) continue;
+    const list = playersByTeam.get(p.team_id) ?? [];
+    list.push(p);
+    playersByTeam.set(p.team_id, list);
+  }
+
+  const data = (teamRows ?? []).map((team: any) => {
+    const players = playersByTeam.get(team.id) ?? [];
+    const defaultCaptain = players[0] ?? null;
+    return {
+      ...team,
+      players,
+      defaultCaptain,
+    };
+  });
+
+  return { data, error: null };
+}
+
 type TeamRow = Database["public"]["Tables"]["teams"]["Row"];
 type PlayoffRow = Database["public"]["Tables"]["playoff_matches"]["Row"];
 
