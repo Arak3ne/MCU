@@ -295,10 +295,12 @@
                         <div class="flex items-center justify-between p-3 border-b border-white/5 bg-gradient-to-r from-transparent to-white/[0.01] transition-all relative z-10"
                              :class="[getWinnerStatusClass(match, 1), !match.is_completed ? 'hover:bg-white/[0.03]' : '']">
                           <div class="flex items-center gap-4">
-                            <div class="w-10 h-10 rounded-xl bg-black/60 border border-white/10 flex items-center justify-center font-title text-sm transition-transform group-hover:scale-110"
-                                 :class="match.team1 ? 'text-[#22C55E] border-[#22C55E]/20 shadow-[0_0_15px_rgba(34,197,94,0.1)]' : 'text-white/5'">
-                              {{ match.team1?.name?.substring(0, 1) || '?' }}
-                            </div>
+                            <TeamLogo
+                              :name="match.team1?.name || ''"
+                              :initials-length="1"
+                              :wrapper-class="'w-10 h-10 rounded-xl bg-black/60 border border-white/10 flex items-center justify-center font-title text-sm transition-transform group-hover:scale-110 overflow-hidden ' + (match.team1 ? 'text-[#22C55E] border-[#22C55E]/20 shadow-[0_0_15px_rgba(34,197,94,0.1)]' : 'text-white/5')"
+                              :initials-class="match.team1 ? 'font-title text-sm text-[#22C55E]' : 'font-title text-sm text-white/5'"
+                            />
                             <span class="font-bold truncate uppercase tracking-[0.1em]" :class="[match.team1 ? 'text-[#F0FDF4]' : 'text-white/10 italic', round.number === 2 ? 'text-lg' : 'text-sm']">
                               {{ match.team1?.name || 'TBD' }}
                             </span>
@@ -314,10 +316,12 @@
                         <div class="flex items-center justify-between p-3 bg-gradient-to-r from-transparent to-white/[0.01] transition-all relative z-10"
                              :class="[getWinnerStatusClass(match, 2), !match.is_completed ? 'hover:bg-white/[0.03]' : '']">
                           <div class="flex items-center gap-4">
-                            <div class="w-10 h-10 rounded-xl bg-black/60 border border-white/10 flex items-center justify-center font-title text-sm transition-transform group-hover:scale-110"
-                                 :class="match.team2 ? 'text-[#22C55E] border-[#22C55E]/20 shadow-[0_0_15px_rgba(34,197,94,0.1)]' : 'text-white/5'">
-                              {{ match.team2?.name?.substring(0, 1) || '?' }}
-                            </div>
+                            <TeamLogo
+                              :name="match.team2?.name || ''"
+                              :initials-length="1"
+                              :wrapper-class="'w-10 h-10 rounded-xl bg-black/60 border border-white/10 flex items-center justify-center font-title text-sm transition-transform group-hover:scale-110 overflow-hidden ' + (match.team2 ? 'text-[#22C55E] border-[#22C55E]/20 shadow-[0_0_15px_rgba(34,197,94,0.1)]' : 'text-white/5')"
+                              :initials-class="match.team2 ? 'font-title text-sm text-[#22C55E]' : 'font-title text-sm text-white/5'"
+                            />
                             <span class="font-bold truncate uppercase tracking-[0.1em]" :class="[match.team2 ? 'text-[#F0FDF4]' : 'text-white/10 italic', round.number === 2 ? 'text-lg' : 'text-sm']">
                               {{ match.team2?.name || 'TBD' }}
                             </span>
@@ -525,6 +529,7 @@ import {
 } from '../lib/logDraftSyncClient';
 import { claimOrRefreshDraftBlueTeam, resolveBlueRedNames } from '../lib/draftMatchSides';
 import type { Database } from '../types/supabase';
+import TeamLogo from '../components/TeamLogo.vue';
 
 type Team = Database['public']['Tables']['teams']['Row'];
 

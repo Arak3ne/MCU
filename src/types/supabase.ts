@@ -7,6 +7,10 @@ export type Database = {
           pseudo: string;
           discord: string;
           riot_id: string | null;
+          team_id?: string | null;
+          auction_price?: number;
+          fantasy_tier?: string | null;
+          participation_type: string;
           primary_role: string | null;
           secondary_role: string | null;
           champion_pool: string[] | null;
@@ -29,6 +33,10 @@ export type Database = {
           pseudo: string;
           discord: string;
           riot_id?: string | null;
+          team_id?: string | null;
+          auction_price?: number;
+          fantasy_tier?: string | null;
+          participation_type?: string;
           primary_role?: string | null;
           secondary_role?: string | null;
           champion_pool?: string[] | null;
@@ -49,6 +57,10 @@ export type Database = {
           pseudo?: string;
           discord?: string;
           riot_id?: string | null;
+          team_id?: string | null;
+          auction_price?: number;
+          fantasy_tier?: string | null;
+          participation_type?: string;
           primary_role?: string | null;
           secondary_role?: string | null;
           champion_pool?: string[] | null;

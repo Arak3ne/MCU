@@ -227,7 +227,7 @@
             <div class="relative bg-gradient-to-b from-[#1A1A1A] to-[#0B0F0C] border border-[#22C55E]/25 backdrop-blur-2xl rounded-lg md:rounded-xl px-4 sm:px-6 md:px-10 py-1.5 sm:py-2 md:py-3 shadow-[0_20px_50px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(74,222,128,0.08)]">
               
               <p class="text-white/40 text-[7px] sm:text-[8px] md:text-[10px] font-bold uppercase tracking-[0.4em] mb-0.5 sm:mb-1">
-                Total équipe (barème dernier match)
+                Total équipe
               </p>
               
               <div class="flex items-center justify-center gap-2 sm:gap-3">

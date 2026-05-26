@@ -439,6 +439,9 @@ const roles = [
 
 const selectedRole = ref<string | null>(null);
 
+const isJoueur = (participationType: string | null | undefined) =>
+  participationType?.toLowerCase() === 'joueur';
+
 const toggleRoleFilter = (role: string) => {
   if (selectedRole.value === role) {
     selectedRole.value = null;
@@ -918,7 +921,7 @@ const fetchStats = async () => {
       .select(`
         *,
         match_history(game_duration),
-        players(pseudo, riot_id, primary_role)
+        players(pseudo, riot_id, primary_role, participation_type)
       `);
 
     if (fetchError) throw fetchError;
@@ -946,7 +949,8 @@ const fetchStats = async () => {
     if (!data || data.length === 0) {
       const { data: roster, error: rosterError } = await supabase
         .from('players')
-        .select('id, pseudo, riot_id, primary_role')
+        .select('id, pseudo, riot_id, primary_role, participation_type')
+        .eq('participation_type', 'joueur')
         .order('pseudo', { ascending: true });
 
       if (rosterError) throw rosterError;
@@ -993,6 +997,7 @@ const fetchStats = async () => {
     for (const row of data) {
       const playerId = row.player_id;
       if (!playerId) continue;
+      if (!isJoueur(row.players?.participation_type)) continue;
       const playerName = row.players?.pseudo || row.players?.riot_id || 'Joueur inconnu';
       const primaryRole = row.players?.primary_role || 'Unknown';
       const gameDurationSecs = row.match_history?.game_duration || 0;
@@ -1120,13 +1125,14 @@ const fetchStats = async () => {
     const seenPlayerIds = new Set(finalStats.map((s) => s.playerId));
     const { data: rosterRows, error: rosterMergeError } = await supabase
       .from('players')
-      .select('id, pseudo, riot_id, primary_role')
+      .select('id, pseudo, riot_id, primary_role, participation_type')
+      .eq('participation_type', 'joueur')
       .order('pseudo', { ascending: true });
 
     if (!rosterMergeError && rosterRows) {
       for (const row of rosterRows) {
         const id = row.id;
-        if (!id || seenPlayerIds.has(id)) continue;
+        if (!id || seenPlayerIds.has(id) || !isJoueur(row.participation_type)) continue;
         seenPlayerIds.add(id);
         finalStats.push(
           createEmptyPlayerStats(

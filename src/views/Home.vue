@@ -94,8 +94,10 @@
               v-for="(team, index) in teams"
               :key="team.id"
               @click="selectTeam(team)"
-              class="group relative flex flex-col gap-3 sm:grid sm:grid-cols-[auto_1fr_auto] sm:gap-6 sm:items-center px-4 py-4 sm:px-6 sm:py-5 bg-gradient-to-r from-[#1A1A1A] to-[#111111] border border-[#2A2A2A] hover:border-[#22C55E]/60 transition-all duration-300 rounded-sm overflow-hidden cursor-pointer"
+              class="group relative flex flex-col gap-3 sm:grid sm:grid-cols-[auto_1fr_auto] sm:gap-6 sm:items-center px-4 py-4 sm:px-6 sm:py-5 bg-gradient-to-r from-[#1A1A1A] to-[#111111] border border-[#2A2A2A] hover:border-[#22C55E]/60 transition-all duration-300 rounded-sm cursor-pointer"
               :class="{
+                'overflow-visible': index < 3,
+                'overflow-hidden': index >= 3,
                 'from-[#1A1A1A] via-[#FBBF24]/10 to-[#111111] border-[#FBBF24]/50 shadow-[0_0_20px_rgba(251,191,36,0.15)] sm:scale-[1.02] z-10': index === 0,
                 'from-[#1A1A1A] via-[#94A3B8]/10 to-[#111111] border-[#94A3B8]/50 shadow-[0_0_15px_rgba(148,163,184,0.12)] sm:scale-[1.01] z-[5]': index === 1,
                 'from-[#1A1A1A] via-[#B45309]/10 to-[#111111] border-[#B45309]/50 shadow-[0_0_12px_rgba(180,83,9,0.12)]': index === 2
@@ -119,11 +121,15 @@
 
               <!-- Team Info -->
               <div class="flex items-center gap-3 sm:gap-6 min-w-0 flex-1">
-                <div class="relative w-11 h-11 sm:w-14 sm:h-14 flex items-center justify-center bg-[#0B0F0C] border border-[#2A2A2A] group-hover:border-[#22C55E]/50 transition-colors shadow-inner shrink-0">
-                  <span class="font-title text-base sm:text-lg uppercase text-[#F0FDF4] group-hover:text-[#22C55E] transition-colors tracking-wider">{{ team.name.substring(0, 2) }}</span>
-                  <div v-if="index === 0" class="absolute -top-2 -right-2 sm:-top-3 sm:-right-3 text-lg sm:text-2xl drop-shadow-[0_0_5px_rgba(251,191,36,0.8)]">👑</div>
-                  <div v-else-if="index === 1" class="absolute -top-2 -right-2 sm:-top-3 sm:-right-3 text-lg sm:text-2xl drop-shadow-[0_0_5px_rgba(148,163,184,0.8)]">🥈</div>
-                  <div v-else-if="index === 2" class="absolute -top-2 -right-2 sm:-top-3 sm:-right-3 text-lg sm:text-2xl drop-shadow-[0_0_5px_rgba(180,83,9,0.8)]">🥉</div>
+                <div class="relative w-11 h-11 sm:w-14 sm:h-14 shrink-0">
+                  <TeamLogo
+                    :name="team.name"
+                    wrapper-class="w-full h-full flex items-center justify-center bg-[#0B0F0C] border border-[#2A2A2A] group-hover:border-[#22C55E]/50 transition-colors shadow-inner overflow-hidden"
+                    initials-class="font-title text-base sm:text-lg uppercase text-[#F0FDF4] group-hover:text-[#22C55E] transition-colors tracking-wider"
+                  />
+                  <div v-if="index === 0" class="absolute -top-3 -right-3 sm:-top-4 sm:-right-4 z-10 text-lg sm:text-2xl leading-none drop-shadow-[0_0_5px_rgba(251,191,36,0.8)] pointer-events-none">👑</div>
+                  <div v-else-if="index === 1" class="absolute -top-3 -right-3 sm:-top-4 sm:-right-4 z-10 text-lg sm:text-2xl leading-none drop-shadow-[0_0_5px_rgba(148,163,184,0.8)] pointer-events-none">🥈</div>
+                  <div v-else-if="index === 2" class="absolute -top-3 -right-3 sm:-top-4 sm:-right-4 z-10 text-lg sm:text-2xl leading-none drop-shadow-[0_0_5px_rgba(180,83,9,0.8)] pointer-events-none">🥉</div>
                 </div>
                 <div class="min-w-0">
                   <h3 class="text-lg sm:text-2xl font-bold tracking-wide text-[#F0FDF4] group-hover:text-[#22C55E] transition-colors uppercase truncate">
@@ -198,13 +204,11 @@
                         :class="match.team1.id === selectedTeam.id ? 'text-[#22C55E]' : 'text-[#F0FDF4]'">
                     {{ match.team1.name }}
                   </span>
-                  <div class="w-12 h-12 rounded-sm bg-[#0B0F0C] border flex items-center justify-center shadow-inner transition-colors"
-                       :class="match.team1.id === selectedTeam.id ? 'border-[#22C55E]/50' : 'border-[#2A2A2A] group-hover:border-[#22C55E]/30'">
-                    <span class="font-title text-sm uppercase tracking-wider transition-colors"
-                          :class="match.team1.id === selectedTeam.id ? 'text-[#22C55E]' : 'text-[#A1A1AA]'">
-                      {{ match.team1.name.substring(0, 2) }}
-                    </span>
-                  </div>
+                  <TeamLogo
+                    :name="match.team1.name"
+                    :wrapper-class="'w-12 h-12 rounded-sm bg-[#0B0F0C] border flex items-center justify-center shadow-inner transition-colors overflow-hidden ' + (match.team1.id === selectedTeam.id ? 'border-[#22C55E]/50' : 'border-[#2A2A2A] group-hover:border-[#22C55E]/30')"
+                    :initials-class="match.team1.id === selectedTeam.id ? 'font-title text-sm uppercase tracking-wider text-[#22C55E]' : 'font-title text-sm uppercase tracking-wider text-[#A1A1AA]'"
+                  />
                 </div>
 
                 <!-- VS -->
@@ -216,13 +220,11 @@
 
                 <!-- Red Side -->
                 <div class="flex-1 flex items-center justify-start gap-5">
-                  <div class="w-12 h-12 rounded-sm bg-[#0B0F0C] border flex items-center justify-center shadow-inner transition-colors"
-                       :class="match.team2.id === selectedTeam.id ? 'border-[#22C55E]/50' : 'border-[#2A2A2A] group-hover:border-[#22C55E]/30'">
-                    <span class="font-title text-sm uppercase tracking-wider transition-colors"
-                          :class="match.team2.id === selectedTeam.id ? 'text-[#22C55E]' : 'text-[#A1A1AA]'">
-                      {{ match.team2.name.substring(0, 2) }}
-                    </span>
-                  </div>
+                  <TeamLogo
+                    :name="match.team2.name"
+                    :wrapper-class="'w-12 h-12 rounded-sm bg-[#0B0F0C] border flex items-center justify-center shadow-inner transition-colors overflow-hidden ' + (match.team2.id === selectedTeam.id ? 'border-[#22C55E]/50' : 'border-[#2A2A2A] group-hover:border-[#22C55E]/30')"
+                    :initials-class="match.team2.id === selectedTeam.id ? 'font-title text-sm uppercase tracking-wider text-[#22C55E]' : 'font-title text-sm uppercase tracking-wider text-[#A1A1AA]'"
+                  />
                   <span class="text-lg md:text-xl font-bold transition-colors uppercase tracking-wide truncate text-left"
                         :class="match.team2.id === selectedTeam.id ? 'text-[#22C55E]' : 'text-[#F0FDF4]'">
                     {{ match.team2.name }}
@@ -403,6 +405,7 @@ import {
 import { fetchChampionshipMatchesHydrated } from "../lib/queries";
 import { claimOrRefreshDraftBlueTeam, resolveBlueRedNames } from "../lib/draftMatchSides";
 import type { Database } from "../types/supabase";
+import TeamLogo from "../components/TeamLogo.vue";
 
 const loading = ref(true);
 

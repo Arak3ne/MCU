@@ -84,9 +84,11 @@
                 >
                   {{ match.team1.name }}
                 </span>
-                <div class="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full bg-black/60 border border-white/10 group-hover:border-mcu-accent/50 flex items-center justify-center shadow-lg backdrop-blur-md transition-all duration-300 shrink-0">
-                  <span class="font-title text-white group-hover:text-mcu-accent text-lg sm:text-xl uppercase tracking-wider transition-colors">{{ match.team1.name.substring(0, 2) }}</span>
-                </div>
+                <TeamLogo
+                  :name="match.team1.name"
+                  wrapper-class="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full bg-black/60 border border-white/10 group-hover:border-mcu-accent/50 flex items-center justify-center shadow-lg backdrop-blur-md transition-all duration-300 shrink-0 overflow-hidden"
+                  initials-class="font-title text-white group-hover:text-mcu-accent text-lg sm:text-xl uppercase tracking-wider transition-colors"
+                />
               </div>
 
               <!-- Scores or VS -->
@@ -119,9 +121,11 @@
 
               <!-- Red Side -->
               <div class="flex-1 flex items-center justify-start gap-2 sm:gap-4 relative z-10 min-w-0">
-                <div class="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full bg-black/60 border border-white/10 group-hover:border-red-400/50 flex items-center justify-center shadow-lg backdrop-blur-md transition-all duration-300 shrink-0">
-                  <span class="font-title text-white group-hover:text-red-400 text-lg sm:text-xl uppercase tracking-wider transition-colors">{{ match.team2.name.substring(0, 2) }}</span>
-                </div>
+                <TeamLogo
+                  :name="match.team2.name"
+                  wrapper-class="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full bg-black/60 border border-white/10 group-hover:border-red-400/50 flex items-center justify-center shadow-lg backdrop-blur-md transition-all duration-300 shrink-0 overflow-hidden"
+                  initials-class="font-title text-white group-hover:text-red-400 text-lg sm:text-xl uppercase tracking-wider transition-colors"
+                />
                 <span 
                   class="font-title text-white group-hover:text-red-400 drop-shadow-[0_0_8px_rgba(255,78,80,0.4)] transition-all uppercase tracking-wider text-left leading-none"
                   :class="match.team2.name.length > 20 ? 'text-xs sm:text-sm md:text-base' : match.team2.name.length > 12 ? 'text-sm sm:text-base md:text-lg' : 'text-base sm:text-xl md:text-2xl'"
@@ -269,6 +273,7 @@ import {
 } from "../lib/logDraftSyncClient";
 import { claimOrRefreshDraftBlueTeam, resolveBlueRedNames } from "../lib/draftMatchSides";
 import type { Database } from "../types/supabase";
+import TeamLogo from "../components/TeamLogo.vue";
 
 type Team = Database["public"]["Tables"]["teams"]["Row"];
 
