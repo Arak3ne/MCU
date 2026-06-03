@@ -314,7 +314,7 @@ export function toggleSkipWaitVote(
   const vote2 = skipWaitVotes[state.captainTeam2PlayerId];
   if (vote1 && vote2) {
     // Both agreed to skip, we can set waitPhaseStartedAt to far in the past to trigger maybeExitWaitPhase
-    nextState.waitPhaseStartedAt = 0; 
+    nextState.waitPhaseStartedAt = 1; 
   }
   
   return nextState;

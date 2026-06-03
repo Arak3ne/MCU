@@ -1,7 +1,6 @@
 <template>
   <div class="h-[100dvh] max-h-[100dvh] overflow-hidden bg-[#0B0F0C] text-[#F0FDF4]">
-    <main class="w-full h-full p-4 md:p-6 flex flex-col gap-4">
-
+    <main @click="initAudio" class="w-full h-full p-4 md:p-6 flex flex-col gap-4 relative">
       <!-- Erreurs et synchronisation -->
       <section v-if="loadError" class="bg-red-500/10 border border-red-500/40 text-red-300 p-4 rounded-md shadow-lg shrink-0">
         {{ loadError }}
@@ -15,7 +14,7 @@
       </section>
 
       <!-- Grille principale à 3 colonnes -->
-      <section v-else class="grid grid-cols-1 lg:grid-cols-[350px_1fr_350px] xl:grid-cols-[450px_1fr_450px] 2xl:grid-cols-[500px_1fr_500px] gap-6 flex-1 min-h-0 items-stretch">
+      <section v-else class="grid grid-cols-1 lg:grid-cols-[320px_1fr_320px] xl:grid-cols-[400px_1fr_400px] 2xl:grid-cols-[450px_1fr_450px] gap-6 flex-1 min-h-0 items-stretch">
         
         <!-- SIDEBAR GAUCHE -->
         <aside class="space-y-4 flex flex-col h-full w-full">
@@ -52,15 +51,26 @@
                       <!-- Placeholder (already cached) -->
                       <img 
                         :src="getChampionImage(getPickedChampion(leftTeam, slot)!)" 
-                        class="absolute inset-0 w-full h-full object-cover blur-md scale-110 opacity-60"
+                        class="absolute inset-0 w-full h-full object-cover blur-md opacity-60"
+                        style="transform: scale(1) translateY(5%);"
                       />
                       <!-- Main Splash -->
                       <img 
                         :src="getChampionSplash(getPickedChampion(leftTeam, slot)!)" 
-                        class="absolute inset-0 w-full h-full object-cover object-[center_15%]"
+                        class="absolute inset-0 w-full h-full object-cover"
+                        style="transform: scale(1) translateY(5%);"
                       />
                       <div class="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-transparent mix-blend-overlay"></div>
-                      <div class="absolute inset-0 border border-blue-500/30 rounded-md animate-borderFlashBlue"></div>
+                      
+                      <!-- Bottom Gradient & Champion Name -->
+                      <div class="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none"></div>
+                      <div class="absolute bottom-1.5 left-2.5 sm:bottom-2 sm:left-3 pointer-events-none z-10">
+                        <span class="text-white font-title text-xs sm:text-sm md:text-base uppercase tracking-[0.2em] drop-shadow-[0_2px_4px_rgba(0,0,0,1)]">
+                          {{ getPickedChampion(leftTeam, slot)!.name }}
+                        </span>
+                      </div>
+
+                      <div class="absolute inset-0 border border-blue-500/30 rounded-md animate-borderFlashBlue pointer-events-none z-20"></div>
                     </div>
                   </template>
                   <template v-else-if="currentTurn?.teamId === leftTeam.id && currentTurn?.slot === slot && canCurrentUserPick && selectedChampion">
@@ -69,14 +79,24 @@
                       <!-- Placeholder -->
                       <img 
                         :src="getChampionImage(selectedChampion)" 
-                        class="absolute inset-0 w-full h-full object-cover blur-md scale-110 opacity-60"
+                        class="absolute inset-0 w-full h-full object-cover blur-md opacity-60"
+                        style="transform: scale(1) translateY(5%);"
                       />
                       <!-- Main Splash -->
                       <img 
                         :src="getChampionSplash(selectedChampion)" 
-                        class="absolute inset-0 w-full h-full object-cover object-[center_15%]"
+                        class="absolute inset-0 w-full h-full object-cover"
+                        style="transform: scale(1) translateY(5%);"
                       />
                       <div class="absolute inset-0 bg-gradient-to-r from-blue-600/10 to-transparent mix-blend-overlay"></div>
+                      
+                      <!-- Bottom Gradient & Champion Name -->
+                      <div class="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none"></div>
+                      <div class="absolute bottom-1.5 left-2.5 sm:bottom-2 sm:left-3 pointer-events-none z-10">
+                        <span class="text-white/80 font-title text-xs sm:text-sm md:text-base uppercase tracking-[0.2em] drop-shadow-[0_2px_4px_rgba(0,0,0,1)]">
+                          {{ selectedChampion.name }}
+                        </span>
+                      </div>
                     </div>
                   </template>
                 </div>
@@ -253,13 +273,13 @@
 
           <!-- BARRE D'ACTION UNIFIÉE (BOTTOM) -->
           <div class="mt-auto shrink-0 flex flex-col items-center z-20">
-            <!-- Affichage du timer au-dessus du bouton -->
-            <div v-if="pickRemainingSec > 0 || state.phase === 'wait_before_pick_phase_2'" class="mb-4">
+            <!-- Affichage du timer et contrôles -->
+            <div class="mb-4 flex items-center justify-center gap-4 h-12">
               <div v-if="pickRemainingSec > 0" class="inline-flex items-center gap-2 px-6 py-2 bg-[#0B0F0C] border border-[#2A2A2A] rounded-full shadow-[0_0_15px_rgba(0,0,0,0.5)]">
                 <span class="w-2.5 h-2.5 rounded-full bg-[#22C55E] animate-pulse shadow-[0_0_10px_#22C55E]"></span>
                 <span class="text-2xl font-bold text-[#F0FDF4]">{{ pickRemainingSec }}s</span>
               </div>
-              <div v-if="state.phase === 'wait_before_pick_phase_2'" class="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <div v-else-if="state.phase === 'wait_before_pick_phase_2'" class="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <div class="inline-flex items-center gap-2 px-6 py-2 bg-[#0B0F0C] border border-[#22C55E]/50 rounded-full shadow-[0_0_15px_rgba(34,197,94,0.2)] text-[#22C55E]">
                   <span class="text-sm font-bold uppercase tracking-widest">Reprise dans</span>
                   <span class="text-2xl font-bold">{{ waitRemainingSec }}s</span>
@@ -273,6 +293,21 @@
                   <span>Passer l'attente ({{ skipWaitVotesCount }}/2)</span>
                 </button>
               </div>
+
+              <!-- Audio Controls -->
+              <button
+                @click.stop="toggleMute"
+                class="bg-[#111111]/80 backdrop-blur-sm border border-[#2A2A2A] hover:border-[#22C55E]/50 text-[#A1A1AA] hover:text-[#22C55E] p-2.5 rounded-full shadow-lg transition-all"
+                title="Activer/Désactiver le son"
+              >
+                <svg v-if="isMuted" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" clip-rule="evenodd" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+                </svg>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                </svg>
+              </button>
             </div>
 
             <!-- LOBBY -->
@@ -369,15 +404,26 @@
                       <!-- Placeholder -->
                       <img 
                         :src="getChampionImage(getPickedChampion(rightTeam, slot)!)" 
-                        class="absolute inset-0 w-full h-full object-cover blur-md scale-110 opacity-60 transform scale-x-[-1]"
+                        class="absolute inset-0 w-full h-full object-cover blur-md opacity-60"
+                        style="transform: scale(1) translateY(5%);"
                       />
                       <!-- Main Splash -->
                       <img 
                         :src="getChampionSplash(getPickedChampion(rightTeam, slot)!)" 
-                        class="absolute inset-0 w-full h-full object-cover object-[center_15%] transform scale-x-[-1]"
+                        class="absolute inset-0 w-full h-full object-cover"
+                        style="transform: scale(1) translateY(5%);"
                       />
                       <div class="absolute inset-0 bg-gradient-to-l from-red-600/20 to-transparent mix-blend-overlay"></div>
-                      <div class="absolute inset-0 border border-red-500/30 rounded-md animate-borderFlashRed"></div>
+                      
+                      <!-- Bottom Gradient & Champion Name -->
+                      <div class="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none"></div>
+                      <div class="absolute bottom-1.5 left-2.5 sm:bottom-2 sm:left-3 pointer-events-none z-10">
+                        <span class="text-white font-title text-xs sm:text-sm md:text-base uppercase tracking-[0.2em] drop-shadow-[0_2px_4px_rgba(0,0,0,1)]">
+                          {{ getPickedChampion(rightTeam, slot)!.name }}
+                        </span>
+                      </div>
+
+                      <div class="absolute inset-0 border border-red-500/30 rounded-md animate-borderFlashRed pointer-events-none z-20"></div>
                     </div>
                   </template>
                   <template v-else-if="currentTurn?.teamId === rightTeam.id && currentTurn?.slot === slot && canCurrentUserPick && selectedChampion">
@@ -386,14 +432,24 @@
                       <!-- Placeholder -->
                       <img 
                         :src="getChampionImage(selectedChampion)" 
-                        class="absolute inset-0 w-full h-full object-cover blur-md scale-110 opacity-60 transform scale-x-[-1]"
+                        class="absolute inset-0 w-full h-full object-cover blur-md opacity-60"
+                        style="transform: scale(1) translateY(5%);"
                       />
                       <!-- Main Splash -->
                       <img 
                         :src="getChampionSplash(selectedChampion)" 
-                        class="absolute inset-0 w-full h-full object-cover object-[center_15%] transform scale-x-[-1]"
+                        class="absolute inset-0 w-full h-full object-cover"
+                        style="transform: scale(1) translateY(5%);"
                       />
                       <div class="absolute inset-0 bg-gradient-to-l from-red-600/10 to-transparent mix-blend-overlay"></div>
+                      
+                      <!-- Bottom Gradient & Champion Name -->
+                      <div class="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none"></div>
+                      <div class="absolute bottom-1.5 left-2.5 sm:bottom-2 sm:left-3 pointer-events-none z-10">
+                        <span class="text-white/80 font-title text-xs sm:text-sm md:text-base uppercase tracking-[0.2em] drop-shadow-[0_2px_4px_rgba(0,0,0,1)]">
+                          {{ selectedChampion.name }}
+                        </span>
+                      </div>
                     </div>
                   </template>
                 </div>
@@ -426,6 +482,7 @@ import {
   toggleSkipWaitVote,
 } from "../lib/draftEngine";
 import { useRealtimeDraftSession } from "../composables/useRealtimeDraftSession";
+import { useDraftAudio } from "../composables/useDraftAudio";
 import type { DraftSessionState } from "../types/draft";
 import type { Database } from "../types/supabase";
 
@@ -506,6 +563,21 @@ const hydrateStateFromStorage = (base: DraftSessionState): DraftSessionState => 
 const initialState = hydrateStateFromStorage(baseInitialState);
 
 const { state, init, dispose, broadcastState, activeDriverId } = useRealtimeDraftSession(initialState, currentUser);
+
+const {
+  isMuted,
+  initAudio,
+  playLockSound,
+  playTickSound,
+  playYourTurnSound,
+  playClickSound,
+  startConfigMusic,
+  startBackgroundMusic,
+  stopAllMusic,
+  playDraftEndSound,
+  toggleMute
+} = useDraftAudio();
+
 const isAwaitingInitialSync = computed(() => {
   if (isInitializing.value) return true;
   return (
@@ -790,6 +862,11 @@ const onChampionClick = async (championId: string, championName: string) => {
   }
   const champ = champions.value.find((c) => c.id === championId);
   if (!champ || isChampionDisabled(championId, champ.is_available)) return;
+  
+  if (selectedChampionId.value !== championId) {
+    playClickSound();
+  }
+  
   selectedChampionId.value = championId;
   selectedChampionName.value = championName;
 };
@@ -817,6 +894,9 @@ const onConfirmChampion = async () => {
   });
 
   if (withPick.version === current.version) return;
+  
+  playLockSound();
+  
   const withWait = enterWaitPhase(withPick);
 
   selectedChampionId.value = null;
@@ -848,8 +928,11 @@ const getChampionSplash = (champ: Champion) => {
   }
   if (champ.image_url) return champ.image_url;
   const key = (champ as any).ddragon_key as string | undefined;
-  const assetId = normalizeChampionAssetId(key || champ.name);
-  return `https://ddragon.leagueoflegends.com/cdn/img/champion/centered/${assetId}_0.jpg`;
+  
+  // Utilisation de l'API CommunityDragon pour les splash arts centrés de haute qualité
+  // (Format utilisé par Drafter)
+  const champNameLower = (key || champ.name).toLowerCase().replace(/[^a-z0-9]/g, '');
+  return `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/characters/${champNameLower}/skins/base/images/${champNameLower}_splash_centered_0.jpg`;
 };
 
 const loadData = async () => {
@@ -958,6 +1041,15 @@ onMounted(async () => {
 watch(
   () => state.value.phase,
   async (newPhase, oldPhase) => {
+    // Gestion de la musique
+    if (["lobby", "choose_side_team", "choose_side_color", "choose_first_pick"].includes(newPhase)) {
+      startConfigMusic();
+    } else if (newPhase === "pick_phase_1" || newPhase === "pick_phase_2") {
+      startBackgroundMusic();
+    } else if (newPhase === "completed" && oldPhase !== "completed") {
+      playDraftEndSound();
+    }
+
     if (newPhase === "completed" && oldPhase !== "completed") {
       if (currentUser?.id && currentUser.id === activeDriverId.value) {
         const pickedIds = state.value.picks
@@ -996,7 +1088,27 @@ watch(
   },
 );
 
+watch(pickRemainingSec, (newVal, oldVal) => {
+  if (newVal <= 10 && newVal > 0 && newVal !== oldVal) {
+    playTickSound();
+  }
+});
+
+watch(
+  () => currentTurn.value,
+  (newTurn, oldTurn) => {
+    if (!newTurn) return;
+    if (
+      newTurn.teamId === currentUserCaptainTeamId.value &&
+      (!oldTurn || oldTurn.teamId !== newTurn.teamId || oldTurn.slot !== newTurn.slot)
+    ) {
+      playYourTurnSound();
+    }
+  }
+);
+
 onUnmounted(() => {
+  stopAllMusic();
   if (timerInterval) clearInterval(timerInterval);
   void dispose();
 });
