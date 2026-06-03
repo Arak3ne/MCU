@@ -411,7 +411,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { supabase } from "../lib/supabase";
-import { getChampions, getPlayers, toggleChampion, disableChampions } from "../lib/queries";
+import { getChampions, getPlayers } from "../lib/queries";
 import {
   createInitialDraftState,
   enterWaitPhase,
@@ -590,10 +590,6 @@ const toggleRole = (roleId: string) => {
 const normalizedSearch = computed(() => searchQuery.value.trim().toLowerCase());
 const pickedChampionIds = computed(() => new Set(state.value.picks.map((p) => p.championId)));
 const currentTurn = computed(() => getCurrentTurn(state.value));
-const currentTurnTeamName = computed(() => {
-  if (!currentTurn.value) return state.value.phase === "completed" ? "Draft terminée" : "En attente";
-  return currentTurn.value.teamId === state.value.team1Id ? state.value.team1Name : state.value.team2Name;
-});
 
 const isCurrentUserCaptain = computed(() => {
   if (!currentUser?.id) return false;
@@ -685,29 +681,6 @@ const pickRemainingSec = computed(() => {
   if (!inPickPhase || !state.value.pickTurnStartedAt) return 0;
   const elapsed = Math.floor((nowMs.value - state.value.pickTurnStartedAt) / 1000);
   return Math.max(0, state.value.pickTurnDurationSec - elapsed);
-});
-
-const phaseLabel = computed(() => {
-  switch (state.value.phase) {
-    case "lobby":
-      return "Lobby (attente prêt)";
-    case "choose_side_team":
-      return "Choix equipe side";
-    case "choose_side_color":
-      return "Choix side";
-    case "choose_first_pick":
-      return "Choix first pick";
-    case "pick_phase_1":
-      return "Pick phase 1";
-    case "wait_before_pick_phase_2":
-      return "Pause 45s";
-    case "pick_phase_2":
-      return "Pick phase 2";
-    case "completed":
-      return "Terminée";
-    default:
-      return state.value.phase;
-  }
 });
 
 const captainTeam1Name = computed(() => {

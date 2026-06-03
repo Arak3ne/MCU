@@ -353,120 +353,6 @@
         </div>
       </div>
     </main>
-
-    <!-- Modal Popup for Draft -->
-    <Transition
-      enter-active-class="transition duration-300 ease-out"
-      enter-from-class="opacity-0 scale-95"
-      enter-to-class="opacity-100 scale-100"
-      leave-active-class="transition duration-200 ease-in"
-      leave-from-class="opacity-100 scale-100"
-      leave-to-class="opacity-0 scale-95"
-    >
-      <div v-if="showDraftModal" class="fixed inset-0 flex items-center justify-center z-[60] p-4" @click.self="closeDraftModal">
-        <!-- Backdrop -->
-        <div class="absolute inset-0 -z-10 cursor-pointer bg-[#0B0F0C]/90 backdrop-blur-md" aria-hidden="true"></div>
-
-        <div class="relative cursor-default bg-[#111111] border border-[#22C55E]/30 rounded-sm p-1 max-w-md w-full shadow-[0_0_50px_rgba(0,0,0,1)] before:absolute before:-inset-[1px] before:bg-gradient-to-b before:from-[#22C55E]/50 before:to-[#22C55E]/10 before:-z-10 before:rounded-sm">
-          <div class="bg-[#111111] p-8 h-full w-full rounded-sm relative">
-            <!-- Close Button -->
-            <button @click="closeDraftModal" class="absolute top-4 right-4 cursor-pointer text-[#A1A1AA] hover:text-[#22C55E] transition-colors p-2 z-20">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-            
-            <h2 class="text-3xl font-title mb-2 text-center text-transparent bg-clip-text bg-gradient-to-b from-[#F0FDF4] to-[#22C55E] tracking-wider uppercase">Initialiser la Draft</h2>
-
-            <div v-if="awaitingSideChoice && sidePickMatch" class="space-y-4 mb-8">
-              <p class="text-[#A1A1AA] text-center text-[11px] uppercase tracking-widest leading-relaxed px-1">
-                Le premier à ouvrir choisit quelle équipe sera <span class="text-sky-400 normal-case">blue side</span> sur Drafter — l’autre sera red side. Ce n’est pas l’ordre affiché sur le match.
-              </p>
-              <button
-                type="button"
-                :disabled="claimingSide"
-                @click="confirmDraftBlueSide(sidePickMatch.team1.id)"
-                class="w-full py-3.5 px-4 rounded-sm border border-sky-500/45 bg-sky-500/10 hover:bg-sky-500/20 text-sky-100 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed text-left"
-              >
-                <span class="flex items-center gap-3">
-                  <span class="shrink-0 w-2.5 h-2.5 rounded-full bg-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.75)]" aria-hidden="true" />
-                  <span class="min-w-0 flex flex-col gap-0.5">
-                    <span class="font-bold uppercase tracking-widest text-xs text-sky-50 truncate">{{ sidePickMatch.team1.name }}</span>
-                    <span class="text-[10px] uppercase tracking-widest text-sky-300/90">Blue side</span>
-                  </span>
-                </span>
-              </button>
-              <button
-                type="button"
-                :disabled="claimingSide"
-                @click="confirmDraftBlueSide(sidePickMatch.team2.id)"
-                class="w-full py-3.5 px-4 rounded-sm border border-sky-500/45 bg-sky-500/10 hover:bg-sky-500/20 text-sky-100 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed text-left"
-              >
-                <span class="flex items-center gap-3">
-                  <span class="shrink-0 w-2.5 h-2.5 rounded-full bg-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.75)]" aria-hidden="true" />
-                  <span class="min-w-0 flex flex-col gap-0.5">
-                    <span class="font-bold uppercase tracking-widest text-xs text-sky-50 truncate">{{ sidePickMatch.team2.name }}</span>
-                    <span class="text-[10px] uppercase tracking-widest text-sky-300/90">Blue side</span>
-                  </span>
-                </span>
-              </button>
-              <p v-if="claimingSide" class="text-center text-[10px] text-[#22C55E] uppercase tracking-widest animate-pulse">Enregistrement…</p>
-            </div>
-            
-            <div v-else class="flex justify-center items-center gap-4 mb-8 text-sm font-bold uppercase tracking-widest">
-              <span class="text-[#4ADE80]">{{ blueName }}</span>
-              <span class="text-[#A1A1AA] text-xs italic">vs</span>
-              <span class="text-[#EF4444]">{{ redName }}</span>
-            </div>
-
-            <div v-if="drafting" class="text-center py-10">
-              <div class="w-16 h-16 border-4 border-[#2A2A2A] border-t-[#22C55E] rounded-full animate-spin mx-auto mb-6"></div>
-              <p class="text-[#22C55E] uppercase tracking-widest text-sm font-bold animate-pulse">{{ message || 'Génération de la draft...' }}</p>
-            </div>
-
-            <div v-else-if="draftUrl" class="space-y-6">
-              <p class="text-green-400 text-center font-bold tracking-widest uppercase text-sm drop-shadow-[0_0_5px_rgba(34,197,94,0.5)]">Draft Générée !</p>
-              
-              <div class="flex flex-col gap-4">
-                <a
-                  :href="draftUrl"
-                  target="_blank"
-                  class="w-full py-4 bg-gradient-to-r from-[#22C55E] to-[#14532D] hover:from-[#d9b876] hover:to-[#8a6831] text-[#0B0F0C] rounded-sm font-title text-center transition-all shadow-[0_0_15px_rgba(200,170,110,0.3)] uppercase tracking-widest text-sm border border-[#22C55E]"
-                >
-                  Ouvrir l'outil de Draft
-                </a>
-                <button
-                  @click="copyDraftLink"
-                  class="w-full py-4 bg-[#1A1A1A] hover:bg-[#282d33] border border-[#2A2A2A] hover:border-[#22C55E]/50 rounded-sm font-bold transition-all flex items-center justify-center gap-2 text-[#A1A1AA] hover:text-[#F0FDF4] uppercase tracking-widest text-xs"
-                 cursor-pointer>
-                  <svg v-if="!linkCopied" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                  <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span :class="linkCopied ? 'text-green-400' : ''">{{ linkCopied ? 'Copié !' : 'Copier le lien' }}</span>
-                </button>
-              </div>
-              
-              <div v-if="draftId" class="flex items-center justify-center gap-2 mt-6 p-3 bg-[#1A1A1A] border border-[#2A2A2A] rounded-sm">
-                <span class="inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_5px_#22c55e]"></span>
-                <p class="text-[10px] text-[#A1A1AA] uppercase tracking-widest font-bold">
-                  Synchronisation automatique des picks en arrière-plan...
-                </p>
-              </div>
-            </div>
-            
-            <div v-else-if="!awaitingSideChoice" class="text-center py-8">
-              <p class="text-red-400 font-bold uppercase tracking-widest text-xs mb-6">{{ message || 'Erreur lors de la génération de la draft' }}</p>
-              <button @click="generateDraft" class="cursor-pointer px-8 py-3 bg-[#1A1A1A] border border-[#2A2A2A] hover:border-[#22C55E]/50 hover:bg-[#282d33] rounded-sm text-[#F0FDF4] font-bold uppercase tracking-widest text-xs transition-all">
-                Réessayer
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </Transition>
   </div>
 </template>
 
@@ -520,11 +406,8 @@ import { useRouter } from "vue-router";
 import { supabase } from '../lib/supabase';
 import { fetchPlayoffMatches } from '../lib/queries';
 import { subscribeToTable } from '../lib/realtime';
-import type { Database } from '../types/supabase';
 
 const router = useRouter();
-
-type Team = Database['public']['Tables']['teams']['Row'];
 
 const matches = ref<any[]>([]);
 const teams = ref<any[]>([]);
@@ -561,9 +444,6 @@ onMounted(() => {
 onUnmounted(() => {
   if (subscription) {
     subscription.unsubscribe();
-  }
-  if (syncInterval) {
-    clearInterval(syncInterval);
   }
 });
 
