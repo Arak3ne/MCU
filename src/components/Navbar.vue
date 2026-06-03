@@ -171,73 +171,6 @@
         </button>
       </div>
     </div>
-<<<<<<< HEAD
-
-    <Teleport to="body">
-      <Transition
-        enter-active-class="transition duration-200 ease-out"
-        enter-from-class="opacity-0"
-        enter-to-class="opacity-100"
-        leave-active-class="transition duration-150 ease-in"
-        leave-from-class="opacity-100"
-        leave-to-class="opacity-0"
-      >
-        <button
-          v-if="menuOpen"
-          type="button"
-          class="fixed inset-0 z-[90] bg-black/60 backdrop-blur-sm lg:hidden"
-          aria-label="Fermer le menu"
-          @click="closeMenu"
-        />
-      </Transition>
-
-      <Transition
-        enter-active-class="transition duration-250 ease-out"
-        enter-from-class="translate-x-full"
-        enter-to-class="translate-x-0"
-        leave-active-class="transition duration-200 ease-in"
-        leave-from-class="translate-x-0"
-        leave-to-class="translate-x-full"
-      >
-        <aside
-          v-if="menuOpen"
-          id="mobile-nav-panel"
-          class="fixed top-0 right-0 z-[95] h-[100dvh] w-[min(100vw,20rem)] bg-[#0B0F0C] border-l border-[#2A2A2A] shadow-[-8px_0_40px_rgba(0,0,0,0.6)] flex flex-col lg:hidden"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Navigation"
-        >
-          <div class="flex items-center justify-between px-4 h-16 border-b border-[#2A2A2A] shrink-0">
-            <span class="font-title text-xl uppercase tracking-widest text-[#22C55E]">Menu</span>
-            <button type="button" class="flex items-center justify-center w-10 h-10 rounded-lg text-[#A1A1AA] hover:text-[#F0FDF4]" aria-label="Fermer" @click="closeMenu">
-              <X class="w-5 h-5" />
-            </button>
-          </div>
-
-          <nav class="flex-1 overflow-y-auto overscroll-contain py-3 px-3 space-y-1">
-            <router-link
-              v-for="item in mobileNavItems"
-              :key="item.to"
-              :to="item.to"
-              class="flex items-center gap-3 rounded-lg px-3 py-3.5 text-sm font-bold tracking-widest uppercase transition-colors min-h-[44px] border"
-              :class="mobileLinkClass(item.to, item.highlight)"
-              @click="closeMenu"
-            >
-              <component :is="item.icon" v-if="item.icon" class="w-4 h-4 shrink-0" />
-              {{ item.label }}
-            </router-link>
-          </nav>
-        </aside>
-      </Transition>
-    </Teleport>
-  </nav>
-</template>
-
-<script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted, type Component } from 'vue';
-import { useRoute } from 'vue-router';
-import { ChevronDown, LayoutDashboard, ListOrdered, UserCircle, Menu, X } from 'lucide-vue-next';
-=======
     </nav>
   </div>
 </template>
@@ -252,7 +185,6 @@ import {
   ListOrdered,
   UserCircle
 } from 'lucide-vue-next';
->>>>>>> feat/draft
 
 const route = useRoute();
 const menuOpen = ref(false);
@@ -277,50 +209,6 @@ const mobileNavItems: MobileNavItem[] = [
 ];
 
 const isFantasyActive = () => ['/fantasy', '/fantasy-leaderboard'].includes(route.path);
-<<<<<<< HEAD
-
-const toggleMenu = () => {
-  menuOpen.value = !menuOpen.value;
-};
-
-const closeMenu = () => {
-  menuOpen.value = false;
-};
-
-const mobileLinkClass = (to: string, highlight?: boolean) => {
-  const active = route.path === to;
-  if (highlight) {
-    return active
-      ? 'bg-[#22C55E] text-[#0B0F0C] border-[#22C55E] mt-2'
-      : 'text-[#22C55E] border-[#22C55E]/40 bg-[#22C55E]/10 mt-2';
-  }
-  if (['/fantasy', '/fantasy-leaderboard'].includes(to)) {
-    return active
-      ? 'bg-[#22C55E]/15 text-[#22C55E] border-[#22C55E]/30 pl-6'
-      : 'text-[#A1A1AA] hover:text-[#F0FDF4] hover:bg-[#1A1A1A] border-transparent pl-6';
-  }
-  return active
-    ? 'bg-[#22C55E]/15 text-[#22C55E] border-[#22C55E]/30'
-    : 'text-[#A1A1AA] hover:text-[#F0FDF4] hover:bg-[#1A1A1A] border-transparent';
-};
-
-const lockBodyScroll = (locked: boolean) => {
-  document.body.style.overflow = locked ? 'hidden' : '';
-};
-
-watch(menuOpen, (open) => lockBodyScroll(open));
-watch(() => route.path, closeMenu);
-
-const onEscape = (e: KeyboardEvent) => {
-  if (e.key === 'Escape') closeMenu();
-};
-
-onMounted(() => window.addEventListener('keydown', onEscape));
-onUnmounted(() => {
-  window.removeEventListener('keydown', onEscape);
-  lockBodyScroll(false);
-});
-=======
 const isDraftRoom = computed(() => route.path.startsWith('/draft/'));
 const isCollapsed = ref(isDraftRoom.value);
 
@@ -330,5 +218,4 @@ watch(
     isCollapsed.value = isDraftRoom.value;
   }
 );
->>>>>>> feat/draft
 </script>
