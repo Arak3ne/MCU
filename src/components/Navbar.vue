@@ -1,12 +1,35 @@
 <template>
-  <nav class="relative z-[100] border-b border-[#2A2A2A] bg-[#0B0F0C]/90 backdrop-blur-md">
-    <div class="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
-      <router-link to="/" class="flex items-center gap-4 group cursor-pointer hover:opacity-80 transition-opacity -ml-18">
-        <img src="../assets/mcu_logo.png" alt="MCU Logo" class="w-16 h-16 object-contain drop-shadow-[0_0_15px_rgba(34,197,94,0.3)]" />
-        <span class="font-title tracking-widest uppercase text-3xl text-[#22C55E] drop-shadow-[0_2px_10px_rgba(34,197,94,0.2)]">Party</span>
-      </router-link>
+  <div :class="isCollapsed ? 'fixed top-0 left-1/2 -translate-x-1/2 z-[100]' : 'relative z-[100]'">
+    <!-- Bouton pour restaurer le menu -->
+    <button 
+      v-if="isCollapsed"
+      @click="isCollapsed = false"
+      class="flex items-center justify-center w-16 h-6 bg-[#111111]/80 backdrop-blur-sm border-b border-x border-[#2A2A2A] rounded-b-md hover:bg-[#111111] hover:border-[#22C55E]/50 transition-all opacity-30 hover:opacity-100 group"
+    >
+      <ChevronDown class="w-4 h-4 text-[#A1A1AA] group-hover:text-[#22C55E]" />
+    </button>
+
+    <!-- Navbar Etendue -->
+    <nav v-else class="border-b border-[#2A2A2A] bg-[#0B0F0C]/90 backdrop-blur-md transition-all relative" :class="isDraftRoom ? 'fixed top-0 left-0 w-full shadow-2xl' : ''">
       
-      <div class="flex flex-1 min-w-0 items-center justify-end gap-0 font-sans z-50">
+      <!-- Bouton pour réduire le menu -->
+      <button 
+        v-if="isDraftRoom"
+        @click="isCollapsed = true"
+        class="absolute top-full left-1/2 -translate-x-1/2 flex items-center justify-center w-16 h-6 bg-[#111111]/90 backdrop-blur-md border-b border-x border-[#2A2A2A] rounded-b-md hover:bg-[#111111] hover:border-[#22C55E]/50 transition-all opacity-30 hover:opacity-100 group z-[110]"
+      >
+        <ChevronUp class="w-4 h-4 text-[#A1A1AA] group-hover:text-[#22C55E]" />
+      </button>
+
+      <div class="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <router-link to="/" class="flex items-center gap-4 group cursor-pointer hover:opacity-80 transition-opacity" :class="isDraftRoom ? '' : '-ml-18'">
+            <img src="../assets/mcu_logo.png" alt="MCU Logo" class="w-16 h-16 object-contain drop-shadow-[0_0_15px_rgba(34,197,94,0.3)]" />
+            <span class="font-title tracking-widest uppercase text-3xl text-[#22C55E] drop-shadow-[0_2px_10px_rgba(34,197,94,0.2)]">Party</span>
+          </router-link>
+        </div>
+        
+        <div class="flex flex-1 min-w-0 items-center justify-end gap-0 font-sans z-50">
         
         <!-- Tournament -->
         <router-link to="/" class="px-4 py-3 text-sm font-bold tracking-widest uppercase relative group flex items-center h-20 cursor-pointer" :class="route.path === '/' ? 'text-[#F0FDF4]' : 'text-[#A1A1AA] hover:text-[#F0FDF4] transition-colors'">
@@ -71,10 +94,6 @@
 
         <div class="h-8 w-px bg-[#2A2A2A] mx-2 shrink-0"></div>
 
-        <router-link to="/draft/setup" class="px-6 py-2.5 text-xs font-bold tracking-widest uppercase transition-all rounded cursor-pointer shrink-0 mr-2" :class="route.path.startsWith('/draft') ? 'text-[#0B0F0C] border border-[#22C55E] bg-[#22C55E] shadow-[0_0_15px_rgba(34,197,94,0.4)]' : 'text-[#22C55E] border border-[#22C55E]/30 hover:border-[#22C55E] hover:bg-[#22C55E]/10 shadow-[inset_0_0_20px_rgba(34,197,94,0.0)] hover:shadow-[inset_0_0_20px_rgba(34,197,94,0.2)]'">
-          Draft
-        </router-link>
-
         <!-- Playoffs button -->
         <router-link to="/playoffs" class="px-6 py-2.5 text-xs font-bold tracking-widest uppercase transition-all rounded cursor-pointer shrink-0" :class="route.path === '/playoffs' ? 'text-[#0B0F0C] border border-[#22C55E] bg-[#22C55E] shadow-[0_0_15px_rgba(34,197,94,0.4)]' : 'text-[#22C55E] border border-[#22C55E]/30 hover:border-[#22C55E] hover:bg-[#22C55E]/10 shadow-[inset_0_0_20px_rgba(34,197,94,0.0)] hover:shadow-[inset_0_0_20px_rgba(34,197,94,0.2)]'">
           Playoffs
@@ -94,19 +113,33 @@
 
       </div>
     </div>
-  </nav>
+    </nav>
+  </div>
 </template>
 
 <script setup lang="ts">
+import { ref, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { 
   ChevronDown, 
+  ChevronUp,
   LayoutDashboard, 
   ListOrdered,
   UserCircle,
+  Menu,
+  X
 } from 'lucide-vue-next';
 
 const route = useRoute();
 
 const isFantasyActive = () => ['/fantasy', '/fantasy-leaderboard'].includes(route.path);
+const isDraftRoom = computed(() => route.path.startsWith('/draft/'));
+const isCollapsed = ref(isDraftRoom.value);
+
+watch(
+  () => route.path,
+  () => {
+    isCollapsed.value = isDraftRoom.value;
+  }
+);
 </script>

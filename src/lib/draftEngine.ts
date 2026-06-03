@@ -72,7 +72,9 @@ export function createInitialDraftState(params: {
     waitPhaseStartedAt: null,
     waitPhaseDurationSec: WAIT_PHASE_DURATION_SECONDS,
     hasCompletedMidDraftPause: false,
+    skipWaitVotes: {},
     version: 1,
+    lastUpdatedBy: params.createdByPlayerId,
   };
 }
 
@@ -197,7 +199,7 @@ export function maybeAutoSkipTurn(state: DraftSessionState, now = Date.now()): D
   if (!state.pickTurnStartedAt) return state;
 
   const elapsedMs = now - state.pickTurnStartedAt;
-  if (elapsedMs < state.pickTurnDurationSec * 1000) return state;
+  if (elapsedMs < (state.pickTurnDurationSec + 2) * 1000) return state;
 
   const timeoutChampionId = `__empty_pick__${state.turnIndex}`;
   return lockChampionPick(state, {
@@ -291,4 +293,29 @@ export function setSecondCaptainFirstPickDecision(
 export function getCurrentTurn(state: DraftSessionState): DraftTurn | null {
   if (state.phase !== "pick_phase_1" && state.phase !== "pick_phase_2") return null;
   return state.turnOrder[state.turnIndex] ?? null;
+}
+
+export function toggleSkipWaitVote(
+  state: DraftSessionState,
+  captainPlayerId: string,
+): DraftSessionState {
+  if (state.phase !== "wait_before_pick_phase_2") return state;
+  
+  const isCaptain = captainPlayerId === state.captainTeam1PlayerId || captainPlayerId === state.captainTeam2PlayerId;
+  if (!isCaptain) return state;
+
+  const skipWaitVotes = { ...(state.skipWaitVotes || {}) };
+  skipWaitVotes[captainPlayerId] = !skipWaitVotes[captainPlayerId];
+  
+  const nextState = { ...state, skipWaitVotes, version: state.version + 1 };
+  
+  // Check if both voted
+  const vote1 = skipWaitVotes[state.captainTeam1PlayerId];
+  const vote2 = skipWaitVotes[state.captainTeam2PlayerId];
+  if (vote1 && vote2) {
+    // Both agreed to skip, we can set waitPhaseStartedAt to far in the past to trigger maybeExitWaitPhase
+    nextState.waitPhaseStartedAt = 0; 
+  }
+  
+  return nextState;
 }

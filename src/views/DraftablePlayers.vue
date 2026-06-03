@@ -401,7 +401,11 @@ const getChampionSquare = (name: string) => {
 
 const getChampionSplash = (name: string) => {
   const champ = champions.value.find(c => c.name === name);
-  return champ?.splash_url || champ?.image_url || '';
+  const url = champ?.splash_url || champ?.image_url || '';
+  if (url && url.includes('/splash/')) {
+    return url.replace('/splash/', '/centered/');
+  }
+  return url;
 };
 
 const getPlayerTeam = (player: any) => {

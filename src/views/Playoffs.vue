@@ -516,15 +516,13 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useRouter } from "vue-router";
 import { supabase } from '../lib/supabase';
 import { fetchPlayoffMatches } from '../lib/queries';
 import { subscribeToTable } from '../lib/realtime';
-import {
-  logDraftSyncClient,
-  type SyncDraftData,
-} from '../lib/logDraftSyncClient';
-import { claimOrRefreshDraftBlueTeam, resolveBlueRedNames } from '../lib/draftMatchSides';
 import type { Database } from '../types/supabase';
+
+const router = useRouter();
 
 type Team = Database['public']['Tables']['teams']['Row'];
 
@@ -533,32 +531,7 @@ const teams = ref<any[]>([]);
 const loading = ref(true);
 let subscription: any = null;
 
-// Draft related state
-const showDraftModal = ref(false);
-const currentMatchId = ref("");
-const blueName = ref("");
-const redName = ref("");
-const drafting = ref(false);
-const draftUrl = ref("");
-const draftId = ref("");
-const syncing = ref(false);
-const message = ref("");
-const linkCopied = ref(false);
 const globalError = ref("");
-const awaitingSideChoice = ref(false);
-const claimingSide = ref(false);
-const sidePickMatch = ref<{ team1: Team; team2: Team } | null>(null);
-let syncInterval: any = null;
-
-const applyDraftDisplayFromMatch = (m: { team1: Team; team2: Team; draft_blue_team_id?: string | null }) => {
-  const { blueName: b, redName: r } = resolveBlueRedNames({
-    team1: m.team1,
-    team2: m.team2,
-    draft_blue_team_id: m.draft_blue_team_id,
-  });
-  blueName.value = b;
-  redName.value = r;
-};
 
 const showError = (msg: string) => {
   globalError.value = msg;
@@ -643,235 +616,8 @@ const startDraftForMatch = async (match: any, roundNumber?: number, allRounds?: 
     return;
   }
 
-  currentMatchId.value = match.id;
-  draftUrl.value = "";
-  draftId.value = "";
-  message.value = "";
-  sidePickMatch.value = { team1: match.team1, team2: match.team2 };
-  showDraftModal.value = true;
-
-  if (match.draft_url) {
-    awaitingSideChoice.value = false;
-    applyDraftDisplayFromMatch(match);
-    void generateDraft();
-    return;
-  }
-  if (match.draft_blue_team_id) {
-    awaitingSideChoice.value = false;
-    applyDraftDisplayFromMatch(match);
-    void generateDraft();
-    return;
-  }
-  awaitingSideChoice.value = true;
-  blueName.value = "";
-  redName.value = "";
-};
-
-const confirmDraftBlueSide = async (blueTeamId: string) => {
-  if (!currentMatchId.value || claimingSide.value) return;
-  claimingSide.value = true;
-  message.value = "";
-  try {
-    const r = await claimOrRefreshDraftBlueTeam(supabase, currentMatchId.value, blueTeamId);
-    const idx = matches.value.findIndex((m: any) => m.id === currentMatchId.value);
-    if (idx !== -1) {
-      const cur = matches.value[idx];
-      matches.value[idx] = {
-        ...cur,
-        draft_blue_team_id: r.draft_blue_team_id ?? cur.draft_blue_team_id,
-        draft_url: r.draft_url ?? cur.draft_url,
-      };
-    }
-    if (!r.draft_blue_team_id && !r.draft_url) {
-      showError("Impossible d’enregistrer le côté bleu. Réessayez.");
-      return;
-    }
-    if (!r.claimed && r.draft_blue_team_id && r.draft_blue_team_id !== blueTeamId) {
-      showError("L’autre équipe a déjà choisi les côtés. Alignement sur leur choix.");
-    }
-    const fresh = matches.value.find((m: any) => m.id === currentMatchId.value);
-    if (fresh?.team1 && fresh?.team2) {
-      applyDraftDisplayFromMatch(fresh);
-    }
-    awaitingSideChoice.value = false;
-    await generateDraft();
-  } catch (e: unknown) {
-    message.value = e instanceof Error ? e.message : "Erreur lors du choix des côtés";
-  } finally {
-    claimingSide.value = false;
-  }
-};
-
-const closeDraftModal = () => {
-  showDraftModal.value = false;
-  awaitingSideChoice.value = false;
-  sidePickMatch.value = null;
-  if (syncInterval) {
-    clearInterval(syncInterval);
-    syncInterval = null;
-  }
-};
-
-const generateDraft = async () => {
-  try {
-    drafting.value = true;
-    draftUrl.value = "";
-    draftId.value = "";
-    linkCopied.value = false;
-
-    // Check if draft already exists in database
-    const match = matches.value.find((m: any) => m.id === currentMatchId.value);
-    if (match && match.draft_url) {
-      message.value = "Draft récupérée (base de données)...";
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      draftUrl.value = match.draft_url;
-      draftId.value = match.draft_id || "";
-      if (match.team1 && match.team2) {
-        applyDraftDisplayFromMatch(match);
-      }
-      message.value = "Draft récupérée !";
-      
-      if (syncInterval) clearInterval(syncInterval);
-      syncInterval = setInterval(() => {
-        syncDraftPicks();
-      }, 4000);
-      return;
-    }
-
-    message.value = "Initialisation de la draft...";
-
-    const sideKey = match?.draft_blue_team_id ?? "unset";
-    const draftCacheKey = `draft_${currentMatchId.value}_${sideKey}_${blueName.value}_${redName.value}`;
-    const cachedDraft = localStorage.getItem(draftCacheKey);
-
-    if (cachedDraft) {
-      message.value = "Initialisation de l'interface...";
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      const parsed = JSON.parse(cachedDraft);
-      draftUrl.value = parsed.draftUrl;
-      draftId.value = parsed.draftId || "";
-      message.value = "Draft récupérée !";
-      
-      // Also update DB since we have it cached locally but maybe not in DB yet
-      if (currentMatchId.value) {
-        await supabase.from("playoff_matches").update({
-          draft_url: parsed.draftUrl,
-          draft_id: parsed.draftId || ""
-        }).eq("id", currentMatchId.value);
-      }
-      
-      if (syncInterval) clearInterval(syncInterval);
-      syncInterval = setInterval(() => {
-        syncDraftPicks();
-      }, 4000);
-      return;
-    }
-    
-    const { data, error: funcError } = await supabase.functions.invoke("generate-draft", {
-      body: {
-        matchId: currentMatchId.value,
-        blueName: blueName.value,
-        redName: redName.value,
-      }
-    });
-
-    if (funcError) {
-      let errorDetail = funcError.message;
-      try {
-        if ((funcError as any).context && typeof (funcError as any).context.json === 'function') {
-          const body = await (funcError as any).context.json();
-          if (body && body.error) {
-            errorDetail = body.error;
-          }
-        }
-      } catch (e) {}
-      throw new Error(`Failed to generate: ${errorDetail}`);
-    }
-
-    if (data?.draftUrl) {
-      draftUrl.value = data.draftUrl;
-      draftId.value = data.draftId || "";
-      message.value = "Draft générée !";
-      
-      localStorage.setItem(draftCacheKey, JSON.stringify({
-        draftUrl: data.draftUrl,
-        draftId: data.draftId || ""
-      }));
-
-      // The Edge Function already updates the DB, but we can update our local state
-      const matchIndex = matches.value.findIndex((m: any) => m.id === currentMatchId.value);
-      if (matchIndex !== -1) {
-        matches.value[matchIndex].draft_url = data.draftUrl;
-        matches.value[matchIndex].draft_id = data.draftId || "";
-      }
-      
-      if (syncInterval) clearInterval(syncInterval);
-      syncInterval = setInterval(() => {
-        syncDraftPicks();
-      }, 4000);
-    } else {
-      throw new Error("Draft generated, but couldn't parse URL.");
-    }
-  } catch (err: any) {
-    message.value = err.message || "Erreur lors de la génération de la draft";
-    console.error(err);
-  } finally {
-    drafting.value = false;
-  }
-};
-
-const copyDraftLink = () => {
-  if (draftUrl.value) {
-    navigator.clipboard.writeText(draftUrl.value);
-    linkCopied.value = true;
-    setTimeout(() => { linkCopied.value = false }, 2000);
-  }
-};
-
-const syncDraftPicks = async () => {
-  if (!draftId.value || syncing.value) return;
-
-  syncing.value = true;
-  try {
-    const { data, error: funcError } = await supabase.functions.invoke('sync-draft', {
-      body: {
-        draftId: draftId.value,
-      },
-    });
-
-    logDraftSyncClient('Playoffs', draftId.value, data as SyncDraftData | undefined, funcError ?? null);
-    if (funcError) return;
-
-    const d = data as SyncDraftData | undefined;
-    if (d?.success === false) {
-      if (d.code === 'DRAFTER_PLAN_LIMIT') {
-        message.value =
-          d.hint ?? 'Accès Drafter limité : passer au plan Full API pour les drafts terminées.';
-      }
-      return;
-    }
-
-    const finished =
-      d?.status === 'FINISHED' ||
-      d?.status === 'finished' ||
-      d?.status === 'COMPLETED';
-
-    if (finished) {
-      if (syncInterval) {
-        clearInterval(syncInterval);
-        syncInterval = null;
-      }
-      message.value = 'Draft terminée ! Champions à jour.';
-      setTimeout(() => {
-        closeDraftModal();
-      }, 3000);
-    }
-  } catch (err: any) {
-    console.error("Auto-sync error:", err);
-  } finally {
-    syncing.value = false;
+  if (match.id) {
+    router.push({ name: 'draft-room', params: { sessionId: match.id } });
   }
 };
 

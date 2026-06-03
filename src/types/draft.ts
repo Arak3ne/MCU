@@ -46,7 +46,9 @@ export type DraftSessionState = {
   waitPhaseStartedAt: number | null;
   waitPhaseDurationSec: number;
   hasCompletedMidDraftPause: boolean;
+  skipWaitVotes?: Record<string, boolean>;
   version: number;
+  lastUpdatedBy?: string;
 };
 
 export type DraftPresence = {

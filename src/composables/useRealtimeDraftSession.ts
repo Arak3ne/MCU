@@ -38,22 +38,55 @@ export function useRealtimeDraftSession(initialState: DraftSessionState, user: S
     );
   });
 
+  const activeDriverId = computed(() => {
+    const p1 = state.value.captainTeam1PlayerId;
+    const p2 = state.value.captainTeam2PlayerId;
+    const connectedIds = new Set(peers.value.map(p => p.playerId));
+    if (connectedIds.has(p1)) return p1;
+    if (connectedIds.has(p2)) return p2;
+    return null;
+  });
+
+  const syncResponderId = computed(() => {
+    const p1 = state.value.captainTeam1PlayerId;
+    const p2 = state.value.captainTeam2PlayerId;
+    const connectedIds = Array.from(new Set(peers.value.map(p => p.playerId))).sort();
+    if (connectedIds.includes(p1)) return p1;
+    if (connectedIds.includes(p2)) return p2;
+    return connectedIds[0] ?? null;
+  });
+
   const canEditState = computed(() => !!user?.id && isCaptain.value);
 
   const applyRemoteState = (incoming: DraftSessionState | null | undefined) => {
     if (!incoming) return;
     if (incoming.sessionId !== state.value.sessionId) return;
-    if ((incoming.version ?? 0) < (state.value.version ?? 0)) return;
+    
+    const currentVersion = state.value.version ?? 0;
+    const incomingVersion = incoming.version ?? 0;
+    
+    if (incomingVersion < currentVersion) return;
+    
+    if (incomingVersion === currentVersion) {
+      const currentUpdater = state.value.lastUpdatedBy ?? "";
+      const incomingUpdater = incoming.lastUpdatedBy ?? "";
+      if (incomingUpdater < currentUpdater) return;
+    }
+    
     state.value = incoming;
   };
 
   const broadcastState = async (nextState: DraftSessionState) => {
-    state.value = nextState;
+    const stateToBroadcast = {
+      ...nextState,
+      lastUpdatedBy: user?.id ?? nextState.lastUpdatedBy,
+    };
+    state.value = stateToBroadcast;
     if (!channel.value) return;
     await channel.value.send({
       type: "broadcast",
       event: "state_update",
-      payload: nextState,
+      payload: stateToBroadcast,
     });
   };
 
@@ -87,7 +120,7 @@ export function useRealtimeDraftSession(initialState: DraftSessionState, user: S
       })
       .on("broadcast", { event: "request_state" }, (payload) => {
         const requestPayload = payload.payload as RequestStatePayload | undefined;
-        if (!canEditState.value) return;
+        if (syncResponderId.value !== user?.id) return;
         if (requestPayload?.requesterId && requestPayload.requesterId === user?.id) return;
         const syncPayload: StateSyncPayload = {
           state: state.value,
@@ -138,6 +171,7 @@ export function useRealtimeDraftSession(initialState: DraftSessionState, user: S
     connected,
     peers,
     isCaptain,
+    activeDriverId,
     canEditState,
     init,
     dispose,
