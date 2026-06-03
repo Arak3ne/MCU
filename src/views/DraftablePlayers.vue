@@ -367,15 +367,6 @@ const getChampionSquare = (name: string) => {
   return champ?.image_url || '';
 };
 
-const getChampionSplash = (name: string) => {
-  const champ = champions.value.find(c => c.name === name);
-  const url = champ?.splash_url || champ?.image_url || '';
-  if (url && url.includes('/splash/')) {
-    return url.replace('/splash/', '/centered/');
-  }
-  return url;
-};
-
 const getPlayerTeam = (player: any) => {
   if (player.team?.name) return player.team.name;
   if (player.team) return player.team;

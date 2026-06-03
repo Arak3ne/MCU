@@ -189,24 +189,13 @@ import {
 const route = useRoute();
 const menuOpen = ref(false);
 
-type MobileNavItem = {
-  to: string;
-  label: string;
-  icon?: Component;
-  highlight?: boolean;
-  section?: string;
+const closeMenu = () => {
+  menuOpen.value = false;
 };
 
-const mobileNavItems: MobileNavItem[] = [
-  { to: '/', label: 'Classement' },
-  { to: '/future-matches', label: 'Matches' },
-  { to: '/champions', label: 'Champions' },
-  { to: '/players', label: 'Players' },
-  { to: '/stats', label: 'Stats' },
-  { to: '/fantasy', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/fantasy-leaderboard', label: 'Leaderboard', icon: ListOrdered },
-  { to: '/playoffs', label: 'Playoffs', highlight: true },
-];
+const toggleMenu = () => {
+  menuOpen.value = !menuOpen.value;
+};
 
 const isFantasyActive = () => ['/fantasy', '/fantasy-leaderboard'].includes(route.path);
 const isDraftRoom = computed(() => route.path.startsWith('/draft/'));
