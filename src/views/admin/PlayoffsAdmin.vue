@@ -305,7 +305,7 @@ import { ref, computed, onMounted, onUnmounted, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { supabase } from '../../lib/supabase';
 import { generateGroupMatches, generateSingleEliminationBracket, generateChampionship } from '../../lib/bracket';
-import { fetchPlayoffMatches, generatePlayoffMatches, updatePlayoffMatch, updateTeamStats } from '../../lib/queries';
+import { fetchPlayoffMatches, generatePlayoffMatches, updatePlayoffMatch, updateTeamStats, handleRoundCompletion } from '../../lib/queries';
 
 const router = useRouter();
 const allTeams = ref<any[]>([]);
@@ -527,6 +527,13 @@ const handleSaveRound = async (_stage: string, roundNum: number, roundMatches: a
         return;
       }
     }
+    
+    // Désactiver les champions pickés dans ce round
+    const { error: roundCompletionError } = await handleRoundCompletion(_stage, roundNum);
+    if (roundCompletionError) {
+      showToast(`Erreur lors de la désactivation des champions pour ce round : ` + roundCompletionError.message, 'error');
+    }
+
     await loadMatches();
     await recalculateStandingsSilent();
     showToast(

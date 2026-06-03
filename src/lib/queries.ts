@@ -54,12 +54,92 @@ export async function toggleChampion(id: string, isAvailable: boolean) {
   return { data, error };
 }
 
+export async function disableChampions(ids: string[]) {
+  if (!ids.length) return { data: null, error: null };
+  const { data, error } = await supabase
+    .from("champions")
+    .update({ is_available: false, updated_at: new Date().toISOString() })
+    .in("id", ids);
+
+  return { data, error };
+}
+
+export async function handleRoundCompletion(stage: string, roundNumber: number) {
+  // Get all matches for this round
+  const { data: matches, error: fetchError } = await supabase
+    .from("playoff_matches")
+    .select("draft_picks")
+    .eq("stage", stage)
+    .eq("round", roundNumber);
+
+  if (fetchError || !matches) return { error: fetchError };
+
+  // Collect all picks from all matches in this round
+  const allPicks = new Set<string>();
+  for (const match of matches) {
+    if (Array.isArray(match.draft_picks)) {
+      for (const pick of match.draft_picks) {
+        if (pick && !pick.startsWith("__empty_pick__")) {
+          allPicks.add(pick);
+        }
+      }
+    }
+  }
+
+  const picksArray = Array.from(allPicks);
+  if (picksArray.length === 0) return { error: null };
+
+  // Disable all champions picked in this round
+  return await disableChampions(picksArray);
+}
+
 export async function updateTeamStats(teamId: string, updates: { wins: number; losses: number; points: number }) {
   const { data, error } = await supabase
     .from("teams")
     .update(updates)
     .eq("id", teamId);
   return { data, error };
+}
+
+export async function fetchDraftSetupTeams() {
+  const { data: teamRows, error: teamError } = await supabase
+    .from("teams")
+    .select("id,name")
+    .order("name", { ascending: true });
+
+  if (teamError) {
+    return { data: null, error: teamError };
+  }
+
+  const { data: playerRows, error: playerError } = await supabase
+    .from("players")
+    .select("id,pseudo,team_id")
+    .not("team_id", "is", null)
+    .order("pseudo", { ascending: true });
+
+  if (playerError) {
+    return { data: null, error: playerError };
+  }
+
+  const playersByTeam = new Map<string, { id: string; pseudo: string; team_id: string | null }[]>();
+  for (const p of playerRows ?? []) {
+    if (!p.team_id) continue;
+    const list = playersByTeam.get(p.team_id) ?? [];
+    list.push(p);
+    playersByTeam.set(p.team_id, list);
+  }
+
+  const data = (teamRows ?? []).map((team: any) => {
+    const players = playersByTeam.get(team.id) ?? [];
+    const defaultCaptain = players[0] ?? null;
+    return {
+      ...team,
+      players,
+      defaultCaptain,
+    };
+  });
+
+  return { data, error: null };
 }
 
 type TeamRow = Database["public"]["Tables"]["teams"]["Row"];

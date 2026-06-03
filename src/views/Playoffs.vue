@@ -357,120 +357,6 @@
         </div>
       </div>
     </main>
-
-    <!-- Modal Popup for Draft -->
-    <Transition
-      enter-active-class="transition duration-300 ease-out"
-      enter-from-class="opacity-0 scale-95"
-      enter-to-class="opacity-100 scale-100"
-      leave-active-class="transition duration-200 ease-in"
-      leave-from-class="opacity-100 scale-100"
-      leave-to-class="opacity-0 scale-95"
-    >
-      <div v-if="showDraftModal" class="fixed inset-0 flex items-center justify-center z-[60] p-4" @click.self="closeDraftModal">
-        <!-- Backdrop -->
-        <div class="absolute inset-0 -z-10 cursor-pointer bg-[#0B0F0C]/90 backdrop-blur-md" aria-hidden="true"></div>
-
-        <div class="relative cursor-default bg-[#111111] border border-[#22C55E]/30 rounded-sm p-1 max-w-md w-full shadow-[0_0_50px_rgba(0,0,0,1)] before:absolute before:-inset-[1px] before:bg-gradient-to-b before:from-[#22C55E]/50 before:to-[#22C55E]/10 before:-z-10 before:rounded-sm">
-          <div class="bg-[#111111] p-8 h-full w-full rounded-sm relative">
-            <!-- Close Button -->
-            <button @click="closeDraftModal" class="absolute top-4 right-4 cursor-pointer text-[#A1A1AA] hover:text-[#22C55E] transition-colors p-2 z-20">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-            
-            <h2 class="text-3xl font-title mb-2 text-center text-transparent bg-clip-text bg-gradient-to-b from-[#F0FDF4] to-[#22C55E] tracking-wider uppercase">Initialiser la Draft</h2>
-
-            <div v-if="awaitingSideChoice && sidePickMatch" class="space-y-4 mb-8">
-              <p class="text-[#A1A1AA] text-center text-[11px] uppercase tracking-widest leading-relaxed px-1">
-                Le premier à ouvrir choisit quelle équipe sera <span class="text-sky-400 normal-case">blue side</span> sur Drafter — l’autre sera red side. Ce n’est pas l’ordre affiché sur le match.
-              </p>
-              <button
-                type="button"
-                :disabled="claimingSide"
-                @click="confirmDraftBlueSide(sidePickMatch.team1.id)"
-                class="w-full py-3.5 px-4 rounded-sm border border-sky-500/45 bg-sky-500/10 hover:bg-sky-500/20 text-sky-100 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed text-left"
-              >
-                <span class="flex items-center gap-3">
-                  <span class="shrink-0 w-2.5 h-2.5 rounded-full bg-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.75)]" aria-hidden="true" />
-                  <span class="min-w-0 flex flex-col gap-0.5">
-                    <span class="font-bold uppercase tracking-widest text-xs text-sky-50 truncate">{{ sidePickMatch.team1.name }}</span>
-                    <span class="text-[10px] uppercase tracking-widest text-sky-300/90">Blue side</span>
-                  </span>
-                </span>
-              </button>
-              <button
-                type="button"
-                :disabled="claimingSide"
-                @click="confirmDraftBlueSide(sidePickMatch.team2.id)"
-                class="w-full py-3.5 px-4 rounded-sm border border-sky-500/45 bg-sky-500/10 hover:bg-sky-500/20 text-sky-100 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed text-left"
-              >
-                <span class="flex items-center gap-3">
-                  <span class="shrink-0 w-2.5 h-2.5 rounded-full bg-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.75)]" aria-hidden="true" />
-                  <span class="min-w-0 flex flex-col gap-0.5">
-                    <span class="font-bold uppercase tracking-widest text-xs text-sky-50 truncate">{{ sidePickMatch.team2.name }}</span>
-                    <span class="text-[10px] uppercase tracking-widest text-sky-300/90">Blue side</span>
-                  </span>
-                </span>
-              </button>
-              <p v-if="claimingSide" class="text-center text-[10px] text-[#22C55E] uppercase tracking-widest animate-pulse">Enregistrement…</p>
-            </div>
-            
-            <div v-else class="flex justify-center items-center gap-4 mb-8 text-sm font-bold uppercase tracking-widest">
-              <span class="text-[#4ADE80]">{{ blueName }}</span>
-              <span class="text-[#A1A1AA] text-xs italic">vs</span>
-              <span class="text-[#EF4444]">{{ redName }}</span>
-            </div>
-
-            <div v-if="drafting" class="text-center py-10">
-              <div class="w-16 h-16 border-4 border-[#2A2A2A] border-t-[#22C55E] rounded-full animate-spin mx-auto mb-6"></div>
-              <p class="text-[#22C55E] uppercase tracking-widest text-sm font-bold animate-pulse">{{ message || 'Génération de la draft...' }}</p>
-            </div>
-
-            <div v-else-if="draftUrl" class="space-y-6">
-              <p class="text-green-400 text-center font-bold tracking-widest uppercase text-sm drop-shadow-[0_0_5px_rgba(34,197,94,0.5)]">Draft Générée !</p>
-              
-              <div class="flex flex-col gap-4">
-                <a
-                  :href="draftUrl"
-                  target="_blank"
-                  class="w-full py-4 bg-gradient-to-r from-[#22C55E] to-[#14532D] hover:from-[#d9b876] hover:to-[#8a6831] text-[#0B0F0C] rounded-sm font-title text-center transition-all shadow-[0_0_15px_rgba(200,170,110,0.3)] uppercase tracking-widest text-sm border border-[#22C55E]"
-                >
-                  Ouvrir l'outil de Draft
-                </a>
-                <button
-                  @click="copyDraftLink"
-                  class="w-full py-4 bg-[#1A1A1A] hover:bg-[#282d33] border border-[#2A2A2A] hover:border-[#22C55E]/50 rounded-sm font-bold transition-all flex items-center justify-center gap-2 text-[#A1A1AA] hover:text-[#F0FDF4] uppercase tracking-widest text-xs"
-                 cursor-pointer>
-                  <svg v-if="!linkCopied" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                  <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span :class="linkCopied ? 'text-green-400' : ''">{{ linkCopied ? 'Copié !' : 'Copier le lien' }}</span>
-                </button>
-              </div>
-              
-              <div v-if="draftId" class="flex items-center justify-center gap-2 mt-6 p-3 bg-[#1A1A1A] border border-[#2A2A2A] rounded-sm">
-                <span class="inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_5px_#22c55e]"></span>
-                <p class="text-[10px] text-[#A1A1AA] uppercase tracking-widest font-bold">
-                  Synchronisation automatique des picks en arrière-plan...
-                </p>
-              </div>
-            </div>
-            
-            <div v-else-if="!awaitingSideChoice" class="text-center py-8">
-              <p class="text-red-400 font-bold uppercase tracking-widest text-xs mb-6">{{ message || 'Erreur lors de la génération de la draft' }}</p>
-              <button @click="generateDraft" class="cursor-pointer px-8 py-3 bg-[#1A1A1A] border border-[#2A2A2A] hover:border-[#22C55E]/50 hover:bg-[#282d33] rounded-sm text-[#F0FDF4] font-bold uppercase tracking-widest text-xs transition-all">
-                Réessayer
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </Transition>
   </div>
 </template>
 
@@ -520,50 +406,19 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useRouter } from "vue-router";
 import { supabase } from '../lib/supabase';
 import { fetchPlayoffMatches } from '../lib/queries';
 import { subscribeToTable } from '../lib/realtime';
-import {
-  logDraftSyncClient,
-  type SyncDraftData,
-} from '../lib/logDraftSyncClient';
-import { claimOrRefreshDraftBlueTeam, resolveBlueRedNames } from '../lib/draftMatchSides';
-import type { Database } from '../types/supabase';
-import TeamLogo from '../components/TeamLogo.vue';
 
-type Team = Database['public']['Tables']['teams']['Row'];
+const router = useRouter();
 
 const matches = ref<any[]>([]);
 const teams = ref<any[]>([]);
 const loading = ref(true);
 let subscription: any = null;
 
-// Draft related state
-const showDraftModal = ref(false);
-const currentMatchId = ref("");
-const blueName = ref("");
-const redName = ref("");
-const drafting = ref(false);
-const draftUrl = ref("");
-const draftId = ref("");
-const syncing = ref(false);
-const message = ref("");
-const linkCopied = ref(false);
 const globalError = ref("");
-const awaitingSideChoice = ref(false);
-const claimingSide = ref(false);
-const sidePickMatch = ref<{ team1: Team; team2: Team } | null>(null);
-let syncInterval: any = null;
-
-const applyDraftDisplayFromMatch = (m: { team1: Team; team2: Team; draft_blue_team_id?: string | null }) => {
-  const { blueName: b, redName: r } = resolveBlueRedNames({
-    team1: m.team1,
-    team2: m.team2,
-    draft_blue_team_id: m.draft_blue_team_id,
-  });
-  blueName.value = b;
-  redName.value = r;
-};
 
 const showError = (msg: string) => {
   globalError.value = msg;
@@ -593,9 +448,6 @@ onMounted(() => {
 onUnmounted(() => {
   if (subscription) {
     subscription.unsubscribe();
-  }
-  if (syncInterval) {
-    clearInterval(syncInterval);
   }
 });
 
@@ -648,235 +500,8 @@ const startDraftForMatch = async (match: any, roundNumber?: number, allRounds?: 
     return;
   }
 
-  currentMatchId.value = match.id;
-  draftUrl.value = "";
-  draftId.value = "";
-  message.value = "";
-  sidePickMatch.value = { team1: match.team1, team2: match.team2 };
-  showDraftModal.value = true;
-
-  if (match.draft_url) {
-    awaitingSideChoice.value = false;
-    applyDraftDisplayFromMatch(match);
-    void generateDraft();
-    return;
-  }
-  if (match.draft_blue_team_id) {
-    awaitingSideChoice.value = false;
-    applyDraftDisplayFromMatch(match);
-    void generateDraft();
-    return;
-  }
-  awaitingSideChoice.value = true;
-  blueName.value = "";
-  redName.value = "";
-};
-
-const confirmDraftBlueSide = async (blueTeamId: string) => {
-  if (!currentMatchId.value || claimingSide.value) return;
-  claimingSide.value = true;
-  message.value = "";
-  try {
-    const r = await claimOrRefreshDraftBlueTeam(supabase, currentMatchId.value, blueTeamId);
-    const idx = matches.value.findIndex((m: any) => m.id === currentMatchId.value);
-    if (idx !== -1) {
-      const cur = matches.value[idx];
-      matches.value[idx] = {
-        ...cur,
-        draft_blue_team_id: r.draft_blue_team_id ?? cur.draft_blue_team_id,
-        draft_url: r.draft_url ?? cur.draft_url,
-      };
-    }
-    if (!r.draft_blue_team_id && !r.draft_url) {
-      showError("Impossible d’enregistrer le côté bleu. Réessayez.");
-      return;
-    }
-    if (!r.claimed && r.draft_blue_team_id && r.draft_blue_team_id !== blueTeamId) {
-      showError("L’autre équipe a déjà choisi les côtés. Alignement sur leur choix.");
-    }
-    const fresh = matches.value.find((m: any) => m.id === currentMatchId.value);
-    if (fresh?.team1 && fresh?.team2) {
-      applyDraftDisplayFromMatch(fresh);
-    }
-    awaitingSideChoice.value = false;
-    await generateDraft();
-  } catch (e: unknown) {
-    message.value = e instanceof Error ? e.message : "Erreur lors du choix des côtés";
-  } finally {
-    claimingSide.value = false;
-  }
-};
-
-const closeDraftModal = () => {
-  showDraftModal.value = false;
-  awaitingSideChoice.value = false;
-  sidePickMatch.value = null;
-  if (syncInterval) {
-    clearInterval(syncInterval);
-    syncInterval = null;
-  }
-};
-
-const generateDraft = async () => {
-  try {
-    drafting.value = true;
-    draftUrl.value = "";
-    draftId.value = "";
-    linkCopied.value = false;
-
-    // Check if draft already exists in database
-    const match = matches.value.find((m: any) => m.id === currentMatchId.value);
-    if (match && match.draft_url) {
-      message.value = "Draft récupérée (base de données)...";
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      draftUrl.value = match.draft_url;
-      draftId.value = match.draft_id || "";
-      if (match.team1 && match.team2) {
-        applyDraftDisplayFromMatch(match);
-      }
-      message.value = "Draft récupérée !";
-      
-      if (syncInterval) clearInterval(syncInterval);
-      syncInterval = setInterval(() => {
-        syncDraftPicks();
-      }, 4000);
-      return;
-    }
-
-    message.value = "Initialisation de la draft...";
-
-    const sideKey = match?.draft_blue_team_id ?? "unset";
-    const draftCacheKey = `draft_${currentMatchId.value}_${sideKey}_${blueName.value}_${redName.value}`;
-    const cachedDraft = localStorage.getItem(draftCacheKey);
-
-    if (cachedDraft) {
-      message.value = "Initialisation de l'interface...";
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      const parsed = JSON.parse(cachedDraft);
-      draftUrl.value = parsed.draftUrl;
-      draftId.value = parsed.draftId || "";
-      message.value = "Draft récupérée !";
-      
-      // Also update DB since we have it cached locally but maybe not in DB yet
-      if (currentMatchId.value) {
-        await supabase.from("playoff_matches").update({
-          draft_url: parsed.draftUrl,
-          draft_id: parsed.draftId || ""
-        }).eq("id", currentMatchId.value);
-      }
-      
-      if (syncInterval) clearInterval(syncInterval);
-      syncInterval = setInterval(() => {
-        syncDraftPicks();
-      }, 4000);
-      return;
-    }
-    
-    const { data, error: funcError } = await supabase.functions.invoke("generate-draft", {
-      body: {
-        matchId: currentMatchId.value,
-        blueName: blueName.value,
-        redName: redName.value,
-      }
-    });
-
-    if (funcError) {
-      let errorDetail = funcError.message;
-      try {
-        if ((funcError as any).context && typeof (funcError as any).context.json === 'function') {
-          const body = await (funcError as any).context.json();
-          if (body && body.error) {
-            errorDetail = body.error;
-          }
-        }
-      } catch (e) {}
-      throw new Error(`Failed to generate: ${errorDetail}`);
-    }
-
-    if (data?.draftUrl) {
-      draftUrl.value = data.draftUrl;
-      draftId.value = data.draftId || "";
-      message.value = "Draft générée !";
-      
-      localStorage.setItem(draftCacheKey, JSON.stringify({
-        draftUrl: data.draftUrl,
-        draftId: data.draftId || ""
-      }));
-
-      // The Edge Function already updates the DB, but we can update our local state
-      const matchIndex = matches.value.findIndex((m: any) => m.id === currentMatchId.value);
-      if (matchIndex !== -1) {
-        matches.value[matchIndex].draft_url = data.draftUrl;
-        matches.value[matchIndex].draft_id = data.draftId || "";
-      }
-      
-      if (syncInterval) clearInterval(syncInterval);
-      syncInterval = setInterval(() => {
-        syncDraftPicks();
-      }, 4000);
-    } else {
-      throw new Error("Draft generated, but couldn't parse URL.");
-    }
-  } catch (err: any) {
-    message.value = err.message || "Erreur lors de la génération de la draft";
-    console.error(err);
-  } finally {
-    drafting.value = false;
-  }
-};
-
-const copyDraftLink = () => {
-  if (draftUrl.value) {
-    navigator.clipboard.writeText(draftUrl.value);
-    linkCopied.value = true;
-    setTimeout(() => { linkCopied.value = false }, 2000);
-  }
-};
-
-const syncDraftPicks = async () => {
-  if (!draftId.value || syncing.value) return;
-
-  syncing.value = true;
-  try {
-    const { data, error: funcError } = await supabase.functions.invoke('sync-draft', {
-      body: {
-        draftId: draftId.value,
-      },
-    });
-
-    logDraftSyncClient('Playoffs', draftId.value, data as SyncDraftData | undefined, funcError ?? null);
-    if (funcError) return;
-
-    const d = data as SyncDraftData | undefined;
-    if (d?.success === false) {
-      if (d.code === 'DRAFTER_PLAN_LIMIT') {
-        message.value =
-          d.hint ?? 'Accès Drafter limité : passer au plan Full API pour les drafts terminées.';
-      }
-      return;
-    }
-
-    const finished =
-      d?.status === 'FINISHED' ||
-      d?.status === 'finished' ||
-      d?.status === 'COMPLETED';
-
-    if (finished) {
-      if (syncInterval) {
-        clearInterval(syncInterval);
-        syncInterval = null;
-      }
-      message.value = 'Draft terminée ! Champions à jour.';
-      setTimeout(() => {
-        closeDraftModal();
-      }, 3000);
-    }
-  } catch (err: any) {
-    console.error("Auto-sync error:", err);
-  } finally {
-    syncing.value = false;
+  if (match.id) {
+    router.push({ name: 'draft-room', params: { sessionId: match.id } });
   }
 };
 

@@ -130,6 +130,9 @@ async function persistDraftPicksMerged(
     if (t && !merged.includes(t)) merged.push(t)
   }
 
+  // NOTE: On ne désactive plus les champions ici.
+  // La désactivation est gérée par le panel Admin lors de la validation du round complet.
+  
   slog(draftId, "info", "draft_picks merge (Drafter + DB)", {
     existingCount: existing.length,
     freshFromApiCount: freshFromApi.length,
@@ -358,11 +361,8 @@ serve(async (req) => {
 
     let disabledCount = 0
     let unmatchedPicks: string[] = []
-    if (mergedPicks.length > 0) {
-      const r = await disableChampionsForPicks(supabase, draftId, mergedPicks, rid)
-      disabledCount = r.disabledCount
-      unmatchedPicks = r.unmatchedPicks
-    }
+    // NOTE: On ne désactive plus les champions ici.
+    // La désactivation est gérée par le panel Admin lors de la validation du round complet.
 
     slog(draftId, "info", "sync OK", {
       durationMs: Date.now() - requestStarted,
