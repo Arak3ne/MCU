@@ -8,6 +8,7 @@
     "build": "electron-builder"
   },
   "build": {
+    "asar": false,
     "appId": "com.mcu.moruetracker",
     "productName": "MorueTracker",
     "win": {

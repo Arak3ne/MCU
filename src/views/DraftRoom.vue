@@ -411,7 +411,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { supabase } from "../lib/supabase";
-import { getChampions, getPlayers, toggleChampion } from "../lib/queries";
+import { getChampions, getPlayers, toggleChampion, disableChampions } from "../lib/queries";
 import {
   createInitialDraftState,
   enterWaitPhase,
@@ -845,9 +845,6 @@ const onConfirmChampion = async () => {
 
   if (withPick.version === current.version) return;
   const withWait = enterWaitPhase(withPick);
-  
-  // Disable champion in DB globally
-  void toggleChampion(selectedChampionId.value, false);
 
   selectedChampionId.value = null;
   selectedChampionName.value = null;
@@ -984,6 +981,30 @@ onMounted(async () => {
     }
   }, 1000);
 });
+
+watch(
+  () => state.value.phase,
+  async (newPhase, oldPhase) => {
+    if (newPhase === "completed" && oldPhase !== "completed") {
+      if (currentUser?.id && currentUser.id === activeDriverId.value) {
+        const pickedIds = state.value.picks
+          .map((p) => p.championId)
+          .filter((id) => !id.startsWith("__empty_pick__"));
+
+        if (pickedIds.length > 0) {
+          // Update playoff_matches.draft_picks
+          await supabase
+            .from("playoff_matches")
+            .update({ draft_picks: pickedIds })
+            .eq("id", sessionId);
+            
+          // Note: On ne désactive plus les champions ici.
+          // Cela se fera via le panel admin quand tout le round sera validé.
+        }
+      }
+    }
+  }
+);
 
 watch(
   () => state.value.version,

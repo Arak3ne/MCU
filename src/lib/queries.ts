@@ -54,6 +54,45 @@ export async function toggleChampion(id: string, isAvailable: boolean) {
   return { data, error };
 }
 
+export async function disableChampions(ids: string[]) {
+  if (!ids.length) return { data: null, error: null };
+  const { data, error } = await supabase
+    .from("champions")
+    .update({ is_available: false, updated_at: new Date().toISOString() })
+    .in("id", ids);
+
+  return { data, error };
+}
+
+export async function handleRoundCompletion(stage: string, roundNumber: number) {
+  // Get all matches for this round
+  const { data: matches, error: fetchError } = await supabase
+    .from("playoff_matches")
+    .select("draft_picks")
+    .eq("stage", stage)
+    .eq("round", roundNumber);
+
+  if (fetchError || !matches) return { error: fetchError };
+
+  // Collect all picks from all matches in this round
+  const allPicks = new Set<string>();
+  for (const match of matches) {
+    if (Array.isArray(match.draft_picks)) {
+      for (const pick of match.draft_picks) {
+        if (pick && !pick.startsWith("__empty_pick__")) {
+          allPicks.add(pick);
+        }
+      }
+    }
+  }
+
+  const picksArray = Array.from(allPicks);
+  if (picksArray.length === 0) return { error: null };
+
+  // Disable all champions picked in this round
+  return await disableChampions(picksArray);
+}
+
 export async function updateTeamStats(teamId: string, updates: { wins: number; losses: number; points: number }) {
   const { data, error } = await supabase
     .from("teams")
