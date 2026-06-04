@@ -1500,8 +1500,6 @@ const initDay = async () => {
           const activeUncompletedMatches = uncompletedMatches.filter(m => activeStages.includes(m.stage));
           
           if (activeUncompletedMatches.length > 0) {
-            const currentRound = Math.min(...activeUncompletedMatches.map(m => m.round));
-            
             if (currentTotal !== lastSeenScore) {
               // We trigger the animation if there are NO uncompleted matches in the CURRENT round for the active stages
               // Wait, if there are uncompleted matches in the current round, it's NOT completed.
