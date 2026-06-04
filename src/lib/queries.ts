@@ -86,6 +86,11 @@ export async function disableChampions(ids: string[]) {
 
 export async function handleRoundCompletion(stage: string, roundNumber: number) {
   // Get all matches for this round
+  // Note: For Day 2, group_a and group_b happen in parallel, so if stage is one of them,
+  // we might want to check both. But for simplicity, we just disable champions picked in the specific stage/round.
+  // Actually, to be safe and handle parallel group stages, we can accept an array of stages or just query by round if needed.
+  // But the current implementation disables picks for the specific stage and round, which is fine since PlayoffsAdmin calls it per stage.
+  
   const { data: matches, error: fetchError } = await supabase
     .from("playoff_matches")
     .select("draft_picks")

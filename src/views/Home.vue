@@ -196,37 +196,39 @@
                   v-for="(match, index) in filteredMatches"
                   :key="index"
                   @click="startDraftForMatch(match, match.round, matches)"
-                  class="group relative bg-[#1A1A1A] border border-[#2A2A2A] hover:border-[#22C55E]/50 rounded-sm p-6 flex items-center justify-between transition-all duration-300 cursor-pointer"
+                  class="group relative bg-[#1A1A1A] border border-[#2A2A2A] hover:border-[#22C55E]/50 rounded-sm p-4 sm:p-6 flex items-center justify-between transition-all duration-300 cursor-pointer"
                 >
                 <!-- Blue Side -->
-                <div class="flex-1 flex items-center justify-end gap-5">
-                  <span class="text-lg md:text-xl font-bold transition-colors uppercase tracking-wide truncate text-right" 
-                        :class="match.team1.id === selectedTeam.id ? 'text-[#22C55E]' : 'text-[#F0FDF4]'">
+                <div class="flex-1 flex items-center justify-end gap-3 sm:gap-5 min-w-0">
+                  <span class="text-sm sm:text-lg md:text-xl font-bold transition-colors uppercase tracking-wide truncate text-right" 
+                        :class="match.team1.id === selectedTeam.id ? 'text-[#22C55E]' : 'text-[#F0FDF4]'"
+                        :title="match.team1.name">
                     {{ match.team1.name }}
                   </span>
                   <TeamLogo
                     :name="match.team1.name"
-                    :wrapper-class="'w-12 h-12 rounded-sm bg-[#0B0F0C] border flex items-center justify-center shadow-inner transition-colors overflow-hidden ' + (match.team1.id === selectedTeam.id ? 'border-[#22C55E]/50' : 'border-[#2A2A2A] group-hover:border-[#22C55E]/30')"
-                    :initials-class="match.team1.id === selectedTeam.id ? 'font-title text-sm uppercase tracking-wider text-[#22C55E]' : 'font-title text-sm uppercase tracking-wider text-[#A1A1AA]'"
+                    :wrapper-class="'w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-sm bg-[#0B0F0C] border flex items-center justify-center shadow-inner transition-colors overflow-hidden ' + (match.team1.id === selectedTeam.id ? 'border-[#22C55E]/50' : 'border-[#2A2A2A] group-hover:border-[#22C55E]/30')"
+                    :initials-class="match.team1.id === selectedTeam.id ? 'font-title text-xs sm:text-sm uppercase tracking-wider text-[#22C55E]' : 'font-title text-xs sm:text-sm uppercase tracking-wider text-[#A1A1AA]'"
                   />
                 </div>
 
                 <!-- VS -->
-                <div class="mx-6 relative flex flex-col items-center justify-center">
-                  <div class="text-[10px] text-[#A1A1AA] font-title italic bg-[#0B0F0C] px-3 py-1 rounded-sm border border-[#2A2A2A] group-hover:border-[#22C55E]/40 uppercase tracking-[0.2em] transition-all">
+                <div class="mx-3 sm:mx-6 shrink-0 relative flex flex-col items-center justify-center">
+                  <div class="text-[10px] text-[#A1A1AA] font-title italic bg-[#0B0F0C] px-2 sm:px-3 py-1 rounded-sm border border-[#2A2A2A] group-hover:border-[#22C55E]/40 uppercase tracking-[0.2em] transition-all">
                     VS
                   </div>
                 </div>
 
                 <!-- Red Side -->
-                <div class="flex-1 flex items-center justify-start gap-5">
+                <div class="flex-1 flex items-center justify-start gap-3 sm:gap-5 min-w-0">
                   <TeamLogo
                     :name="match.team2.name"
-                    :wrapper-class="'w-12 h-12 rounded-sm bg-[#0B0F0C] border flex items-center justify-center shadow-inner transition-colors overflow-hidden ' + (match.team2.id === selectedTeam.id ? 'border-[#22C55E]/50' : 'border-[#2A2A2A] group-hover:border-[#22C55E]/30')"
-                    :initials-class="match.team2.id === selectedTeam.id ? 'font-title text-sm uppercase tracking-wider text-[#22C55E]' : 'font-title text-sm uppercase tracking-wider text-[#A1A1AA]'"
+                    :wrapper-class="'w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-sm bg-[#0B0F0C] border flex items-center justify-center shadow-inner transition-colors overflow-hidden ' + (match.team2.id === selectedTeam.id ? 'border-[#22C55E]/50' : 'border-[#2A2A2A] group-hover:border-[#22C55E]/30')"
+                    :initials-class="match.team2.id === selectedTeam.id ? 'font-title text-xs sm:text-sm uppercase tracking-wider text-[#22C55E]' : 'font-title text-xs sm:text-sm uppercase tracking-wider text-[#A1A1AA]'"
                   />
-                  <span class="text-lg md:text-xl font-bold transition-colors uppercase tracking-wide truncate text-left"
-                        :class="match.team2.id === selectedTeam.id ? 'text-[#22C55E]' : 'text-[#F0FDF4]'">
+                  <span class="text-sm sm:text-lg md:text-xl font-bold transition-colors uppercase tracking-wide truncate text-left"
+                        :class="match.team2.id === selectedTeam.id ? 'text-[#22C55E]' : 'text-[#F0FDF4]'"
+                        :title="match.team2.name">
                     {{ match.team2.name }}
                   </span>
                 </div>

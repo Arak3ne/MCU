@@ -341,11 +341,11 @@
                             Enter Draft Phase
                           </button>
                         </div>
+                      </div>
 
-                        <!-- Crown for winner of the Final -->
-                        <div v-if="match.is_completed && round.number === 2" class="absolute -top-6 -right-6 text-5xl drop-shadow-[0_0_15px_rgba(234,179,8,0.8)] z-20 rotate-12 animate-pulse">
-                          👑
-                        </div>
+                      <!-- Crown for winner of the Final -->
+                      <div v-if="match.is_completed && round.number === 2" class="absolute -top-6 -right-6 text-5xl drop-shadow-[0_0_15px_rgba(234,179,8,0.8)] z-[1000] rotate-12 animate-pulse">
+                        👑
                       </div>
                     </div>
                   </div>

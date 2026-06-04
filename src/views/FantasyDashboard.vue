@@ -799,7 +799,12 @@
                    ? 'text-red-400 drop-shadow-[0_0_20px_rgba(248,113,113,0.35)]'
                    : 'text-white/75'">
             {{ team?.totalPoints?.toFixed(2) || '0.00' }}
-            <svg v-if="(team?.totalPoints || 0) > 0" class="w-8 h-8 text-mcu-primary animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+            <!-- Small live indicator when matches are ongoing -->
+            <span v-if="!allMatchesCompleted && team?.isLocked" class="flex h-3 w-3 relative ml-1" title="Points en direct">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-mcu-primary opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-3 w-3 bg-mcu-primary"></span>
+            </span>
+            <svg v-else-if="(team?.totalPoints || 0) > 0" class="w-8 h-8 text-mcu-primary animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
             <svg v-else-if="(team?.totalPoints || 0) < 0" class="w-8 h-8 text-red-400 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>
           </div>
           <button 
@@ -1413,6 +1418,8 @@ onUnmounted(() => {
 });
 
 
+const allMatchesCompleted = ref(false);
+
 const initDay = async () => {
   isCheckingReveal.value = true;
   await loadTeam();
@@ -1451,11 +1458,88 @@ const initDay = async () => {
       const lastSeenScore = parseFloat(localStorage.getItem(storageKey) || '0');
       const currentTotal = team.value.totalPoints || 0;
       
-      if (currentTotal !== lastSeenScore) {
-        oldTotalScore.value = lastSeenScore;
-        newTotalScore.value = currentTotal;
-        showScoreReveal.value = true;
-        localStorage.setItem(storageKey, currentTotal.toString());
+      // HYBRID REVEAL LOGIC:
+      // We only trigger the full screen animation if the round is completed (all matches of the day are done)
+      // Otherwise, we just silently update the score in the background.
+      
+      // Check if all matches for the current ACTIVE ROUND are completed
+      // 1. First, find the current active round (the one with the lowest round number that has uncompleted matches)
+      // Or if all are completed, the highest round number
+      
+      // Get all matches for the current tournament day
+      // Day 1 = championship
+      // Day 2 = group_a, group_b, knockout
+      const stagesToQuery = tournamentDay.value === 1 
+        ? ['championship'] 
+        : ['group_a', 'group_b', 'knockout'];
+        
+      const { data: allMatches } = await supabase
+        .from('playoff_matches')
+        .select('stage, round, is_completed')
+        .in('stage', stagesToQuery);
+        
+      if (allMatches && allMatches.length > 0) {
+        // Group matches by stage and round to find the "current" active block
+        // For Day 2, group_a and group_b rounds happen in parallel, then knockout
+        
+        // Find the lowest uncompleted round across all relevant stages
+        const uncompletedMatches = allMatches.filter(m => !m.is_completed);
+        
+        if (uncompletedMatches.length > 0) {
+          allMatchesCompleted.value = false;
+          
+          // Find the active stage(s) and round
+          // For Day 2, if there are uncompleted group matches, we are in the group phase
+          // If group matches are done, we are in the knockout phase
+          let activeStages = stagesToQuery;
+          if (tournamentDay.value === 2) {
+            const hasUncompletedGroups = uncompletedMatches.some(m => m.stage === 'group_a' || m.stage === 'group_b');
+            activeStages = hasUncompletedGroups ? ['group_a', 'group_b'] : ['knockout'];
+          }
+          
+          const activeUncompletedMatches = uncompletedMatches.filter(m => activeStages.includes(m.stage));
+          
+          if (activeUncompletedMatches.length > 0) {
+            const currentRound = Math.min(...activeUncompletedMatches.map(m => m.round));
+            
+            if (currentTotal !== lastSeenScore) {
+              // We trigger the animation if there are NO uncompleted matches in the CURRENT round for the active stages
+              // Wait, if there are uncompleted matches in the current round, it's NOT completed.
+              // We should trigger when a round JUST finished.
+              // The logic above was slightly flawed: if we are in round 2 (because round 1 finished), 
+              // we only want to trigger if we JUST finished round 1.
+              
+              // Let's simplify: we trigger the animation if the score changed AND there are NO uncompleted matches 
+              // for ANY round that has at least one completed match.
+              // Actually, the easiest way to know a round just finished is to check if ALL matches in the 
+              // most recently played round are completed.
+              
+              const completedMatches = allMatches.filter(m => m.is_completed && activeStages.includes(m.stage));
+              if (completedMatches.length > 0) {
+                const highestCompletedRound = Math.max(...completedMatches.map(m => m.round));
+                const matchesInHighestCompletedRound = allMatches.filter(m => m.round === highestCompletedRound && activeStages.includes(m.stage));
+                const isRoundFullyCompleted = matchesInHighestCompletedRound.every(m => m.is_completed);
+                
+                if (isRoundFullyCompleted) {
+                  oldTotalScore.value = lastSeenScore;
+                  newTotalScore.value = currentTotal;
+                  showScoreReveal.value = true;
+                  localStorage.setItem(storageKey, currentTotal.toString());
+                }
+              }
+            }
+          }
+        } else {
+          // All matches in all stages for this day are completed
+          allMatchesCompleted.value = true;
+          
+          if (currentTotal !== lastSeenScore) {
+            oldTotalScore.value = lastSeenScore;
+            newTotalScore.value = currentTotal;
+            showScoreReveal.value = true;
+            localStorage.setItem(storageKey, currentTotal.toString());
+          }
+        }
       }
     } catch (err) {
       console.error('Failed to load player scores for animation', err);

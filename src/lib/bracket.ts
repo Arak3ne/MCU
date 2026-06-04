@@ -14,6 +14,17 @@ function generateId(): string {
 }
 
 /**
+ * Shuffle an array in place
+ */
+function shuffleArray<T>(array: T[]): T[] {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
+
+/**
  * Generates round-robin matches for N teams
  */
 export function generateChampionship(teamIds: string[]): PlayoffMatchInsert[] {
@@ -22,7 +33,8 @@ export function generateChampionship(teamIds: string[]): PlayoffMatchInsert[] {
   }
 
   const matches: PlayoffMatchInsert[] = [];
-  const teams = [...teamIds];
+  // Shuffle teams to randomize the matchups while keeping round-robin integrity
+  const teams = shuffleArray([...teamIds]);
   
   // Add a dummy team if odd number of teams to handle byes
   if (teams.length % 2 !== 0) {
@@ -68,6 +80,9 @@ export function generateGroupMatches(teamIds: string[], groupName: 'group_a' | '
   }
 
   const matches: PlayoffMatchInsert[] = [];
+  
+  // Shuffle teams to randomize the matchups order while keeping round-robin integrity
+  const teams = shuffleArray([...teamIds]);
 
   // Round Robin for 3 teams
   // Match 1: 0 vs 1
@@ -79,8 +94,8 @@ export function generateGroupMatches(teamIds: string[], groupName: 'group_a' | '
     stage: groupName,
     round: 1,
     match_order: 1,
-    team1_id: teamIds[0] || null,
-    team2_id: teamIds[1] || null,
+    team1_id: teams[0] || null,
+    team2_id: teams[1] || null,
   });
 
   matches.push({
@@ -88,8 +103,8 @@ export function generateGroupMatches(teamIds: string[], groupName: 'group_a' | '
     stage: groupName,
     round: 2,
     match_order: 1,
-    team1_id: teamIds[0] || null,
-    team2_id: teamIds[2] || null,
+    team1_id: teams[0] || null,
+    team2_id: teams[2] || null,
   });
 
   matches.push({
@@ -97,8 +112,8 @@ export function generateGroupMatches(teamIds: string[], groupName: 'group_a' | '
     stage: groupName,
     round: 3,
     match_order: 1,
-    team1_id: teamIds[1] || null,
-    team2_id: teamIds[2] || null,
+    team1_id: teams[1] || null,
+    team2_id: teams[2] || null,
   });
 
   return matches;

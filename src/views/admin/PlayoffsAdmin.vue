@@ -69,7 +69,7 @@
     </div>
 
     <!-- Generators Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
       <!-- 1. Championship -->
       <div class="bg-[#111111] border border-[#2A2A2A] p-4 rounded-sm flex flex-col justify-between">
         <div>
@@ -165,6 +165,22 @@
         <div v-else>
           <button @click="showKnockoutSetup = true" class="px-4 py-2 bg-[#1A1A1A] border border-[#2A2A2A] text-[#A1A1AA] font-bold rounded-sm hover:text-[#F0FDF4] transition-colors w-full cursor-pointer text-sm">
             Expand to Setup
+          </button>
+        </div>
+      </div>
+
+      <!-- 4. Champions -->
+      <div class="bg-[#111111] border border-[#2A2A2A] p-4 rounded-sm flex flex-col justify-between">
+        <div>
+          <h2 class="text-lg font-bold mb-1">4. Champions</h2>
+          <p class="text-[#A1A1AA] text-xs mb-3">Manage champion availability for drafts.</p>
+        </div>
+        <div class="flex flex-col gap-2">
+          <button @click="handleDisablePickedChampions" class="px-4 py-2 bg-[#EAB308]/20 border border-[#EAB308]/50 text-[#EAB308] font-bold rounded-sm hover:bg-[#EAB308]/30 transition-colors w-full cursor-pointer text-sm">
+            Disable Picked Champions
+          </button>
+          <button @click="handleResetChampions" class="px-4 py-2 bg-red-500/20 border border-red-500/50 text-red-500 font-bold rounded-sm hover:bg-red-500/30 transition-colors w-full cursor-pointer text-sm">
+            Reset All Champions
           </button>
         </div>
       </div>
@@ -305,7 +321,7 @@ import { ref, computed, onMounted, onUnmounted, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { supabase } from '../../lib/supabase';
 import { generateGroupMatches, generateSingleEliminationBracket, generateChampionship } from '../../lib/bracket';
-import { fetchPlayoffMatches, generatePlayoffMatches, updatePlayoffMatch, updateTeamStats, handleRoundCompletion } from '../../lib/queries';
+import { fetchPlayoffMatches, generatePlayoffMatches, updatePlayoffMatch, updateTeamStats, handleRoundCompletion, disableChampions } from '../../lib/queries';
 
 const router = useRouter();
 const allTeams = ref<any[]>([]);
@@ -573,6 +589,62 @@ const recalculateStandingsSilent = async () => {
 const handleRecalculateStandings = async () => {
   await recalculateStandingsSilent();
   showToast('Classements recalculés.', 'success');
+};
+
+const handleResetChampions = async () => {
+  if (!confirm('Êtes-vous sûr de vouloir réinitialiser tous les champions pour qu\'ils soient disponibles à la draft ? Cette action est irréversible.')) {
+    return;
+  }
+  
+  const { error } = await supabase
+    .from('champions')
+    .update({ is_available: true })
+    .neq('is_available', true); // update all that are false
+    
+  if (error) {
+    showToast('Erreur lors de la réinitialisation des champions: ' + error.message, 'error');
+  } else {
+    showToast('Tous les champions ont été réinitialisés avec succès.', 'success');
+  }
+};
+
+const handleDisablePickedChampions = async () => {
+  if (!confirm('Voulez-vous désactiver tous les champions qui ont déjà été pick dans les drafts (même pour les matchs non terminés) ?')) {
+    return;
+  }
+
+  const { data: allMatches, error: fetchError } = await supabase
+    .from('playoff_matches')
+    .select('draft_picks');
+
+  if (fetchError) {
+    showToast('Erreur lors de la récupération des matchs: ' + fetchError.message, 'error');
+    return;
+  }
+
+  const allPicks = new Set<string>();
+  for (const match of allMatches || []) {
+    if (Array.isArray(match.draft_picks)) {
+      for (const pick of match.draft_picks) {
+        if (pick && !pick.startsWith('__empty_pick__')) {
+          allPicks.add(pick);
+        }
+      }
+    }
+  }
+
+  const picksArray = Array.from(allPicks);
+  if (picksArray.length === 0) {
+    showToast('Aucun champion n\'a encore été pick dans les drafts.', 'success');
+    return;
+  }
+
+  const { error: disableError } = await disableChampions(picksArray);
+  if (disableError) {
+    showToast('Erreur lors de la désactivation: ' + disableError.message, 'error');
+  } else {
+    showToast(`${picksArray.length} champions ont été désactivés avec succès.`, 'success');
+  }
 };
 
 const formatBracketName = (name: string) => {
