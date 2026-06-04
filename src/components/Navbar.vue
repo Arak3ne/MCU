@@ -4,9 +4,9 @@
     <button 
       v-if="isCollapsed"
       @click="isCollapsed = false"
-      class="flex items-center justify-center w-16 h-6 bg-[#111111]/80 backdrop-blur-sm border-b border-x border-[#2A2A2A] rounded-b-md hover:bg-[#111111] hover:border-[#22C55E]/50 transition-all opacity-30 hover:opacity-100 group"
+      class="flex items-center justify-center w-16 h-6 bg-[#111111]/80 backdrop-blur-sm border-b border-x border-[#2A2A2A] rounded-b-md hover:bg-[#111111] hover:border-[#22C55E]/50 transition-all opacity-60 hover:opacity-100 group"
     >
-      <ChevronDown class="w-4 h-4 text-[#A1A1AA] group-hover:text-[#22C55E]" />
+      <ChevronDown class="w-4 h-4 text-[#22C55E]" />
     </button>
 
     <!-- Navbar Etendue -->
@@ -16,9 +16,9 @@
       <button 
         v-if="isDraftRoom"
         @click="isCollapsed = true"
-        class="absolute top-full left-1/2 -translate-x-1/2 flex items-center justify-center w-16 h-6 bg-[#111111]/90 backdrop-blur-md border-b border-x border-[#2A2A2A] rounded-b-md hover:bg-[#111111] hover:border-[#22C55E]/50 transition-all opacity-30 hover:opacity-100 group z-[110]"
+        class="absolute top-full left-1/2 -translate-x-1/2 flex items-center justify-center w-16 h-6 bg-[#111111]/90 backdrop-blur-md border-b border-x border-[#2A2A2A] rounded-b-md hover:bg-[#111111] hover:border-[#22C55E]/50 transition-all opacity-60 hover:opacity-100 group z-[110]"
       >
-        <ChevronUp class="w-4 h-4 text-[#A1A1AA] group-hover:text-[#22C55E]" />
+        <ChevronUp class="w-4 h-4 text-[#22C55E]" />
       </button>
 
       <div class="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">

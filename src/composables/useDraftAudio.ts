@@ -1,4 +1,4 @@
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 
 export function useDraftAudio() {
   // Instances audio
@@ -14,34 +14,61 @@ export function useDraftAudio() {
   let activeTrack: HTMLAudioElement | null = null;
 
   const isMuted = ref(false);
+  const volume = ref(100); // Volume global de 0 à 100
+  const isAudioInitialized = ref(false);
+
+  // Ratios de volume par défaut pour chaque son
+  const defaultVolumes = {
+    lockSound: 0.8,
+    tickSound: 0.6,
+    yourTurnSound: 0.7,
+    bgMusic: 0.15,
+    configMusic: 0.15,
+    draftEndSound: 0.3,
+    clickSound: 0.4
+  };
+
+  const updateVolumes = () => {
+    const multiplier = volume.value / 100;
+    if (lockSound) lockSound.volume = defaultVolumes.lockSound * multiplier;
+    if (tickSound) tickSound.volume = defaultVolumes.tickSound * multiplier;
+    if (yourTurnSound) yourTurnSound.volume = defaultVolumes.yourTurnSound * multiplier;
+    if (bgMusic) bgMusic.volume = defaultVolumes.bgMusic * multiplier;
+    if (configMusic) configMusic.volume = defaultVolumes.configMusic * multiplier;
+    if (draftEndSound) draftEndSound.volume = defaultVolumes.draftEndSound * multiplier;
+    if (clickSound) clickSound.volume = defaultVolumes.clickSound * multiplier;
+  };
+
+  watch(volume, () => {
+    updateVolumes();
+    if (volume.value === 0 && !isMuted.value) {
+      isMuted.value = true;
+      if (activeTrack) activeTrack.pause();
+      if (draftEndSound) draftEndSound.pause();
+    } else if (volume.value > 0 && isMuted.value) {
+      isMuted.value = false;
+      if (activeTrack) activeTrack.play().catch(e => console.warn("Autoplay bloqué", e));
+    }
+  });
 
   // Initialisation des sons (à appeler lors d'une interaction utilisateur)
   const initAudio = () => {
-    if (lockSound) return; // Déjà initialisé
+    if (isAudioInitialized.value) return; // Déjà initialisé
+    isAudioInitialized.value = true;
 
     try {
       lockSound = new Audio('/sounds/lockin.ogg');
-      lockSound.volume = 0.8;
-
       tickSound = new Audio('/sounds/tick.ogg');
-      tickSound.volume = 0.6;
-
       yourTurnSound = new Audio('/sounds/your_turn.ogg');
-      yourTurnSound.volume = 0.7;
-
       bgMusic = new Audio('/sounds/draft_music.ogg');
-      bgMusic.volume = 0.15; // Volume plus bas pour la musique de fond
       bgMusic.loop = true;
-
       configMusic = new Audio('/sounds/config_music.ogg');
-      configMusic.volume = 0.15;
       configMusic.loop = true;
-
       draftEndSound = new Audio('/sounds/draft_end.ogg');
-      draftEndSound.volume = 0.3;
-
       clickSound = new Audio('/sounds/click.ogg');
-      clickSound.volume = 0.4; // Volume modéré pour ne pas être trop intrusif
+      
+      // Appliquer le volume global initial
+      updateVolumes();
     } catch (e) {
       console.warn("L'audio n'est pas supporté ou les fichiers sont manquants", e);
     }
@@ -124,6 +151,8 @@ export function useDraftAudio() {
 
   return {
     isMuted,
+    volume,
+    isAudioInitialized,
     initAudio,
     playLockSound,
     playTickSound,

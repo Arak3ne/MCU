@@ -359,7 +359,7 @@
                     <td class="p-4 text-center font-bold" :class="getShareColor(stat.goldShare)">{{ stat.goldShare.toFixed(1) }}%</td>
                     <td class="p-4 text-center font-bold" :class="getCspmColor(stat.cspm)">{{ stat.cspm.toFixed(1) }}</td>
                     <td class="p-4 text-center font-medium" :class="getDmgPerGoldColor(stat.dmgPerGold)">{{ stat.dmgPerGold.toFixed(2) }}</td>
-                    <td class="p-4 text-center font-bold" :class="getVisionColor(stat.avgVisionScore)">{{ stat.avgVisionScore.toFixed(1) }}</td>
+                    <td class="p-4 text-center font-bold" :class="getVisionColor(stat.avgVisionScore)">{{ stat.avgVisionScore.toFixed(2) }}</td>
                     <td class="p-4 text-center text-[#A1A1AA]">{{ stat.dtpm.toFixed(0) }}</td>
                   </template>
 
@@ -377,8 +377,8 @@
                     <td class="p-4 text-center font-medium" :class="stat.pacifistScore < 5000 ? 'text-red-400' : 'text-[#A1A1AA]'">
                       {{ stat.pacifistScore === Infinity ? '-' : stat.pacifistScore }}
                     </td>
-                    <td class="p-4 text-center font-medium" :class="stat.blindScore < 0.5 ? 'text-red-400 font-bold' : 'text-[#A1A1AA]'">
-                      {{ stat.blindScore.toFixed(2) }}
+                    <td class="p-4 text-center font-medium" :class="stat.blindScore < 10 ? 'text-red-400 font-bold' : 'text-[#A1A1AA]'">
+                      {{ stat.blindScore }}
                     </td>
                     <td class="p-4 text-center font-medium" :class="stat.wardDispenserScore >= 0.8 ? 'text-[#EAB308] font-bold' : 'text-[#A1A1AA]'">
                       {{ stat.wardDispenserScore.toFixed(2) }}
@@ -573,6 +573,7 @@ function createEmptyPlayerStats(playerId: string, playerName: string, primaryRol
     totalWardsPlaced: 0,
     maxDeathsInGame: 0,
     minDamageInGame: Infinity,
+    minVisionInGame: Infinity,
   };
 }
 
@@ -623,6 +624,7 @@ interface PlayerStats {
   totalWardsPlaced: number;
   maxDeathsInGame: number;
   minDamageInGame: number;
+  minVisionInGame: number;
 }
 
 const loading = ref(true);
@@ -756,7 +758,7 @@ const funCols = [
   { key: 'largestKillingSpree', label: 'Max K / match', tooltip: 'Maximum d\'éliminations sur une partie' },
   { key: 'feederScore', label: 'Feeder', tooltip: 'Plus grand nombre de morts en une partie' },
   { key: 'pacifistScore', label: 'Pacifiste', tooltip: 'Plus petit montant de dégâts infligés en une partie' },
-  { key: 'blindScore', label: 'L\'Aveugle', tooltip: 'Score de vision par minute' },
+  { key: 'blindScore', label: 'L\'Aveugle', tooltip: 'Pire score de vision sur une partie' },
   { key: 'wardDispenserScore', label: 'Poseur de Wards', tooltip: 'Balises posées par minute' },
   { key: 'survivorScore', label: 'Survivant', tooltip: 'Dégâts auto-mitigés par minute' },
   { key: 'avgGameDuration', label: 'Temps Moyen', tooltip: 'Durée moyenne des parties' }
@@ -807,17 +809,17 @@ const formatMetricValue = (value: any) => {
   }
   
   // High precision decimals
-  if (['cspm', 'wardDispenserScore', 'dmgPerGold', 'blindScore'].includes(metricId)) {
+  if (['cspm', 'wardDispenserScore', 'dmgPerGold', 'avgVisionScore'].includes(metricId)) {
     return value.toFixed(2);
   }
   
   // Standard 1-decimal stats
-  if (['avgKills', 'avgDeaths', 'avgAssists', 'avgVisionScore'].includes(metricId)) {
+  if (['avgKills', 'avgDeaths', 'avgAssists'].includes(metricId)) {
     return value.toFixed(1);
   }
   
   // Integers or rounded values
-  if (['dpm', 'gpm', 'dtpm', 'largestKillingSpree', 'survivorScore', 'totalKills', 'totalDeaths', 'totalAssists', 'pacifistScore', 'feederScore'].includes(metricId)) {
+  if (['dpm', 'gpm', 'dtpm', 'largestKillingSpree', 'survivorScore', 'totalKills', 'totalDeaths', 'totalAssists', 'pacifistScore', 'feederScore', 'blindScore'].includes(metricId)) {
     if (value === Infinity) return '-';
     return Math.round(value).toString();
   }
@@ -899,9 +901,9 @@ const getDmgPerGoldColor = (val: number) => {
 };
 
 const getVisionColor = (val: number) => {
-  if (val >= 40) return 'text-[#EAB308] drop-shadow-[0_0_8px_rgba(234,179,8,0.3)]';
-  if (val >= 25) return 'text-[#22C55E]';
-  if (val < 15) return 'text-red-400';
+  if (val >= 1.5) return 'text-[#EAB308] drop-shadow-[0_0_8px_rgba(234,179,8,0.3)]';
+  if (val >= 1.0) return 'text-[#22C55E]';
+  if (val < 0.5) return 'text-red-400';
   return 'text-[#F0FDF4]';
 };
 
@@ -1045,6 +1047,7 @@ const fetchStats = async () => {
           totalWardsPlaced: 0,
           maxDeathsInGame: 0,
           minDamageInGame: Infinity,
+          minVisionInGame: Infinity,
         });
       }
 
@@ -1091,6 +1094,9 @@ const fetchStats = async () => {
       
       const dmg = row.total_damage_dealt_to_champions || 0;
       if (dmg < p.minDamageInGame) p.minDamageInGame = dmg;
+
+      const vision = row.vision_score || 0;
+      if (vision < p.minVisionInGame) p.minVisionInGame = vision;
     }
 
     const finalStats: PlayerStats[] = [];
@@ -1116,7 +1122,7 @@ const fetchStats = async () => {
       p.pacifistScore = p.minDamageInGame === Infinity ? 0 : p.minDamageInGame;
       p.feederScore = p.maxDeathsInGame;
       p.wardDispenserScore = p.totalGameDurationMinutes > 0 ? p.totalWardsPlaced / p.totalGameDurationMinutes : 0;
-      p.blindScore = p.totalGameDurationMinutes > 0 ? p.totalVisionScore / p.totalGameDurationMinutes : 0;
+      p.blindScore = p.minVisionInGame === Infinity ? 0 : p.minVisionInGame;
       p.survivorScore = p.totalGameDurationMinutes > 0 ? p.totalDamageSelfMitigated / p.totalGameDurationMinutes : 0;
       
       finalStats.push(p);

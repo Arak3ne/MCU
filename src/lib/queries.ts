@@ -14,26 +14,46 @@ export async function getPlayers() {
 }
 
 export async function getChampions() {
+  let championsData: any[] | null = null;
+  let rolesData: any[] | null = null;
+
+  // Try to fetch with relation first
   const { data, error } = await supabase
     .from("champions")
     .select("*, champion_roles(role)")
     .order("name");
 
-  // Fallback for environments where the relation isn't exposed in PostgREST
-  if (error) {
-    const fallback = await supabase
-      .from("champions")
-      .select("*")
-      .order("name");
-    return { data: fallback.data as Champion[] | null, error: fallback.error };
+  if (!error && data) {
+    championsData = data;
+  } else {
+    // Fallback: fetch separately
+    const [champsRes, rolesRes] = await Promise.all([
+      supabase.from("champions").select("*").order("name"),
+      supabase.from("champion_roles").select("champion_id, role")
+    ]);
+    
+    if (champsRes.error) {
+      return { data: null, error: champsRes.error };
+    }
+    
+    championsData = champsRes.data;
+    rolesData = rolesRes.data;
   }
 
-  const normalizedData = (data ?? []).map((champion: any) => {
-    const relationRoles = Array.isArray(champion.champion_roles)
-      ? champion.champion_roles
-          .map((entry: { role?: string | null }) => entry?.role)
-          .filter((role: string | null | undefined): role is string => !!role)
-      : [];
+  const normalizedData = (championsData ?? []).map((champion: any) => {
+    let relationRoles: string[] = [];
+    
+    if (Array.isArray(champion.champion_roles)) {
+      relationRoles = champion.champion_roles
+        .map((entry: { role?: string | null }) => entry?.role)
+        .filter((role: string | null | undefined): role is string => !!role);
+    } else if (rolesData) {
+      relationRoles = rolesData
+        .filter((r: any) => r.champion_id === champion.id)
+        .map((r: any) => r.role)
+        .filter(Boolean);
+    }
+
     const directRoles = Array.isArray(champion.roles) ? champion.roles : [];
 
     return {

@@ -1,5 +1,4 @@
--- Mercato J2 : prix = prix J1 × rentabilité J1 (score brut / fantasy_cost), borné [5, 35].
--- Score négatif → traité comme 0 pour le prix.
+-- Mercato J2 : prix = prix J1 + score brut, borné [5, 35].
 
 CREATE OR REPLACE FUNCTION public.calculate_day2_prices()
 RETURNS void AS $$
@@ -13,7 +12,7 @@ BEGIN
                 5,
                 LEAST(
                     35,
-                    ROUND(GREATEST(0, fps.score::numeric))::integer
+                    ROUND(pl.fantasy_cost + fps.score::numeric)::integer
                 )
             ) AS day2_price
         FROM public.fantasy_player_scores fps

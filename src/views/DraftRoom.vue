@@ -1,6 +1,6 @@
 <template>
   <div class="h-[100dvh] max-h-[100dvh] overflow-hidden bg-[#0B0F0C] text-[#F0FDF4]">
-    <main @click="initAudio" class="w-full h-full p-4 md:p-6 flex flex-col gap-4 relative">
+    <main @click="handleUserInteraction" class="w-full h-full p-4 md:p-6 flex flex-col gap-4 relative">
       <!-- Erreurs et synchronisation -->
       <section v-if="loadError" class="bg-red-500/10 border border-red-500/40 text-red-300 p-4 rounded-md shadow-lg shrink-0">
         {{ loadError }}
@@ -222,15 +222,36 @@
                     :key="role.id"
                     @click="toggleRole(role.id)"
                     :class="[
-                      'flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-bold tracking-wider uppercase transition-all whitespace-nowrap cursor-pointer border',
+                      'flex items-center justify-center w-8 h-8 rounded-sm transition-all cursor-pointer border',
                       selectedRole === role.id
-                        ? 'bg-[#22C55E]/20 text-[#22C55E] border-[#22C55E] shadow-[0_0_10px_rgba(34,197,94,0.2)]'
-                        : 'bg-transparent text-[#A1A1AA] border-transparent hover:text-[#F0FDF4] hover:bg-[#111111]'
+                        ? 'bg-[#22C55E]/20 border-[#22C55E] shadow-[0_0_10px_rgba(34,197,94,0.2)]'
+                        : 'bg-transparent border-transparent hover:bg-[#111111]'
                     ]"
                     :title="role.name"
                   >
-                    <img :src="role.icon" :alt="role.name" class="w-4 h-4 object-contain pointer-events-none drop-shadow-md" :class="{'brightness-0 invert opacity-60': selectedRole !== role.id}" />
-                    <span class="hidden md:inline pointer-events-none">{{ role.name }}</span>
+                    <img :src="role.icon" :alt="role.name" class="w-5 h-5 object-contain pointer-events-none drop-shadow-md" :class="{'brightness-0 invert opacity-60': selectedRole !== role.id}" />
+                  </button>
+                  
+                  <div class="w-px bg-[#2A2A2A] mx-1 my-1"></div>
+                  
+                  <button
+                    @click="showOnlyAvailable = !showOnlyAvailable"
+                    :class="[
+                      'flex items-center justify-center px-2 h-8 rounded-sm transition-all cursor-pointer border text-xs font-bold uppercase tracking-wider',
+                      showOnlyAvailable
+                        ? 'bg-[#22C55E]/20 text-[#22C55E] border-[#22C55E] shadow-[0_0_10px_rgba(34,197,94,0.2)]'
+                        : 'bg-transparent text-[#A1A1AA] border-transparent hover:text-[#F0FDF4] hover:bg-[#111111]'
+                    ]"
+                    title="Afficher uniquement les champions disponibles"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor" v-if="showOnlyAvailable">
+                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                    </svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" v-else>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    Dispo
                   </button>
                 </div>
               </div>
@@ -295,19 +316,38 @@
               </div>
 
               <!-- Audio Controls -->
-              <button
-                @click.stop="toggleMute"
-                class="bg-[#111111]/80 backdrop-blur-sm border border-[#2A2A2A] hover:border-[#22C55E]/50 text-[#A1A1AA] hover:text-[#22C55E] p-2.5 rounded-full shadow-lg transition-all"
-                title="Activer/Désactiver le son"
-              >
-                <svg v-if="isMuted" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" clip-rule="evenodd" />
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
-                </svg>
-                <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-                </svg>
-              </button>
+              <div class="relative group flex items-center justify-center">
+                <!-- Volume Slider Popover -->
+                <div class="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-[#111111]/95 border border-[#2A2A2A] rounded-lg p-3 shadow-xl pointer-events-none group-hover:pointer-events-auto flex flex-col items-center gap-3 z-50">
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    v-model.number="volume"
+                    @input="handleUserInteraction"
+                    class="h-24 w-1.5 appearance-none bg-[#2A2A2A] rounded-full outline-none cursor-pointer"
+                    style="-webkit-appearance: slider-vertical; writing-mode: bt-lr;"
+                  />
+                  <span class="text-[10px] font-bold text-[#A1A1AA]">{{ volume }}%</span>
+                </div>
+                <button
+                  @click.stop="onToggleMute"
+                  class="bg-[#111111]/80 backdrop-blur-sm border border-[#2A2A2A] hover:border-[#22C55E]/50 text-[#A1A1AA] hover:text-[#22C55E] p-2.5 rounded-full shadow-lg transition-all"
+                  title="Volume"
+                >
+                  <svg v-if="isMuted || volume == 0" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" clip-rule="evenodd" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+                  </svg>
+                  <svg v-else-if="volume < 50" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072" />
+                  </svg>
+                  <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                  </svg>
+                </button>
+              </div>
             </div>
 
             <!-- LOBBY -->
@@ -511,6 +551,7 @@ const copyDraftLink = () => {
 const players = ref<Player[]>([]);
 const searchQuery = ref("");
 const selectedRole = ref("");
+const showOnlyAvailable = ref(false);
 const selectedChampionId = ref<string | null>(null);
 const selectedChampionName = ref<string | null>(null);
 const nowMs = ref(Date.now());
@@ -566,6 +607,8 @@ const { state, init, dispose, broadcastState, activeDriverId } = useRealtimeDraf
 
 const {
   isMuted,
+  volume,
+  isAudioInitialized,
   initAudio,
   playLockSound,
   playTickSound,
@@ -577,6 +620,23 @@ const {
   playDraftEndSound,
   toggleMute
 } = useDraftAudio();
+
+const handleUserInteraction = () => {
+  if (!isAudioInitialized.value) {
+    initAudio();
+    // Synchroniser la musique avec la phase actuelle si on rejoint en cours de route
+    if (["lobby", "choose_side_team", "choose_side_color", "choose_first_pick"].includes(state.value.phase)) {
+      startConfigMusic();
+    } else if (state.value.phase === "pick_phase_1" || state.value.phase === "pick_phase_2") {
+      startBackgroundMusic();
+    }
+  }
+};
+
+const onToggleMute = () => {
+  handleUserInteraction();
+  toggleMute();
+};
 
 const isAwaitingInitialSync = computed(() => {
   if (isInitializing.value) return true;
@@ -774,6 +834,7 @@ const secondCaptainName = computed(() => {
 
 const filteredChampions = computed(() => {
   return champions.value.filter((champ) => {
+    if (showOnlyAvailable.value && isChampionDisabled(champ.id, champ.is_available)) return false;
     if (normalizedSearch.value && !champ.name.toLowerCase().includes(normalizedSearch.value)) return false;
     if (!selectedRole.value) return true;
     const roles = (champ.roles ?? []).map((r) => roleAliases[String(r).toLowerCase()] ?? String(r).toLowerCase());
