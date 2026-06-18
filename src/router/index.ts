@@ -92,6 +92,12 @@ const router = createRouter({
       component: () => import("../views/AuctionOverlay.vue"),
       meta: { requiresAuth: true },
     },
+    {
+      path: "/admin/mercato",
+      name: "admin-mercato-overlay",
+      component: () => import("../views/admin/MercatoOverlay.vue"),
+      meta: { requiresAuth: true },
+    },
   ],
 });
 

@@ -78,8 +78,8 @@
                     <!-- Fantasy Points Earned -->
                     <div class="mt-0.5 text-[9px] md:text-[10px] font-bold flex flex-col items-center justify-center leading-tight" :class="(playerScores[playerId] || 0) > 0 ? 'text-mcu-primary' : (playerScores[playerId] || 0) < 0 ? 'text-red-400' : 'text-white/50'">
                       <span>{{ (playerScores[playerId] || 0) > 0 ? '+' : '' }}{{ Math.round(playerScores[playerId] || 0) }} pts</span>
-                      <span v-if="getFullPlayer(playerId)?.fantasy?.fantasyPriceDay1 > 0" class="text-white/40 font-normal text-[8px] md:text-[9px] -mt-0.5" title="Rentabilité J1 (score / prix d'achat)">
-                        (x{{ ((playerScores[playerId] || 0) / getFullPlayer(playerId)!.fantasy.fantasyPriceDay1).toFixed(1) }})
+                      <span v-if="getFullPlayer(playerId)?.fantasy?.fantasyPriceDay1 > 0" class="text-white/40 font-normal text-[8px] md:text-[9px] -mt-0.5" title="Performance vs Rang (Alpha)">
+                        (x{{ getPlayerAlpha(playerId, getFullPlayer(playerId)!.fantasy.fantasyPriceDay1).toFixed(2) }})
                       </span>
                     </div>
                     
@@ -204,6 +204,7 @@ const props = defineProps<{
   getRoleIcon: (roleName: string) => string;
   getPriceChange: (player: any) => number;
   getRosterCardSplashUrl: (playerId: string) => string;
+  getPlayerAlpha: (playerId: string, priceDay1: number) => number;
 }>();
 
 const mercatoBudgetBrut = computed(

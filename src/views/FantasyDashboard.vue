@@ -32,6 +32,7 @@
         :get-role-icon="getRoleIcon"
         :get-price-change="getPriceChange"
         :get-roster-card-splash-url="getRosterCardSplashUrl"
+        :get-player-alpha="getPlayerAlpha"
       />
     </Teleport>
 
@@ -889,19 +890,19 @@
 
                   <!-- Match Stats if available -->
                 <div v-if="playerStats[getPlayerByRole(roleObj.value)!.id]" class="bg-[#111111]/70 border border-[#2A2A2A] rounded-xl p-2.5 flex flex-col gap-2.5 shadow-inner backdrop-blur-sm">
-                  <div class="flex items-center justify-between p-2.5 rounded-lg bg-black/40 border border-white/5 relative overflow-hidden group/renta transition-all hover:scale-[1.02] hover:bg-black/60 hover:border-white/10" title="Score J1 / prix d'achat (sans bonus capitaine)">
+                  <div class="flex items-center justify-between p-2.5 rounded-lg bg-black/40 border border-white/5 relative overflow-hidden group/renta transition-all hover:scale-[1.02] hover:bg-black/60 hover:border-white/10" title="Performance vs Rang (Alpha)">
                     <div
                       class="absolute inset-0 opacity-10 transition-opacity duration-300 group-hover/renta:opacity-20"
-                      :class="getMatchRentability(getPlayerByRole(roleObj.value)!.id, getPlayerByRole(roleObj.value)!.fantasyPriceDay1) >= 1 ? 'bg-mcu-primary' : 'bg-red-500'"
+                      :class="getPlayerAlpha(getPlayerByRole(roleObj.value)!.id, getPlayerByRole(roleObj.value)!.fantasyPriceDay1) >= 1 ? 'bg-mcu-primary' : 'bg-red-500'"
                     />
                     <div class="flex flex-col relative z-10">
-                      <span class="text-[8px] uppercase text-white/40 font-bold tracking-widest">Rentabilité J1</span>
+                      <span class="text-[8px] uppercase text-white/40 font-bold tracking-widest">Alpha</span>
                     </div>
                     <div class="flex items-center gap-1.5 relative z-10">
-                      <span class="text-lg font-title transition-colors" :class="getMatchRentability(getPlayerByRole(roleObj.value)!.id, getPlayerByRole(roleObj.value)!.fantasyPriceDay1) >= 1 ? 'text-mcu-primary drop-shadow-[0_0_10px_rgba(34,197,94,0.4)] group-hover/renta:text-emerald-300' : 'text-red-400 drop-shadow-[0_0_10px_rgba(248,113,113,0.4)] group-hover/renta:text-red-300'">
-                        {{ getMatchRentability(getPlayerByRole(roleObj.value)!.id, getPlayerByRole(roleObj.value)!.fantasyPriceDay1).toFixed(2) }}x
+                      <span class="text-lg font-title transition-colors" :class="getPlayerAlpha(getPlayerByRole(roleObj.value)!.id, getPlayerByRole(roleObj.value)!.fantasyPriceDay1) >= 1 ? 'text-mcu-primary drop-shadow-[0_0_10px_rgba(34,197,94,0.4)] group-hover/renta:text-emerald-300' : 'text-red-400 drop-shadow-[0_0_10px_rgba(248,113,113,0.4)] group-hover/renta:text-red-300'">
+                        {{ getPlayerAlpha(getPlayerByRole(roleObj.value)!.id, getPlayerByRole(roleObj.value)!.fantasyPriceDay1).toFixed(2) }}x
                       </span>
-                      <svg v-if="getMatchRentability(getPlayerByRole(roleObj.value)!.id, getPlayerByRole(roleObj.value)!.fantasyPriceDay1) >= 1" class="w-4 h-4 text-mcu-primary group-hover/renta:text-emerald-300 transition-transform duration-300 group-hover/renta:-translate-y-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+                      <svg v-if="getPlayerAlpha(getPlayerByRole(roleObj.value)!.id, getPlayerByRole(roleObj.value)!.fantasyPriceDay1) >= 1" class="w-4 h-4 text-mcu-primary group-hover/renta:text-emerald-300 transition-transform duration-300 group-hover/renta:-translate-y-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
                       <svg v-else class="w-4 h-4 text-red-400 group-hover/renta:text-red-300 transition-transform duration-300 group-hover/renta:translate-y-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>
                     </div>
                   </div>
@@ -1074,7 +1075,9 @@ import { getFantasyTierBadgeClass as getTierColor, getFantasyTierGlowClass as ge
 import {
   getMercatoPriceChange,
   matchRentability,
-  withMercatoDay2Price,
+  computeAllMercatoDay2Prices,
+  computeTierMedians,
+  computeAlpha
 } from '../utils/fantasyMercato';
 
 import mcuCoinsIcon from '../assets/mcu_coins.png';
@@ -1255,33 +1258,47 @@ const roleWeights: Record<string, number> = {
   'top': 1, 'jungle': 2, 'mid': 3, 'adc': 4, 'support': 5
 };
 
+let mercatoIntroCheckToken = 0;
+
 /**
- * Ouvre l'intro mercato une fois que le dashboard n'est plus sous loader / vérif reveal
- * (évite une modale `fixed` cassée sous un ancêtre avec transform ou invisible pendant le fade-in).
+ * Ouvre l'intro mercato une fois l'équipe J1 chargée et le dashboard idle.
+ * Le cache localStorage stocke l'ID de l'équipe J1 pour rejouer l'anim sur un nouveau tournoi.
  */
-function scheduleMercatoIntroIfEligible(previousDayBefore: 1 | 2) {
-  if (previousDayBefore !== 1 || tournamentDay.value !== 2) return;
+function tryShowMercatoIntro() {
+  if (tournamentDay.value !== 2) return;
   const uid = currentUserId.value;
   if (!uid) return;
-  const mercatoSeenKey = `mcu_fantasy_mercato_seen_${uid}`;
-  if (localStorage.getItem(mercatoSeenKey)) return;
 
-  const maxPasses = 200;
-  let pass = 0;
+  const token = ++mercatoIntroCheckToken;
+  const mercatoSeenKey = `mcu_fantasy_mercato_seen_${uid}`;
 
   void (async (): Promise<void> => {
-    while (pass++ < maxPasses) {
+    const maxPasses = 200;
+    for (let pass = 0; pass < maxPasses; pass++) {
+      if (token !== mercatoIntroCheckToken) return;
       await nextTick();
       await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
       if (!currentUserId.value || tournamentDay.value !== 2) return;
-      if (localStorage.getItem(mercatoSeenKey)) return;
+
+      const refId = previousTeam.value?.id;
+      if (!refId) continue;
+
+      if (localStorage.getItem(mercatoSeenKey) === refId) return;
+
       if (!loading.value && !isCheckingReveal.value) {
-        if (localStorage.getItem(mercatoSeenKey)) return;
         showMercatoOverlay.value = true;
         return;
       }
     }
-    if (currentUserId.value && tournamentDay.value === 2 && !localStorage.getItem(mercatoSeenKey)) {
+
+    const refId = previousTeam.value?.id;
+    if (
+      token === mercatoIntroCheckToken &&
+      refId &&
+      currentUserId.value &&
+      tournamentDay.value === 2 &&
+      localStorage.getItem(mercatoSeenKey) !== refId
+    ) {
       console.warn('[Fantasy] Mercato intro: attente idle dépassée, ouverture forcée');
       showMercatoOverlay.value = true;
     }
@@ -1296,10 +1313,8 @@ function applyPlayoffPhase(playoffRows: any[]) {
     return;
   }
 
-  const previousDayBefore = tournamentDay.value;
   const nextDay = fantasyTournamentDayFromPlayoffs(playoffRows);
   tournamentDay.value = nextDay;
-  scheduleMercatoIntroIfEligible(previousDayBefore);
 }
 
 async function refreshPlayoffPhase() {
@@ -1320,8 +1335,11 @@ function schedulePlayoffPhaseRefresh() {
 }
 
 watch(showMercatoOverlay, (show, oldShow) => {
-  if (oldShow === true && show === false && currentUserId.value) {
-    localStorage.setItem(`mcu_fantasy_mercato_seen_${currentUserId.value}`, 'true');
+  if (oldShow === true && show === false && currentUserId.value && previousTeam.value?.id) {
+    localStorage.setItem(
+      `mcu_fantasy_mercato_seen_${currentUserId.value}`,
+      previousTeam.value.id,
+    );
   }
 });
 
@@ -1544,6 +1562,9 @@ const initDay = async () => {
     }
   }
   isCheckingReveal.value = false;
+  if (tournamentDay.value === 2) {
+    tryShowMercatoIntro();
+  }
 };
 
 const replayAnimation = async () => {
@@ -1565,10 +1586,15 @@ const replayAnimation = async () => {
 
 const applyMercatoDay2PricesFromScores = (scoresDay1: Record<string, number>) => {
   if (!players.value.length) return;
-  players.value = players.value.map((p) => ({
+  
+  const fantasyPlayers = players.value.map(p => p.fantasy);
+  const updatedFantasyPlayers = computeAllMercatoDay2Prices(fantasyPlayers, scoresDay1);
+  
+  players.value = players.value.map((p, index) => ({
     ...p,
-    fantasy: withMercatoDay2Price(p.fantasy, scoresDay1[p.id]),
+    fantasy: updatedFantasyPlayers[index]
   })) as EnrichedPlayer[];
+  
   hydratePlayers(players.value.map((p) => p.fantasy));
 };
 
@@ -1683,13 +1709,20 @@ const getPriceChange = (player: FantasyPlayer) => {
   return getMercatoPriceChange(player.price, player.fantasyPriceDay1);
 };
 
-const getMatchRentability = (playerId: string, priceDay1: number) => {
+const tierMedians = computed(() => {
+  const scores = tournamentDay.value === 2 ? playerScoresDay1.value : playerScores.value;
+  const fantasyPlayers = players.value.map(p => p.fantasy);
+  return computeTierMedians(fantasyPlayers, scores);
+});
+
+const getPlayerAlpha = (playerId: string, priceDay1: number) => {
   const score =
     tournamentDay.value === 2
       ? playerScoresDay1.value[playerId]
       : playerScores.value[playerId];
-  if (score === undefined) return 0;
-  return matchRentability(score, priceDay1);
+  if (score === undefined) return 1;
+  const median = tierMedians.value[priceDay1] || 0;
+  return computeAlpha(score, median);
 };
 
 const getFullPlayer = (id: string) => {

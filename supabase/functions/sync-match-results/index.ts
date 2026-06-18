@@ -1,10 +1,50 @@
 // Setup type definitions for built-in Supabase Runtime APIs
 import "@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
+import {
+  fantasyTournamentDayFromPlayoffs,
+  type PlayoffMatchPhaseRow,
+} from '../_shared/fantasyPhase.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+async function resolveFantasyTournamentDay(
+  supabase: ReturnType<typeof createClient>,
+): Promise<1 | 2> {
+  const { data, error } = await supabase
+    .from('playoff_matches')
+    .select('stage, team1_id, team2_id, is_completed, team1_score, team2_score')
+
+  if (error) {
+    console.error(`resolveFantasyTournamentDay: ${error.message}`)
+    return 1
+  }
+
+  return fantasyTournamentDayFromPlayoffs((data ?? []) as PlayoffMatchPhaseRow[])
+}
+
+/** Verrouille les équipes du jour en cours ; snapshot carryover uniquement pour le jour 1. */
+async function lockFantasyTeamsForDay(
+  supabase: ReturnType<typeof createClient>,
+  tournamentDay: 1 | 2,
+): Promise<void> {
+  const { error: lockError } = await supabase
+    .from('fantasy_teams')
+    .update({ is_locked: true })
+    .eq('tournament_day', tournamentDay)
+
+  if (lockError) {
+    console.error(`Failed to lock fantasy teams (day ${tournamentDay}): ${lockError.message}`)
+    return
+  }
+
+  if (tournamentDay === 1) {
+    const { error: snapErr } = await supabase.rpc('snapshot_day1_carryover_budget')
+    if (snapErr) console.error(`snapshot_day1_carryover_budget: ${snapErr.message}`)
+  }
 }
 
 /** Clef normalisée pour tolérer camelCase / snake_case / PascalCase. */
@@ -101,14 +141,8 @@ Deno.serve(async (req) => {
       .maybeSingle()
 
     if (existingMatch) {
-      // S'assurer que les équipes sont verrouillées même si le match existait déjà
-      const { error: lockError } = await supabase.from('fantasy_teams').update({ is_locked: true }).eq('tournament_day', 1)
-      if (lockError) {
-        console.error(`Failed to lock fantasy teams for existing match: ${lockError.message}`)
-      } else {
-        const { error: snapErr } = await supabase.rpc('snapshot_day1_carryover_budget')
-        if (snapErr) console.error(`snapshot_day1_carryover_budget: ${snapErr.message}`)
-      }
+      const tournamentDay = await resolveFantasyTournamentDay(supabase)
+      await lockFantasyTeamsForDay(supabase, tournamentDay)
 
       return new Response(
         JSON.stringify({ success: true, message: `Match ${gameId} already processed.` }),
@@ -167,6 +201,7 @@ Deno.serve(async (req) => {
     }
 
     const matchId = insertedMatch.id
+    const tournamentDay = await resolveFantasyTournamentDay(supabase)
 
     const participants = (matchData.participants as unknown[]) || []
     const identities = (matchData.participantIdentities as any[]) || []
@@ -265,7 +300,7 @@ Deno.serve(async (req) => {
         playerScoresToUpdate.push({
           playerId: playerId,
           points: points,
-          tournamentDay: 1 // Defaulting to 1 for now
+          tournamentDay,
         })
       }
     }
@@ -313,23 +348,13 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Verrouiller toutes les équipes pour ce jour (puisqu'un match a été joué)
-    const { error: lockError } = await supabase
-      .from('fantasy_teams')
-      .update({ is_locked: true })
-      .eq('tournament_day', 1) // Defaulting to 1 for now
-
-    if (lockError) {
-      console.error(`Failed to lock fantasy teams: ${lockError.message}`)
-    } else {
-      const { error: snapErr } = await supabase.rpc('snapshot_day1_carryover_budget')
-      if (snapErr) console.error(`snapshot_day1_carryover_budget: ${snapErr.message}`)
-    }
+    await lockFantasyTeamsForDay(supabase, tournamentDay)
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         message: `Match ${gameId} processed successfully!`,
+        tournament_day: tournamentDay,
         players_found: playerScoresToUpdate.length
       }),
       { 

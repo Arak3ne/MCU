@@ -1,36 +1,84 @@
 import type { FantasyPlayer } from '../types/fantasy'
 
-/** Bornes prix mercato jour 2 (alignées sur calculate_day2_prices en base). */
-export const MERCATO_PRICE_MIN = 5
-export const MERCATO_PRICE_MAX = 35
-
 /** Rentabilité match J1 : score brut / prix d'achat (sans bonus capitaine). */
 export function matchRentability(score: number, priceDay1: number): number {
   if (priceDay1 <= 0) return 0
-  return Math.max(0, score) / priceDay1
+  return score / priceDay1
 }
 
-/**
- * Prix J2 = prix J1 × rentabilité, plafonné.
- * Équivaut à round(score J1) quand score ≥ 0.
- */
-export function computeMercatoDay2Price(score: number, priceDay1: number): number {
-  if (priceDay1 <= 0) return MERCATO_PRICE_MIN
-  const effectiveScore = Math.max(0, score)
-  const raw = Math.round(priceDay1 * (effectiveScore / priceDay1))
-  return Math.max(MERCATO_PRICE_MIN, Math.min(MERCATO_PRICE_MAX, raw))
+export function calculateMedian(scores: number[]): number {
+  if (scores.length === 0) return 0
+  const sorted = [...scores].sort((a, b) => a - b)
+  const mid = Math.floor(sorted.length / 2)
+  if (sorted.length % 2 === 0) {
+    return (sorted[mid - 1] + sorted[mid]) / 2
+  }
+  return sorted[mid]
+}
+
+export function computeTierMedians(
+  players: FantasyPlayer[],
+  scoresDay1: Record<string, number>
+): Record<number, number> {
+  const tierScores: Record<number, number[]> = {}
+  
+  // Group virtual scores by tier (fantasyPriceDay1)
+  players.forEach((player) => {
+    const price = player.fantasyPriceDay1
+    if (!tierScores[price]) {
+      tierScores[price] = []
+    }
+    const score = scoresDay1[player.id]
+    if (score !== undefined) {
+      // Ramener virtuellement les scores négatifs à 0
+      tierScores[price].push(Math.max(0, score))
+    }
+  })
+
+  const medians: Record<number, number> = {}
+  for (const [priceStr, scores] of Object.entries(tierScores)) {
+    const price = Number(priceStr)
+    medians[price] = calculateMedian(scores)
+  }
+  return medians
+}
+
+export function computeAlpha(score: number | undefined, tierMedian: number): number {
+  if (score === undefined) return 1
+  const virtualScore = Math.max(0, score)
+  const safeMedian = Math.max(1, tierMedian)
+  return virtualScore / safeMedian
+}
+
+export function computeAllMercatoDay2Prices(
+  players: FantasyPlayer[],
+  scoresDay1: Record<string, number>
+): FantasyPlayer[] {
+  const medians = computeTierMedians(players, scoresDay1)
+
+  return players.map((player) => {
+    const score = scoresDay1[player.id]
+    if (score === undefined) {
+      return {
+        ...player,
+        price: player.fantasyPriceDay1,
+        fantasyPriceDay2: player.fantasyPriceDay1,
+      }
+    }
+    
+    const tierMedian = medians[player.fantasyPriceDay1] || 0
+    const alpha = computeAlpha(score, tierMedian)
+    
+    const newPrice = Math.max(1, Math.round(player.fantasyPriceDay1 * alpha))
+    
+    return {
+      ...player,
+      price: newPrice,
+      fantasyPriceDay2: newPrice,
+    }
+  })
 }
 
 export function getMercatoPriceChange(priceDay2: number, priceDay1: number): number {
   return priceDay2 - priceDay1
-}
-
-/** Applique le prix J2 calculé à partir du score J1 validé. */
-export function withMercatoDay2Price(
-  player: FantasyPlayer,
-  scoreDay1: number | undefined,
-): FantasyPlayer {
-  if (scoreDay1 === undefined) return player
-  const day2 = computeMercatoDay2Price(scoreDay1, player.fantasyPriceDay1)
-  return { ...player, price: day2, fantasyPriceDay2: day2 }
 }
