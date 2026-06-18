@@ -1074,7 +1074,6 @@ import { getRankIconUrl } from '../utils/rankIcon';
 import { getFantasyTierBadgeClass as getTierColor, getFantasyTierGlowClass as getTierGlow } from '../utils/tierStyles';
 import {
   getMercatoPriceChange,
-  matchRentability,
   computeAllMercatoDay2Prices,
   computeTierMedians,
   computeAlpha
