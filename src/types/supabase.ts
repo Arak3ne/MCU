@@ -117,6 +117,7 @@ export type Database = {
           game_duration: number | null;
           game_mode: string | null;
           game_type: string | null;
+          tournament_day: number | null;
           created_at: string | null;
         };
         Insert: {
@@ -126,6 +127,7 @@ export type Database = {
           game_duration?: number | null;
           game_mode?: string | null;
           game_type?: string | null;
+          tournament_day?: number | null;
           created_at?: string | null;
         };
         Update: {
@@ -135,6 +137,7 @@ export type Database = {
           game_duration?: number | null;
           game_mode?: string | null;
           game_type?: string | null;
+          tournament_day?: number | null;
           created_at?: string | null;
         };
       };

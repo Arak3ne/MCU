@@ -997,6 +997,10 @@
               <svg class="w-6 h-6 text-blue-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
               <span>Tu as droit à <strong>2 transferts gratuits</strong> pour le Jour 2. Chaque transfert supplémentaire retire <strong>20 points</strong> de ton <strong>budget mercato</strong> (budget potentiel), sans impact sur le score de match de tes joueurs.</span>
             </li>
+            <li class="flex items-start gap-4">
+              <svg class="w-6 h-6 text-blue-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+              <span>Score <strong>Jour 2 uniquement</strong> : <strong>(total ÷ matchs joués) × 4</strong> — pour équilibrer les joueurs éliminés tôt (~2 matchs) et ceux qui vont au bout (~4 matchs). Le <strong>Jour 1</strong> reste en total brut.</span>
+            </li>
           </ul>
         </section>
 
@@ -1570,7 +1574,7 @@ const replayAnimation = async () => {
   if (!team.value) return;
   try {
     const [scores, stats] = await Promise.all([
-      fantasyService.getPlayerScores('all'),
+      fantasyService.getPlayerScores(tournamentDay.value),
       fantasyService.getPlayerMatchStats(team.value.playerIds)
     ]);
     playerScores.value = scores;

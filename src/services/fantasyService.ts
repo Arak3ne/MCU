@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase'
 import type { FantasyTeam, FantasyLeaderboardEntry } from '../types/fantasy'
+import { effectiveFantasyPlayerScore } from '../utils/fantasyDay2Score'
 import { fantasyPointsBreakdown } from '../utils/fantasyMatchPoints'
 
 /** Colonne numeric / string PostgREST → nombre fini uniquement si la valeur existe en base. */
@@ -162,32 +163,101 @@ export const fantasyService = {
   },
 
   /**
-   * Get all validated scores for a specific tournament day
+   * Nombre de matchs jour 2 par joueur (match_history.tournament_day = 2).
+   */
+  async getPlayerDay2MatchCounts(playerIds?: string[]): Promise<Record<string, number>> {
+    let query = supabase
+      .from('match_participants')
+      .select('player_id, match_history!inner(tournament_day)')
+      .eq('match_history.tournament_day', 2)
+
+    if (playerIds?.length) {
+      query = query.in('player_id', playerIds)
+    }
+
+    const { data, error } = await query
+    if (error) {
+      console.error('Error fetching day 2 match counts:', error)
+      throw error
+    }
+
+    const counts: Record<string, number> = {}
+    for (const row of data ?? []) {
+      const pid = row.player_id as string
+      if (!pid) continue
+      counts[pid] = (counts[pid] || 0) + 1
+    }
+    return counts
+  },
+
+  /**
+   * Get all validated scores for a specific tournament day.
+   * Jour 2 : score effectif = (total brut / nb matchs) × 4.
    */
   async getPlayerScores(tournamentDay: 1 | 2 | 'all'): Promise<Record<string, number>> {
     let query = supabase
       .from('fantasy_player_scores')
-      .select('player_id, score')
-    
+      .select('player_id, score, tournament_day')
+
     if (tournamentDay !== 'all') {
       query = query.eq('tournament_day', tournamentDay)
     }
-      
+
     const { data, error } = await query
-      
+
     if (error) {
       console.error('Error fetching player scores:', error)
       throw error
     }
 
-    const scoresMap: Record<string, number> = {}
-    if (data) {
-      data.forEach(row => {
-        const pid = row.player_id
-        scoresMap[pid] = (scoresMap[pid] || 0) + (row.score || 0)
-      })
+    const rawByPlayerDay = new Map<string, number>()
+    for (const row of data ?? []) {
+      const pid = row.player_id as string
+      const day = row.tournament_day as number
+      const key = `${pid}:${day}`
+      rawByPlayerDay.set(key, (rawByPlayerDay.get(key) || 0) + (row.score || 0))
     }
-    
+
+    const needsDay2 =
+      tournamentDay === 2 ||
+      tournamentDay === 'all' ||
+      [...rawByPlayerDay.keys()].some((k) => k.endsWith(':2'))
+
+    const day2PlayerIds = [...rawByPlayerDay.keys()]
+      .filter((k) => k.endsWith(':2'))
+      .map((k) => k.split(':')[0]!)
+
+    const matchCounts =
+      needsDay2 && day2PlayerIds.length > 0
+        ? await this.getPlayerDay2MatchCounts(day2PlayerIds)
+        : {}
+
+    const scoresMap: Record<string, number> = {}
+
+    if (tournamentDay === 'all') {
+      for (const [key, raw] of rawByPlayerDay) {
+        const [pid, dayStr] = key.split(':')
+        const day = Number(dayStr) as 1 | 2
+        const effective = effectiveFantasyPlayerScore(
+          raw,
+          day,
+          day === 2 ? (matchCounts[pid!] || 0) : 0,
+        )
+        scoresMap[pid!] = (scoresMap[pid!] || 0) + effective
+      }
+      return scoresMap
+    }
+
+    for (const [key, raw] of rawByPlayerDay) {
+      const [pid] = key.split(':')
+      const effective = effectiveFantasyPlayerScore(
+        raw,
+        tournamentDay,
+        tournamentDay === 2 ? (matchCounts[pid!] || 0) : 0,
+      )
+      scoresMap[pid!] = effective
+    }
+
     return scoresMap
   },
 

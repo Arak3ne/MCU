@@ -184,6 +184,8 @@ Deno.serve(async (req) => {
 
     // Insert match_history
     const gameCreation = matchData.gameCreation ? new Date(matchData.gameCreation).toISOString() : new Date().toISOString()
+    const tournamentDay = await resolveFantasyTournamentDay(supabase)
+
     const { data: insertedMatch, error: matchError } = await supabase
       .from('match_history')
       .insert({
@@ -191,7 +193,8 @@ Deno.serve(async (req) => {
         game_creation: gameCreation,
         game_duration: matchData.gameDuration,
         game_mode: matchData.gameMode,
-        game_type: matchData.gameType
+        game_type: matchData.gameType,
+        tournament_day: tournamentDay,
       })
       .select('id')
       .single()
@@ -201,7 +204,6 @@ Deno.serve(async (req) => {
     }
 
     const matchId = insertedMatch.id
-    const tournamentDay = await resolveFantasyTournamentDay(supabase)
 
     const participants = (matchData.participants as unknown[]) || []
     const identities = (matchData.participantIdentities as any[]) || []
