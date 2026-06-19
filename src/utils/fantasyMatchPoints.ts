@@ -87,3 +87,21 @@ export function fantasyPointsFromParticipantStats(s: ParticipantStatsLike): numb
 export function roundFantasyDecimal(n: number): number {
   return Math.round(n * 10) / 10
 }
+
+/** Échelle de référence jour 2 (min ~2 matchs groupes, max ~4 avec knockout). */
+export const FANTASY_DAY2_REFERENCE_MATCHES = 4
+
+/**
+ * Score fantasy jour 2 normalisé : (total brut / nb matchs) × 4.
+ * Jour 1 : retourne le total brut inchangé.
+ * Si le nb de matchs est inconnu (0), on garde le brut pour ne pas gonfler les anciennes données.
+ */
+export function effectiveFantasyPlayerScore(
+  rawTotal: number,
+  tournamentDay: 1 | 2,
+  matchCount: number,
+): number {
+  if (tournamentDay === 1) return roundFantasyDecimal(rawTotal)
+  if (matchCount <= 0) return roundFantasyDecimal(rawTotal)
+  return roundFantasyDecimal((rawTotal / matchCount) * FANTASY_DAY2_REFERENCE_MATCHES)
+}

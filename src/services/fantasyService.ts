@@ -1,7 +1,6 @@
 import { supabase } from '../lib/supabase'
 import type { FantasyTeam, FantasyLeaderboardEntry } from '../types/fantasy'
-import { effectiveFantasyPlayerScore } from '../utils/fantasyDay2Score'
-import { fantasyPointsBreakdown } from '../utils/fantasyMatchPoints'
+import { effectiveFantasyPlayerScore, fantasyPointsBreakdown } from '../utils/fantasyMatchPoints'
 
 /** Colonne numeric / string PostgREST → nombre fini uniquement si la valeur existe en base. */
 function parseCarriedOverBudget(raw: unknown): number | undefined {
