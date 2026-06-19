@@ -896,7 +896,7 @@
                       :class="getPlayerAlpha(getPlayerByRole(roleObj.value)!.id, getPlayerByRole(roleObj.value)!.fantasyPriceDay1) >= 1 ? 'bg-mcu-primary' : 'bg-red-500'"
                     />
                     <div class="flex flex-col relative z-10">
-                      <span class="text-[8px] uppercase text-white/40 font-bold tracking-widest">Alpha</span>
+                      <span class="text-[8px] uppercase text-white/40 font-bold tracking-widest">Rentabilité</span>
                     </div>
                     <div class="flex items-center gap-1.5 relative z-10">
                       <span class="text-lg font-title transition-colors" :class="getPlayerAlpha(getPlayerByRole(roleObj.value)!.id, getPlayerByRole(roleObj.value)!.fantasyPriceDay1) >= 1 ? 'text-mcu-primary drop-shadow-[0_0_10px_rgba(34,197,94,0.4)] group-hover/renta:text-emerald-300' : 'text-red-400 drop-shadow-[0_0_10px_rgba(248,113,113,0.4)] group-hover/renta:text-red-300'">

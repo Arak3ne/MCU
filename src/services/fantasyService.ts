@@ -93,6 +93,10 @@ export const fantasyService = {
     if (team.id) {
       query = supabase.from('fantasy_teams').update(teamPayload).eq('id', team.id).select()
     } else {
+      if (team.tournamentDay === 2) {
+        const day1Team = await this.getTeam(team.userId, 1)
+        teamPayload.total_points = day1Team?.totalPoints ?? 0
+      }
       query = supabase.from('fantasy_teams').insert(teamPayload).select()
     }
 
@@ -402,18 +406,15 @@ export const fantasyService = {
       fantasy_picks?: { player_id: string; is_captain: boolean }[]
     }
 
-    type UserAgg = { totalPoints: number; day1?: TeamRow; day2?: TeamRow }
+    type UserAgg = { day1?: TeamRow; day2?: TeamRow }
     const byUser = new Map<string, UserAgg>()
 
     for (const row of (data || []) as TeamRow[]) {
       const userId = row.user_id
-      const points = row.total_points || 0
       let agg = byUser.get(userId)
       if (!agg) {
-        agg = { totalPoints: points }
+        agg = {}
         byUser.set(userId, agg)
-      } else {
-        agg.totalPoints += points
       }
       if (row.tournament_day === 1) agg.day1 = row
       if (row.tournament_day === 2) agg.day2 = row
@@ -423,6 +424,10 @@ export const fantasyService = {
 
     const entries: FantasyLeaderboardEntry[] = []
     for (const [userId, agg] of byUser) {
+      // J2 cumule déjà le total J1 : ne pas additionner les deux lignes.
+      const cumulativeTotal = agg.day2
+        ? (agg.day2.total_points || 0)
+        : (agg.day1?.total_points || 0)
       // Avoid relying on row iteration order (global sort by points): pick roster explicitly.
       const { day1, day2 } = agg
       const rosterRow =
@@ -434,7 +439,7 @@ export const fantasyService = {
         teamId: rosterRow.id,
         teamName: rosterRow.name,
         tournamentDay: rosterRow.tournament_day as 1 | 2,
-        totalPoints: agg.totalPoints,
+        totalPoints: cumulativeTotal,
         picks: mapRowPicks(rosterRow.fantasy_picks)
       })
     }

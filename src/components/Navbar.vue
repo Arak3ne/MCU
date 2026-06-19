@@ -183,7 +183,9 @@ import {
   ChevronUp,
   LayoutDashboard, 
   ListOrdered,
-  UserCircle
+  UserCircle,
+  Menu,
+  X,
 } from 'lucide-vue-next';
 
 const route = useRoute();

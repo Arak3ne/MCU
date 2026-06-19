@@ -193,6 +193,96 @@
       </div>
     </div>
 
+    <!-- Fantasy Morue-verse — verrouillage manuel -->
+    <div class="mb-8 bg-[#111111] border border-[#2A2A2A] p-4 md:p-6 rounded-sm">
+      <div class="flex flex-wrap justify-between items-start gap-4 mb-4">
+        <div>
+          <h2 class="text-xl font-bold mb-1">Morue-verse — Verrouillage manuel</h2>
+          <p class="text-xs text-[#A1A1AA] max-w-2xl leading-relaxed">
+            Secours jour J si la sync LCU ne lock pas les équipes. Même effet que le 1<sup>er</sup> match importé :
+            passage draft → dashboard (J1) ou mercato → dashboard (J2).
+          </p>
+          <p class="text-[10px] text-[#22C55E] font-bold uppercase tracking-widest mt-2">
+            Phase fantasy détectée : Jour {{ currentFantasyDay }}
+          </p>
+        </div>
+        <button
+          type="button"
+          @click="loadFantasyLockStatus"
+          :disabled="fantasyLockLoading"
+          class="cursor-pointer text-xs px-4 py-2 bg-[#1A1A1A] border border-[#2A2A2A] hover:bg-[#2A2A2A] rounded font-bold transition-colors disabled:opacity-50"
+        >
+          {{ fantasyLockLoading ? 'Chargement…' : 'Rafraîchir' }}
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="border border-[#2A2A2A] rounded-sm p-4 bg-[#0B0F0C]/50 flex flex-col gap-3">
+          <div class="flex justify-between items-center gap-2">
+            <h3 class="font-bold text-sm uppercase tracking-wider">Jour 1 — Championship</h3>
+            <span
+              class="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded"
+              :class="fantasyDay1Stats.unlocked === 0 && fantasyDay1Stats.total > 0
+                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'"
+            >
+              {{ fantasyDay1Stats.locked }}/{{ fantasyDay1Stats.total }} lockées
+            </span>
+          </div>
+          <p class="text-xs text-[#A1A1AA]">
+            {{ fantasyDay1Stats.unlocked > 0
+              ? `${fantasyDay1Stats.unlocked} équipe(s) encore modifiable(s).`
+              : fantasyDay1Stats.total === 0
+                ? 'Aucune équipe enregistrée.'
+                : 'Toutes les équipes J1 sont verrouillées.' }}
+          </p>
+          <button
+            type="button"
+            @click="handleLockFantasyDay(1)"
+            :disabled="fantasyLockSaving !== null || fantasyDay1Stats.total === 0 || fantasyDay1Stats.unlocked === 0"
+            class="cursor-pointer px-4 py-2.5 bg-amber-500/20 border border-amber-500/50 text-amber-300 font-bold rounded-sm hover:bg-amber-500/30 transition-colors text-sm disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            {{ fantasyLockSaving === 1 ? 'Verrouillage…' : 'Verrouiller J1' }}
+          </button>
+        </div>
+
+        <div class="border border-[#2A2A2A] rounded-sm p-4 bg-[#0B0F0C]/50 flex flex-col gap-3">
+          <div class="flex justify-between items-center gap-2">
+            <h3 class="font-bold text-sm uppercase tracking-wider">Jour 2 — Groupes + KO</h3>
+            <span
+              class="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded"
+              :class="fantasyDay2Stats.unlocked === 0 && fantasyDay2Stats.total > 0
+                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'"
+            >
+              {{ fantasyDay2Stats.locked }}/{{ fantasyDay2Stats.total }} lockées
+            </span>
+          </div>
+          <p class="text-xs text-[#A1A1AA]">
+            {{ fantasyDay2Stats.unlocked > 0
+              ? `${fantasyDay2Stats.unlocked} équipe(s) encore en mercato.`
+              : fantasyDay2Stats.total === 0
+                ? 'Aucune équipe J2 (lancer initialize_day2_teams si besoin).'
+                : 'Toutes les équipes J2 sont verrouillées.' }}
+          </p>
+          <button
+            type="button"
+            @click="handleLockFantasyDay(2)"
+            :disabled="fantasyLockSaving !== null || fantasyDay2Stats.total === 0 || fantasyDay2Stats.unlocked === 0"
+            class="cursor-pointer px-4 py-2.5 bg-amber-500/20 border border-amber-500/50 text-amber-300 font-bold rounded-sm hover:bg-amber-500/30 transition-colors text-sm disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            {{ fantasyLockSaving === 2 ? 'Verrouillage…' : 'Verrouiller J2' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Management Section -->
     <div class="mb-4">
       <div class="flex flex-wrap gap-4 justify-between items-center mb-4 bg-[#111111] p-4 rounded border border-[#2A2A2A]">
@@ -329,7 +419,9 @@ import { useRouter } from 'vue-router';
 import { supabase } from '../../lib/supabase';
 import { generateGroupMatches, generateSingleEliminationBracket, generateChampionship } from '../../lib/bracket';
 import { fetchPlayoffMatches, generatePlayoffMatches, updatePlayoffMatch, updateTeamStats, handleRoundCompletion, disableChampions } from '../../lib/queries';
+import { fantasyTournamentDayFromPlayoffs } from '../../lib/fantasyPhase';
 
+type FantasyLockStats = { total: number; locked: number; unlocked: number };
 const router = useRouter();
 const allTeams = ref<any[]>([]);
 
@@ -351,6 +443,13 @@ const knockoutSetup = ref({
 const matches = ref<any[]>([]);
 const loadingMatches = ref(true);
 const savingRoundKey = ref('');
+
+const fantasyLockLoading = ref(false);
+const fantasyLockSaving = ref<1 | 2 | null>(null);
+const fantasyDay1Stats = ref<FantasyLockStats>({ total: 0, locked: 0, unlocked: 0 });
+const fantasyDay2Stats = ref<FantasyLockStats>({ total: 0, locked: 0, unlocked: 0 });
+
+const currentFantasyDay = computed(() => fantasyTournamentDayFromPlayoffs(matches.value));
 
 type AdminToast = { message: string; type: 'success' | 'error' };
 const toast = ref<AdminToast | null>(null);
@@ -400,6 +499,7 @@ onMounted(async () => {
   const { data } = await supabase.from('teams').select('*').order('name');
   if (data) allTeams.value = data;
   await loadMatches();
+  await loadFantasyLockStatus();
 });
 
 onUnmounted(() => {
@@ -423,6 +523,96 @@ const loadMatches = async () => {
   }
   matches.value = data ?? [];
   loadingMatches.value = false;
+};
+
+const loadFantasyLockStatus = async () => {
+  fantasyLockLoading.value = true;
+  try {
+    for (const day of [1, 2] as const) {
+      const { data, error } = await supabase
+        .from('fantasy_teams')
+        .select('id, is_locked')
+        .eq('tournament_day', day);
+
+      if (error) {
+        showToast(`Erreur chargement Morue-verse J${day} : ${error.message}`, 'error');
+        continue;
+      }
+
+      const rows = data ?? [];
+      const locked = rows.filter((r) => r.is_locked).length;
+      const stats: FantasyLockStats = {
+        total: rows.length,
+        locked,
+        unlocked: rows.length - locked,
+      };
+      if (day === 1) fantasyDay1Stats.value = stats;
+      else fantasyDay2Stats.value = stats;
+    }
+  } finally {
+    fantasyLockLoading.value = false;
+  }
+};
+
+const handleLockFantasyDay = async (day: 1 | 2) => {
+  const stats = day === 1 ? fantasyDay1Stats.value : fantasyDay2Stats.value;
+  const label = day === 1 ? 'Jour 1 (Championship)' : 'Jour 2 (Groupes + Knockout)';
+
+  if (stats.total === 0) {
+    showToast(`Aucune équipe Morue-verse pour le ${label}.`, 'error');
+    return;
+  }
+
+  if (stats.unlocked === 0) {
+    showToast(`Toutes les équipes ${label} sont déjà verrouillées.`, 'success');
+    return;
+  }
+
+  const confirmMsg =
+    day === 1
+      ? `Verrouiller ${stats.unlocked} équipe(s) Morue-verse ${label} ?\n\nLes joueurs ne pourront plus modifier leur draft. Un snapshot budget mercato sera pris (comme au 1er match sync).`
+      : `Verrouiller ${stats.unlocked} équipe(s) Morue-verse ${label} ?\n\nLes joueurs ne pourront plus faire de transferts mercato.`;
+
+  if (!confirm(confirmMsg)) return;
+
+  fantasyLockSaving.value = day;
+  try {
+    const { data, error } = await supabase
+      .from('fantasy_teams')
+      .update({ is_locked: true, updated_at: new Date().toISOString() })
+      .eq('tournament_day', day)
+      .eq('is_locked', false)
+      .select('id');
+
+    if (error) throw error;
+
+    const updatedCount = data?.length ?? 0;
+    if (updatedCount === 0) {
+      showToast('Aucune équipe à verrouiller (déjà lockées ?).', 'error');
+      await loadFantasyLockStatus();
+      return;
+    }
+
+    if (day === 1) {
+      const { error: snapErr } = await supabase.rpc('snapshot_day1_carryover_budget');
+      if (snapErr) {
+        showToast(
+          `${updatedCount} équipe(s) lockées, mais snapshot budget échoué : ${snapErr.message}`,
+          'error',
+        );
+        await loadFantasyLockStatus();
+        return;
+      }
+    }
+
+    await loadFantasyLockStatus();
+    showToast(`${updatedCount} équipe(s) Morue-verse ${label} verrouillée(s).`, 'success');
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Erreur verrouillage Morue-verse';
+    showToast(message, 'error');
+  } finally {
+    fantasyLockSaving.value = null;
+  }
 };
 
 const scoreInputsLocked = (m: any) =>

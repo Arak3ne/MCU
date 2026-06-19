@@ -204,8 +204,8 @@ async function refreshLastKnownMatchIdFromLcU() {
 }
 
 // Initialize Supabase
-const SUPABASE_URL = 'https://dqoixaksmbdmbkbtphpt.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxb2l4YWtzbWJkbWJrYnRwaHB0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1Mjg2NjksImV4cCI6MjA5MzEwNDY2OX0.NDVtX2Hgfq-W0L6JfuzW9PS7zz7moS9Z5V_oLHKRW_o';
+const SUPABASE_URL = 'https://habjlxqsepiphdyazrcd.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhYmpseHFzZXBpcGhkeWF6cmNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3NTE4NjIsImV4cCI6MjA5MjMyNzg2Mn0.5iDFQQw35xQ_PsoNmc_mHlr_Eb8MyvixmX0Dh85LnU4';
 
 supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
