@@ -2,8 +2,12 @@ import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 dotenv.config();
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://dqoixaksmbdmbkbtphpt.supabase.co';
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxb2l4YWtzbWJkbWJrYnRwaHB0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1Mjg2NjksImV4cCI6MjA5MzEwNDY2OX0.NDVtX2Hgfq-W0L6JfuzW9PS7zz7moS9Z5V_oLHKRW_o';
+const supabaseUrl = process.env.VITE_SUPABASE_URL;
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
+if (!supabaseUrl || !supabaseKey) {
+  console.error('Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY in .env');
+  process.exit(1);
+}
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 

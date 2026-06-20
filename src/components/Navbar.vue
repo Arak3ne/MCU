@@ -21,15 +21,19 @@
         <ChevronUp class="w-4 h-4 text-[#22C55E]" />
       </button>
 
-      <div class="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
-        <div class="flex items-center gap-4">
-          <router-link to="/" class="flex items-center gap-4 group cursor-pointer hover:opacity-80 transition-opacity" :class="isDraftRoom ? '' : '-ml-18'">
-            <img src="../assets/mcu_logo.png" alt="MCU Logo" class="w-16 h-16 object-contain drop-shadow-[0_0_15px_rgba(34,197,94,0.3)]" />
-            <span class="font-title tracking-widest uppercase text-3xl text-[#22C55E] drop-shadow-[0_2px_10px_rgba(34,197,94,0.2)]">Party</span>
-          </router-link>
-        </div>
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 lg:h-20 flex items-center justify-between gap-3">
+        <router-link
+          to="/"
+          class="flex items-center gap-2 sm:gap-4 group cursor-pointer hover:opacity-80 transition-opacity shrink-0 min-w-0"
+          :class="isDraftRoom ? '' : 'lg:-ml-18'"
+          @click="closeMenu"
+        >
+          <img src="../assets/mcu_logo.png" alt="MCU Logo" class="w-11 h-11 sm:w-16 sm:h-16 object-contain drop-shadow-[0_0_15px_rgba(34,197,94,0.3)]" />
+          <span class="font-title tracking-widest uppercase text-2xl sm:text-3xl text-[#22C55E] drop-shadow-[0_2px_10px_rgba(34,197,94,0.2)] truncate">Party</span>
+        </router-link>
         
-        <div class="flex flex-1 min-w-0 items-center justify-end gap-0 font-sans z-50">
+        <!-- Desktop -->
+        <div class="hidden lg:flex flex-1 min-w-0 items-center justify-end gap-0 font-sans z-50">
         
         <!-- Tournament -->
         <router-link to="/" class="px-4 py-3 text-sm font-bold tracking-widest uppercase relative group flex items-center h-20 cursor-pointer" :class="route.path === '/' ? 'text-[#F0FDF4]' : 'text-[#A1A1AA] hover:text-[#F0FDF4] transition-colors'">
@@ -171,12 +175,70 @@
         </button>
       </div>
     </div>
+
+    <Teleport to="body">
+      <Transition
+        enter-active-class="transition duration-200 ease-out"
+        enter-from-class="opacity-0"
+        enter-to-class="opacity-100"
+        leave-active-class="transition duration-150 ease-in"
+        leave-from-class="opacity-100"
+        leave-to-class="opacity-0"
+      >
+        <button
+          v-if="menuOpen"
+          type="button"
+          class="fixed inset-0 z-[90] bg-black/60 backdrop-blur-sm lg:hidden"
+          aria-label="Fermer le menu"
+          @click="closeMenu"
+        />
+      </Transition>
+
+      <Transition
+        enter-active-class="transition duration-250 ease-out"
+        enter-from-class="translate-x-full"
+        enter-to-class="translate-x-0"
+        leave-active-class="transition duration-200 ease-in"
+        leave-from-class="translate-x-0"
+        leave-to-class="translate-x-full"
+      >
+        <aside
+          v-if="menuOpen"
+          id="mobile-nav-panel"
+          class="fixed top-0 right-0 z-[95] h-[100dvh] w-[min(100vw,20rem)] bg-[#0B0F0C] border-l border-[#2A2A2A] shadow-[-8px_0_40px_rgba(0,0,0,0.6)] flex flex-col lg:hidden"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Navigation"
+        >
+          <div class="flex items-center justify-between px-4 h-16 border-b border-[#2A2A2A] shrink-0">
+            <span class="font-title text-xl uppercase tracking-widest text-[#22C55E]">Menu</span>
+            <button type="button" class="flex items-center justify-center w-10 h-10 rounded-lg text-[#A1A1AA] hover:text-[#F0FDF4]" aria-label="Fermer" @click="closeMenu">
+              <X class="w-5 h-5" />
+            </button>
+          </div>
+
+          <nav class="flex-1 overflow-y-auto overscroll-contain py-3 px-3 space-y-1">
+            <router-link
+              v-for="item in mobileNavItems"
+              :key="item.to"
+              :to="item.to"
+              class="flex items-center gap-3 rounded-lg px-3 py-3.5 text-sm font-bold tracking-widest uppercase transition-colors min-h-[44px] border"
+              :class="mobileLinkClass(item.to, item.highlight)"
+              @click="closeMenu"
+            >
+              <component :is="item.icon" v-if="item.icon" class="w-4 h-4 shrink-0" />
+              {{ item.label }}
+            </router-link>
+          </nav>
+        </aside>
+      </Transition>
+    </Teleport>
     </nav>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted, type Component } from 'vue';
 import { useRoute } from 'vue-router';
 import { 
   ChevronDown, 
@@ -191,6 +253,24 @@ import {
 const route = useRoute();
 const menuOpen = ref(false);
 
+type MobileNavItem = {
+  to: string;
+  label: string;
+  icon?: Component;
+  highlight?: boolean;
+};
+
+const mobileNavItems: MobileNavItem[] = [
+  { to: '/', label: 'Classement' },
+  { to: '/future-matches', label: 'Matches' },
+  { to: '/champions', label: 'Champions' },
+  { to: '/players', label: 'Players' },
+  { to: '/stats', label: 'Stats' },
+  { to: '/fantasy', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/fantasy-leaderboard', label: 'Leaderboard', icon: ListOrdered },
+  { to: '/playoffs', label: 'Playoffs', highlight: true },
+];
+
 const closeMenu = () => {
   menuOpen.value = false;
 };
@@ -203,10 +283,44 @@ const isFantasyActive = () => ['/fantasy', '/fantasy-leaderboard'].includes(rout
 const isDraftRoom = computed(() => route.path.startsWith('/draft/'));
 const isCollapsed = ref(isDraftRoom.value);
 
+const mobileLinkClass = (to: string, highlight?: boolean) => {
+  const active = route.path === to;
+  if (highlight) {
+    return active
+      ? 'bg-[#22C55E] text-[#0B0F0C] border-[#22C55E] mt-2'
+      : 'text-[#22C55E] border-[#22C55E]/40 bg-[#22C55E]/10 mt-2';
+  }
+  if (['/fantasy', '/fantasy-leaderboard'].includes(to)) {
+    return active
+      ? 'bg-[#22C55E]/15 text-[#22C55E] border-[#22C55E]/30 pl-6'
+      : 'text-[#A1A1AA] hover:text-[#F0FDF4] hover:bg-[#1A1A1A] border-transparent pl-6';
+  }
+  return active
+    ? 'bg-[#22C55E]/15 text-[#22C55E] border-[#22C55E]/30'
+    : 'text-[#A1A1AA] hover:text-[#F0FDF4] hover:bg-[#1A1A1A] border-transparent';
+};
+
+const lockBodyScroll = (locked: boolean) => {
+  document.body.style.overflow = locked ? 'hidden' : '';
+};
+
+watch(menuOpen, (open) => lockBodyScroll(open));
+
 watch(
   () => route.path,
   () => {
     isCollapsed.value = isDraftRoom.value;
+    closeMenu();
   }
 );
+
+const onEscape = (e: KeyboardEvent) => {
+  if (e.key === 'Escape') closeMenu();
+};
+
+onMounted(() => window.addEventListener('keydown', onEscape));
+onUnmounted(() => {
+  window.removeEventListener('keydown', onEscape);
+  lockBodyScroll(false);
+});
 </script>

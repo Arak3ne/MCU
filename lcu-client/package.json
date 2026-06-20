@@ -11,8 +11,14 @@
     "asar": false,
     "appId": "com.mcu.moruetracker",
     "productName": "MorueTracker",
+    "extraResources": [
+      {
+        "from": "../.env",
+        "to": ".env"
+      }
+    ],
     "win": {
-      "target": "nsis",
+      "target": ["zip"],
       "icon": "icon.png"
     },
     "protocols": [
