@@ -144,7 +144,7 @@
                           <div v-if="!match.is_completed" class="p-1.5 bg-black/40 flex justify-center border-t border-[#2A2A2A]/50">
                             <button @click="startDraftForMatch(match, round.number, groupARounds)" 
                                     class="text-[9px] font-bold uppercase tracking-widest text-[#22C55E] hover:text-[#4ADE80] transition-colors py-1 px-3 rounded-full border border-[#22C55E]/30 hover:border-[#22C55E]/60 bg-[#22C55E]/5 cursor-pointer">
-                              Draft
+                              {{ getMatchDraftLabel(match) }}
                             </button>
                           </div>
                         </div>
@@ -229,7 +229,7 @@
                           <div v-if="!match.is_completed" class="p-1.5 bg-black/40 flex justify-center border-t border-[#2A2A2A]/50">
                             <button @click="startDraftForMatch(match, round.number, groupBRounds)" 
                                     class="text-[9px] font-bold uppercase tracking-widest text-[#A855F7] hover:text-[#C084FC] transition-colors py-1 px-3 rounded-full border border-[#A855F7]/30 hover:border-[#A855F7]/60 bg-[#A855F7]/5 cursor-pointer">
-                              Draft
+                              {{ getMatchDraftLabel(match) }}
                             </button>
                           </div>
                         </div>
@@ -338,7 +338,7 @@
                              class="p-3 bg-black/60 flex justify-center border-t border-white/5 relative z-10">
                           <button @click="startDraftForMatch(match, round.number, knockoutRounds)" 
                                   class="w-full text-[10px] font-black uppercase tracking-[0.25em] text-[#22C55E] hover:text-black hover:bg-[#22C55E] transition-all py-2 rounded-lg border border-[#22C55E]/40 cursor-pointer shadow-[0_0_15px_rgba(34,197,94,0.1)] hover:shadow-[0_0_20px_rgba(34,197,94,0.3)]">
-                            Enter Draft Phase
+                            {{ getMatchDraftLabel(match) === 'Spectate' ? 'Spectate' : 'Enter Draft Phase' }}
                           </button>
                         </div>
                       </div>
@@ -410,6 +410,12 @@ import { useRouter } from "vue-router";
 import { supabase } from '../lib/supabase';
 import { fetchPlayoffMatches } from '../lib/queries';
 import { subscribeToTable } from '../lib/realtime';
+import {
+  draftButtonLabel,
+  openDraftRoomForMatch,
+  refreshDraftSpectatorFlag,
+  type DraftAccessPlayer,
+} from '../lib/draftAccess';
 
 const router = useRouter();
 
@@ -419,6 +425,7 @@ const loading = ref(true);
 let subscription: any = null;
 
 const globalError = ref("");
+const currentPlayer = ref<DraftAccessPlayer | null>(null);
 
 const showError = (msg: string) => {
   globalError.value = msg;
@@ -437,10 +444,19 @@ const loadMatches = async () => {
   loading.value = false;
 };
 
-onMounted(() => {
+onMounted(async () => {
+  await refreshDraftSpectatorFlag();
+  const userStr = localStorage.getItem('mcu_user');
+  if (userStr) {
+    try {
+      currentPlayer.value = JSON.parse(userStr);
+    } catch {
+      currentPlayer.value = null;
+    }
+  }
+
   loadMatches();
   subscription = subscribeToTable('playoff_matches', () => {
-    // When a match updates, reload all matches to get full team objects populated
     loadMatches();
   });
 });
@@ -451,58 +467,21 @@ onUnmounted(() => {
   }
 });
 
+const getMatchDraftLabel = (match: any) => draftButtonLabel(currentPlayer.value, match);
+
 const startDraftForMatch = async (match: any, roundNumber?: number, allRounds?: any[]) => {
   if (!match.team1 || !match.team2) return;
-  if (match.is_completed) {
-    showError("Ce match est déjà terminé. Impossible de lancer une nouvelle draft.");
-    return;
-  }
 
-  // Vérifier si les rounds précédents sont terminés
+  let roundOk = true;
   if (roundNumber && allRounds && roundNumber > 1) {
-    const previousRounds = allRounds.filter(r => r.number < roundNumber);
-    const allPreviousMatchesCompleted = previousRounds.every(r => 
-      r.matches.every((m: any) => m.is_completed)
-    );
-    
-    if (!allPreviousMatchesCompleted) {
-      showError("Vous ne pouvez pas lancer la draft pour ce round tant que les matchs des rounds précédents ne sont pas terminés.");
-      return;
-    }
+    const previousRounds = allRounds.filter((r: any) => r.number < roundNumber);
+    roundOk = previousRounds.every((r: any) => r.matches.every((m: any) => m.is_completed));
   }
 
-  // Vérifier si le joueur fait partie de l'une des deux équipes
-  const userStr = localStorage.getItem('mcu_user');
-  if (!userStr) {
-    showError("Vous devez être connecté pour lancer une draft.");
-    return;
-  }
-
-  try {
-    const user = JSON.parse(userStr);
-    
-    // Fetch latest user data from DB to ensure team_id is up to date
-    const { data: latestUser } = await supabase.from('players').select('team_id').eq('id', user.id).single();
-    const currentTeamId = latestUser?.team_id || user.team_id;
-
-    if (!currentTeamId || (currentTeamId !== match.team1.id && currentTeamId !== match.team2.id)) {
-      showError("Vous ne pouvez lancer la draft que pour les matchs de votre équipe.");
-      return;
-    }
-    
-    // Update local storage with latest team_id just in case
-    if (latestUser && latestUser.team_id !== user.team_id) {
-      user.team_id = latestUser.team_id;
-      localStorage.setItem('mcu_user', JSON.stringify(user));
-    }
-  } catch (e) {
-    showError("Erreur d'authentification.");
-    return;
-  }
-
-  if (match.id) {
-    router.push({ name: 'draft-room', params: { sessionId: match.id } });
-  }
+  await openDraftRoomForMatch(router, match, {
+    roundOk,
+    onError: showError,
+  });
 };
 
 const getWinnerStatusClass = (match: any, teamNum: 1 | 2, group: 'A' | 'B' | 'KO' = 'KO') => {

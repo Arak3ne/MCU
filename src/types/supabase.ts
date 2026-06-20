@@ -19,6 +19,7 @@ export type Database = {
           playstyle: string | null;
           mindset: string | null;
           created_at: string;
+          can_spectate_drafts?: boolean;
           fantasy_cost?: number | null;
           fantasy_cost_day2?: number | null;
           tier_skill?: string | null;
@@ -45,6 +46,7 @@ export type Database = {
           playstyle?: string | null;
           mindset?: string | null;
           created_at?: string;
+          can_spectate_drafts?: boolean;
           tier_skill?: string | null;
           tier_champion_pool?: string | null;
           tier_game_knowledge?: string | null;
@@ -69,6 +71,7 @@ export type Database = {
           playstyle?: string | null;
           mindset?: string | null;
           created_at?: string;
+          can_spectate_drafts?: boolean;
           tier_skill?: string | null;
           tier_champion_pool?: string | null;
           tier_game_knowledge?: string | null;

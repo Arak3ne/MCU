@@ -288,6 +288,7 @@ import { useRouter } from "vue-router";
 import { supabase } from "../lib/supabase";
 import { subscribeToTable } from "../lib/realtime";
 import { fetchChampionshipMatchesHydrated } from "../lib/queries";
+import { openDraftRoomForMatch } from "../lib/draftAccess";
 import type { Database } from "../types/supabase";
 import TeamLogo from "../components/TeamLogo.vue";
 
@@ -346,54 +347,17 @@ const closeMatches = () => {
 
 const startDraftForMatch = async (match: Match, roundNumber?: number, allMatches?: any[]) => {
   if (!match.team1 || !match.team2) return;
-  if (match.is_completed) {
-    showError("Ce match est déjà terminé. Impossible de lancer une nouvelle draft.");
-    return;
-  }
 
-  // Vérifier si les rounds précédents sont terminés
+  let roundOk = true;
   if (roundNumber && allMatches && roundNumber > 1) {
-    const previousMatches = allMatches.filter(m => m.round < roundNumber);
-    const allPreviousMatchesCompleted = previousMatches.every(m => m.is_completed);
-    
-    if (!allPreviousMatchesCompleted) {
-      showError("Vous ne pouvez pas lancer la draft pour ce round tant que les matchs des rounds précédents ne sont pas terminés.");
-      return;
-    }
+    const previousMatches = allMatches.filter((m: any) => m.round < roundNumber);
+    roundOk = previousMatches.every((m: any) => m.is_completed);
   }
 
-  // Vérifier si le joueur fait partie de l'une des deux équipes
-  const userStr = localStorage.getItem('mcu_user');
-  if (!userStr) {
-    showError("Vous devez être connecté pour lancer une draft.");
-    return;
-  }
-
-  try {
-    const user = JSON.parse(userStr);
-    
-    // Fetch latest user data from DB to ensure team_id is up to date
-    const { data: latestUser } = await supabase.from('players').select('team_id').eq('id', user.id).single();
-    const currentTeamId = latestUser?.team_id || user.team_id;
-
-    if (!currentTeamId || (currentTeamId !== match.team1.id && currentTeamId !== match.team2.id)) {
-      showError("Vous ne pouvez lancer la draft que pour les matchs de votre équipe.");
-      return;
-    }
-    
-    // Update local storage with latest team_id just in case
-    if (latestUser && latestUser.team_id !== user.team_id) {
-      user.team_id = latestUser.team_id;
-      localStorage.setItem('mcu_user', JSON.stringify(user));
-    }
-  } catch (e) {
-    showError("Erreur d'authentification.");
-    return;
-  }
-
-  if (match.id) {
-    router.push({ name: 'draft-room', params: { sessionId: match.id } });
-  }
+  await openDraftRoomForMatch(router, match, {
+    roundOk,
+    onError: showError,
+  });
 };
 
 const fetchTeams = async () => {

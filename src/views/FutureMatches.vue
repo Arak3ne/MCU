@@ -156,9 +156,9 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from "vue";
 import { useRouter } from "vue-router";
-import { supabase } from "../lib/supabase";
 import { fetchChampionshipMatchesHydrated } from "../lib/queries";
 import { subscribeToTable } from "../lib/realtime";
+import { openDraftRoomForMatch } from "../lib/draftAccess";
 import type { Database } from "../types/supabase";
 import TeamLogo from "../components/TeamLogo.vue";
 
@@ -270,57 +270,17 @@ const championshipScoreClass = (match: Match, side: 1 | 2) => {
 
 const startDraftForMatch = async (match: Match, roundNumber?: number, allRounds?: any[]) => {
   if (!match.team1 || !match.team2) return;
-  if (match.is_completed) {
-    showError("Ce match est déjà terminé. Impossible de lancer une nouvelle draft.");
-    return;
-  }
 
-  // Vérifier si les rounds précédents sont terminés
+  let roundOk = true;
   if (roundNumber && allRounds && roundNumber > 1) {
-    const previousRounds = allRounds.filter(r => r.number < roundNumber);
-    const allPreviousMatchesCompleted = previousRounds.every(r => 
-      r.matches.every((m: any) => m.is_completed)
-    );
-    
-    if (!allPreviousMatchesCompleted) {
-      showError("Vous ne pouvez pas lancer la draft pour ce round tant que les matchs des rounds précédents ne sont pas terminés.");
-      return;
-    }
+    const previousRounds = allRounds.filter((r: any) => r.number < roundNumber);
+    roundOk = previousRounds.every((r: any) => r.matches.every((m: any) => m.is_completed));
   }
 
-  // Vérifier si le joueur fait partie de l'une des deux équipes
-  const userStr = localStorage.getItem('mcu_user');
-  if (!userStr) {
-    showError("Vous devez être connecté pour lancer une draft.");
-    return;
-  }
-
-  try {
-    const user = JSON.parse(userStr);
-    
-    // Fetch latest user data from DB to ensure team_id is up to date
-    const { data: latestUser } = await supabase.from('players').select('team_id').eq('id', user.id).single();
-    const currentTeamId = latestUser?.team_id || user.team_id;
-
-    if (!currentTeamId || (currentTeamId !== match.team1.id && currentTeamId !== match.team2.id)) {
-      showError("Vous ne pouvez lancer la draft que pour les matchs de votre équipe.");
-      return;
-    }
-    
-    // Update local storage with latest team_id just in case
-    if (latestUser && latestUser.team_id !== user.team_id) {
-      user.team_id = latestUser.team_id;
-      localStorage.setItem('mcu_user', JSON.stringify(user));
-    }
-  } catch (e) {
-    showError("Erreur d'authentification.");
-    return;
-  }
-
-  // Si tout est ok, on route vers la draft room
-  if (match.id) {
-    router.push({ name: 'draft-room', params: { sessionId: match.id } });
-  }
+  await openDraftRoomForMatch(router, match, {
+    roundOk,
+    onError: showError,
+  });
 };
 </script>
 
