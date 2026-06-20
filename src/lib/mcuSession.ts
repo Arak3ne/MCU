@@ -42,3 +42,9 @@ export function getMcuRegisteredUser(): Record<string, unknown> | null {
 export function isMcuRegistered(): boolean {
   return getMcuRegisteredUser() !== null
 }
+
+export function patchMcuRegisteredUser(patch: Record<string, unknown>): void {
+  const user = getMcuRegisteredUser()
+  if (!user) return
+  localStorage.setItem('mcu_user', JSON.stringify({ ...user, ...patch }))
+}

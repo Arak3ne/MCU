@@ -112,7 +112,7 @@
             aria-label="Sections profil"
           >
             <button
-              v-for="tab in visibleTabs"
+              v-for="tab in editorTabs"
               :key="tab.id"
               type="button"
               role="tab"
@@ -259,7 +259,7 @@
                 class="w-full max-w-xl bg-[#0B0F0C] border border-[#2A2A2A] rounded-lg px-3 py-2 text-sm focus:border-[#22C55E] focus:ring-1 focus:ring-[#22C55E] outline-none"
               />
               <p class="text-[10px] text-[#71717A]">
-                Identifiant League of Legends utilisé pour synchroniser tes statistiques de match.
+                Identifiant League of Legends (Pseudo#TAG) pour synchroniser tes stats de match.
               </p>
             </div>
             <p v-if="riotIdSaveError" class="text-red-400 text-[10px] font-bold uppercase tracking-widest">{{ riotIdSaveError }}</p>
@@ -363,6 +363,7 @@ import {
   previewAccessories,
 } from '../lib/avataaarsPreviewUrls'
 import { fetchPlayerAvatarConfig, upsertPlayerAvatarConfig } from '../services/playerAvatarService'
+import { patchMcuRegisteredUser, getMcuRegisteredUser } from '../lib/mcuSession'
 import { supabase } from '../lib/supabase'
 import DicebearPickGrid from '../components/DicebearPickGrid.vue'
 import DicebearColorPicker from '../components/DicebearColorPicker.vue'
@@ -394,13 +395,6 @@ const riotIdForm = ref('')
 const riotIdSaving = ref(false)
 const riotIdSaveError = ref('')
 const riotIdSaveOk = ref(false)
-
-const isJoueur = computed(
-  () => !player.value?.participation_type || player.value.participation_type === 'joueur',
-)
-const visibleTabs = computed(() =>
-  isJoueur.value ? editorTabs : editorTabs.filter((t) => t.id !== 'account'),
-)
 
 function toFormDraft(base: AvataaarsFormState): FormDraft {
   return {
@@ -485,15 +479,16 @@ async function saveRiotId() {
       .from('players')
       .update({ riot_id: trimmed })
       .eq('id', player.value.id)
-      .select()
-      .single()
+      .select('riot_id')
+      .maybeSingle()
     if (error) throw error
-
-    const raw = localStorage.getItem('mcu_user')
-    if (raw) {
-      const u = JSON.parse(raw) as Record<string, unknown>
-      localStorage.setItem('mcu_user', JSON.stringify({ ...u, riot_id: data?.riot_id ?? trimmed }))
+    if (!data) {
+      riotIdSaveError.value = 'Profil introuvable en base. Reconnecte-toi via /register.'
+      return
     }
+
+    patchMcuRegisteredUser({ riot_id: data.riot_id ?? trimmed })
+    riotIdForm.value = (data.riot_id ?? trimmed).trim()
 
     riotIdSaveOk.value = true
     setTimeout(() => {
@@ -546,51 +541,49 @@ function mergeStoredIntoForm(seed: string, opts: Record<string, unknown>, pseudo
 
 onMounted(async () => {
   loadError.value = ''
-  const raw = localStorage.getItem('mcu_user')
-  if (!raw) {
+  const u = getMcuRegisteredUser()
+  if (!u) {
     loadError.value = 'Non connecté.'
     loading.value = false
     return
   }
+  const userId = u.id as string
+  const pseudo = typeof u.pseudo === 'string' ? u.pseudo : ''
+  if (!pseudo) {
+    loadError.value = 'Profil invalide. Réinscris-toi.'
+    loading.value = false
+    return
+  }
   try {
-    const u = JSON.parse(raw) as {
-      id?: string
-      pseudo?: string
-      riot_id?: string | null
-      participation_type?: string
-    }
-    if (!u.id || !u.pseudo) {
-      loadError.value = 'Profil invalide. Réinscris-toi.'
-      loading.value = false
-      return
-    }
-
-    const { data: playerRow } = await supabase
+    const { data: playerRow, error: playerError } = await supabase
       .from('players')
       .select('riot_id, participation_type')
-      .eq('id', u.id)
-      .single()
+      .eq('id', userId)
+      .maybeSingle()
 
-    const participationType =
+    if (playerError) throw playerError
+
+    const participationTypeRaw =
       (playerRow as { participation_type?: string } | null)?.participation_type ??
-      u.participation_type
+      (typeof u.participation_type === 'string' ? u.participation_type : undefined)
+    const participationType = participationTypeRaw?.toLowerCase()
 
-    player.value = { id: u.id, pseudo: u.pseudo, participation_type: participationType }
+    player.value = { id: userId, pseudo, participation_type: participationTypeRaw ?? undefined }
     if (participationType === 'drafter') activeTab.value = 'head'
     riotIdForm.value =
       (playerRow as { riot_id?: string | null } | null)?.riot_id?.trim() ||
-      u.riot_id?.trim() ||
+      (typeof u.riot_id === 'string' ? u.riot_id.trim() : '') ||
       ''
 
-    const row = await fetchPlayerAvatarConfig(u.id)
+    const row = await fetchPlayerAvatarConfig(userId)
     if (row?.seed) {
       const opts =
         row.options && typeof row.options === 'object' && !Array.isArray(row.options)
           ? (row.options as Record<string, unknown>)
           : {}
-      mergeStoredIntoForm(row.seed, opts, u.pseudo)
+      mergeStoredIntoForm(row.seed, opts, pseudo)
     } else {
-      Object.assign(form, toFormDraft(defaultAvataaarsForm(u.pseudo)))
+      Object.assign(form, toFormDraft(defaultAvataaarsForm(pseudo)))
     }
   } catch (e: any) {
     loadError.value = e?.message || 'Erreur de chargement.'
