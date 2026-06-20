@@ -862,10 +862,9 @@
                     <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
                     Capitaine (x1.5)
                   </div>
-                  <div v-if="playerStats[getPlayerByRole(roleObj.value)!.id]" class="px-2 py-0.5 mt-1 rounded text-[9px] font-bold uppercase tracking-wider flex items-center gap-1"
-                       :class="playerStats[getPlayerByRole(roleObj.value)!.id].wins > 0 ? 'bg-mcu-primary/15 text-mcu-primary border border-mcu-primary/35 shadow-[0_0_15px_rgba(34,197,94,0.2)]' : 'bg-red-500/20 text-red-400 border border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.2)]'">
-                    <span v-if="playerStats[getPlayerByRole(roleObj.value)!.id].wins > 0">Victoire</span>
-                    <span v-else>Défaite</span>
+                  <div v-if="playerStats[getPlayerByRole(roleObj.value)!.id]?.games" class="px-2 py-0.5 mt-1 rounded text-[9px] font-bold uppercase tracking-wider flex items-center gap-1 bg-black/40 border border-white/10 text-white/60">
+                    {{ playerStats[getPlayerByRole(roleObj.value)!.id].wins }}V · {{ playerStats[getPlayerByRole(roleObj.value)!.id].losses }}D
+                    <span class="text-white/30">({{ playerStats[getPlayerByRole(roleObj.value)!.id].games }} match{{ playerStats[getPlayerByRole(roleObj.value)!.id].games > 1 ? 's' : '' }})</span>
                   </div>
                 </div>
               </div>
@@ -907,7 +906,7 @@
                     </div>
                   </div>
                   
-                  <div class="flex items-center justify-between p-2.5 rounded-lg bg-black/40 border border-white/5 group/stat hover:bg-black/60 hover:border-white/10 transition-all hover:scale-[1.02]" title="Kills / Deaths / Assists">
+                  <div class="flex items-center justify-between p-2.5 rounded-lg bg-black/40 border border-white/5 group/stat hover:bg-black/60 hover:border-white/10 transition-all hover:scale-[1.02]" title="Kills / Deaths / Assists (cumul)">
                     <span class="text-[8px] uppercase text-white/40 font-bold tracking-widest"><span class="text-emerald-400/70">K</span><span class="text-white/20">/</span><span class="text-red-400/70">D</span><span class="text-white/20">/</span><span class="text-yellow-400/70">A</span></span>
                     <span class="text-sm font-title group-hover/stat:brightness-125 transition-all drop-shadow-md">
                       <span class="text-emerald-400">{{ playerStats[getPlayerByRole(roleObj.value)!.id].kills }}</span><span class="text-white/20 mx-0.5">/</span><span class="text-red-400">{{ playerStats[getPlayerByRole(roleObj.value)!.id].deaths }}</span><span class="text-white/20 mx-0.5">/</span><span class="text-yellow-400">{{ playerStats[getPlayerByRole(roleObj.value)!.id].assists }}</span>
@@ -1466,7 +1465,7 @@ const initDay = async () => {
   if (team.value && team.value.isLocked) {
     try {
       const [stats, leaderboard] = await Promise.all([
-        fantasyService.getPlayerMatchStats(team.value.playerIds),
+        fantasyService.getPlayerCumulativeMatchStats(team.value.playerIds, tournamentDay.value),
         fantasyService.getLeaderboard(tournamentDay.value)
       ]);
       playerStats.value = stats;
@@ -1575,7 +1574,7 @@ const replayAnimation = async () => {
   try {
     const [scores, stats] = await Promise.all([
       fantasyService.getPlayerScores(tournamentDay.value),
-      fantasyService.getPlayerMatchStats(team.value.playerIds)
+      fantasyService.getPlayerCumulativeMatchStats(team.value.playerIds, tournamentDay.value)
     ]);
     playerScores.value = scores;
     playerStats.value = stats;
@@ -1713,16 +1712,12 @@ const getPriceChange = (player: FantasyPlayer) => {
 };
 
 const tierMedians = computed(() => {
-  const scores = tournamentDay.value === 2 ? playerScoresDay1.value : playerScores.value;
   const fantasyPlayers = players.value.map(p => p.fantasy);
-  return computeTierMedians(fantasyPlayers, scores);
+  return computeTierMedians(fantasyPlayers, playerScores.value);
 });
 
 const getPlayerAlpha = (playerId: string, priceDay1: number) => {
-  const score =
-    tournamentDay.value === 2
-      ? playerScoresDay1.value[playerId]
-      : playerScores.value[playerId];
+  const score = playerScores.value[playerId];
   if (score === undefined) return 1;
   const median = tierMedians.value[priceDay1] || 0;
   return computeAlpha(score, median);

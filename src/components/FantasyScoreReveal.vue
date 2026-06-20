@@ -422,7 +422,10 @@ const startAnimationSequence = async () => {
   clearTimeoutsAndRafs();
 
   try {
-    playerStats.value = await fantasyService.getPlayerMatchStats(props.team.playerIds);
+    playerStats.value = await fantasyService.getPlayerLastMatchStats(
+      props.team.playerIds,
+      props.team.tournamentDay,
+    );
   } catch (e) {
     console.error('Failed to fetch player stats', e);
   }

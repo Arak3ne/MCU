@@ -345,11 +345,171 @@ export const fantasyService = {
   },
 
   /**
-   * Stats du dernier match connu par joueur (tri match_history.game_creation desc).
-   * Ajoute fantasyPoints et loggue le détail du barème si dev ou si localStorage `mcu_fantasy_log_last_match=1`.
+   * Stats agrégées sur tous les matchs du jour (dashboard : KDA, W/L, etc.).
    */
-  async getPlayerMatchStats(playerIds: string[]): Promise<Record<string, any>> {
-    if (!playerIds || playerIds.length === 0) return {}
+  async getPlayerCumulativeMatchStats(
+    playerIds: string[],
+    tournamentDay: 1 | 2,
+  ): Promise<Record<string, any>> {
+    const rows = await this.fetchPlayerMatchParticipantRows(playerIds, tournamentDay)
+    const statsMap: Record<string, any> = {}
+
+    for (const row of rows) {
+      const pid = row.player_id as string
+      if (!pid) continue
+
+      const kills = Number(row.kills) || 0
+      const deaths = Number(row.deaths) || 0
+      const assists = Number(row.assists) || 0
+      const win = Boolean(row.win)
+      const gameDurationSec =
+        typeof row.match_history?.game_duration === 'number'
+          ? row.match_history.game_duration
+          : 0
+
+      const matchFantasyPoints = fantasyPointsBreakdown({
+        kills: row.kills,
+        deaths: row.deaths,
+        assists: row.assists,
+        total_minions_killed: row.total_minions_killed,
+        win: row.win,
+        first_blood_kill: row.first_blood_kill,
+        vision_score: row.vision_score,
+        total_damage_dealt_to_champions: row.total_damage_dealt_to_champions,
+        gold_earned: row.gold_earned,
+      }).fantasyPoints
+
+      const existing = statsMap[pid]
+      if (!existing) {
+        statsMap[pid] = {
+          kills,
+          deaths,
+          assists,
+          wins: win ? 1 : 0,
+          losses: win ? 0 : 1,
+          games: 1,
+          total_minions_killed: Number(row.total_minions_killed) || 0,
+          vision_score: Number(row.vision_score) || 0,
+          damage_dealt: Number(row.total_damage_dealt_to_champions) || 0,
+          game_duration_sec: gameDurationSec,
+          championIds: row.champion_id ? [row.champion_id] : [],
+          fantasyPoints: matchFantasyPoints,
+          lastMatchWin: win,
+        }
+        continue
+      }
+
+      existing.kills += kills
+      existing.deaths += deaths
+      existing.assists += assists
+      existing.wins += win ? 1 : 0
+      existing.losses += win ? 0 : 1
+      existing.games += 1
+      existing.total_minions_killed += Number(row.total_minions_killed) || 0
+      existing.vision_score += Number(row.vision_score) || 0
+      existing.damage_dealt += Number(row.total_damage_dealt_to_champions) || 0
+      existing.game_duration_sec += gameDurationSec
+      existing.fantasyPoints += matchFantasyPoints
+      if (row.champion_id && !existing.championIds.includes(row.champion_id)) {
+        existing.championIds.push(row.champion_id)
+      }
+    }
+
+    for (const stats of Object.values(statsMap)) {
+      stats.kda =
+        stats.deaths === 0
+          ? stats.kills + stats.assists
+          : Number(((stats.kills + stats.assists) / stats.deaths).toFixed(2))
+    }
+
+    return statsMap
+  },
+
+  /**
+   * Stats du dernier match connu par joueur (animation post-match).
+   */
+  async getPlayerLastMatchStats(
+    playerIds: string[],
+    tournamentDay: 1 | 2,
+  ): Promise<Record<string, any>> {
+    const rows = await this.fetchPlayerMatchParticipantRows(playerIds, tournamentDay)
+    const statsMap: Record<string, any> = {}
+    const shouldLogBreakdown = shouldLogFantasyLastMatchBreakdown()
+
+    for (const row of rows) {
+      const pid = row.player_id as string
+      if (!pid || statsMap[pid]) continue
+
+      const gameDurationSec =
+        typeof row.match_history?.game_duration === 'number'
+          ? row.match_history.game_duration
+          : 0
+
+      const breakdownInput = {
+        kills: row.kills,
+        deaths: row.deaths,
+        assists: row.assists,
+        total_minions_killed: row.total_minions_killed,
+        win: row.win,
+        first_blood_kill: row.first_blood_kill,
+        vision_score: row.vision_score,
+        total_damage_dealt_to_champions: row.total_damage_dealt_to_champions,
+        gold_earned: row.gold_earned,
+      }
+      const { fantasyPoints: fp, lines } = fantasyPointsBreakdown(breakdownInput)
+
+      if (shouldLogBreakdown) {
+        const table = lines.map((l) => ({
+          critere: l.critere,
+          contribution:
+            Number.isInteger(l.contribution) || Math.abs(l.contribution) >= 100
+              ? l.contribution
+              : Number(l.contribution.toFixed(6)),
+        }))
+        console.groupCollapsed(`[MCU fantasy] dernier match — joueur ${pid}`)
+        console.table(table)
+        const sumCheck = lines.reduce((acc, l) => acc + l.contribution, 0)
+        console.log('Total fantasyPoints', fp, '| somme lignes', sumCheck)
+        console.groupEnd()
+      }
+
+      statsMap[pid] = {
+        kills: row.kills || 0,
+        deaths: row.deaths || 0,
+        assists: row.assists || 0,
+        wins: row.win ? 1 : 0,
+        losses: row.win ? 0 : 1,
+        games: 1,
+        total_minions_killed: row.total_minions_killed || 0,
+        vision_score: row.vision_score || 0,
+        damage_dealt: row.total_damage_dealt_to_champions || 0,
+        game_duration_sec: gameDurationSec,
+        championIds: row.champion_id ? [row.champion_id] : [],
+        kda:
+          row.deaths === 0
+            ? row.kills + row.assists
+            : ((row.kills + row.assists) / row.deaths).toFixed(2),
+        fantasyPoints: fp,
+        lastMatchWin: Boolean(row.win),
+      }
+    }
+
+    return statsMap
+  },
+
+  /** @deprecated Utiliser getPlayerLastMatchStats ou getPlayerCumulativeMatchStats. */
+  async getPlayerMatchStats(
+    playerIds: string[],
+    tournamentDay: 1 | 2 = 1,
+  ): Promise<Record<string, any>> {
+    return this.getPlayerLastMatchStats(playerIds, tournamentDay)
+  },
+
+  async fetchPlayerMatchParticipantRows(
+    playerIds: string[],
+    tournamentDay: 1 | 2,
+  ): Promise<any[]> {
+    if (!playerIds?.length) return []
 
     const { data, error } = await supabase
       .from('match_participants')
@@ -365,85 +525,21 @@ export const fantasyService = {
         vision_score,
         total_damage_dealt_to_champions,
         gold_earned,
-        match_history!inner(game_creation, game_duration)
+        match_history!inner(game_creation, game_duration, tournament_day)
       `)
       .in('player_id', playerIds)
+      .eq('match_history.tournament_day', tournamentDay)
 
     if (error) {
       console.error('Error fetching player match stats:', error)
-      return {}
+      return []
     }
 
-    const statsMap: Record<string, any> = {}
-
-    if (data) {
-      const sortedData = [...data].sort((a, b) => {
-        const tA = new Date((a as any).match_history?.game_creation ?? 0).getTime()
-        const tB = new Date((b as any).match_history?.game_creation ?? 0).getTime()
-        return tB - tA
-      })
-
-      const shouldLogBreakdown = shouldLogFantasyLastMatchBreakdown()
-
-      sortedData.forEach((row: any) => {
-        const pid = row.player_id
-        if (statsMap[pid]) return
-
-        const gameDurationSec =
-          typeof row.match_history?.game_duration === 'number'
-            ? row.match_history.game_duration
-            : 0
-
-        const breakdownInput = {
-          kills: row.kills,
-          deaths: row.deaths,
-          assists: row.assists,
-          total_minions_killed: row.total_minions_killed,
-          win: row.win,
-          first_blood_kill: row.first_blood_kill,
-          vision_score: row.vision_score,
-          total_damage_dealt_to_champions: row.total_damage_dealt_to_champions,
-          gold_earned: row.gold_earned
-        }
-        const { fantasyPoints: fp, lines } = fantasyPointsBreakdown(breakdownInput)
-
-        if (shouldLogBreakdown) {
-          const table = lines.map((l) => ({
-            critere: l.critere,
-            contribution:
-              Number.isInteger(l.contribution) || Math.abs(l.contribution) >= 100
-                ? l.contribution
-                : Number(l.contribution.toFixed(6))
-          }))
-          console.groupCollapsed(`[MCU fantasy] dernier match — joueur ${pid}`)
-          console.table(table)
-          const sumCheck = lines.reduce((acc, l) => acc + l.contribution, 0)
-          console.log('Total fantasyPoints', fp, '| somme lignes', sumCheck)
-          console.groupEnd()
-        }
-
-        statsMap[pid] = {
-          kills: row.kills || 0,
-          deaths: row.deaths || 0,
-          assists: row.assists || 0,
-          wins: row.win ? 1 : 0,
-          losses: row.win ? 0 : 1,
-          games: 1,
-          total_minions_killed: row.total_minions_killed || 0,
-          vision_score: row.vision_score || 0,
-          damage_dealt: row.total_damage_dealt_to_champions || 0,
-          game_duration_sec: gameDurationSec,
-          championIds: row.champion_id ? [row.champion_id] : [],
-          kda:
-            row.deaths === 0
-              ? row.kills + row.assists
-              : ((row.kills + row.assists) / row.deaths).toFixed(2),
-          fantasyPoints: fp
-        }
-      })
-    }
-
-    return statsMap
+    return [...(data ?? [])].sort((a, b) => {
+      const tA = new Date(a.match_history?.game_creation ?? 0).getTime()
+      const tB = new Date(b.match_history?.game_creation ?? 0).getTime()
+      return tB - tA
+    })
   },
 
   /**
