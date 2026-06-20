@@ -66,3 +66,35 @@ export function computeFantasyTeamTotal(
 
   return Math.round((rosterPoints - penalty) * 10) / 10
 }
+
+type LeaderboardPickRow = { player_id: string; is_captain: boolean }
+
+function captainMultiplier(isCaptain: boolean): number {
+  return isCaptain ? 1.5 : 1
+}
+
+/**
+ * Score affiché par encadré joueur sur le leaderboard.
+ * J1 : score J1 × capitaine.
+ * J2 (classement global / cumul) : contribution J1 (si encore dans l'équipe J1) + score J2 normalisé × capitaine J2.
+ */
+export function computeLeaderboardPickScore(
+  pick: { playerId: string; isCaptain: boolean },
+  rosterDay: 1 | 2,
+  day1Picks: LeaderboardPickRow[] | undefined,
+  scoresDay1: Record<string, number>,
+  scoresDay2: Record<string, number>,
+): number {
+  if (rosterDay === 1) {
+    return Math.round((scoresDay1[pick.playerId] || 0) * captainMultiplier(pick.isCaptain) * 10) / 10
+  }
+
+  const j2Part = (scoresDay2[pick.playerId] || 0) * captainMultiplier(pick.isCaptain)
+  const j1Pick = day1Picks?.find((p) => p.player_id === pick.playerId)
+  if (!j1Pick) {
+    return Math.round(j2Part * 10) / 10
+  }
+
+  const j1Part = (scoresDay1[pick.playerId] || 0) * captainMultiplier(j1Pick.is_captain)
+  return Math.round((j1Part + j2Part) * 10) / 10
+}

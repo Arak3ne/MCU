@@ -159,16 +159,16 @@
                   <!-- Picks -->
                   <div v-if="entry.picks && entry.picks.length > 0" class="flex flex-wrap gap-2">
                     <div v-for="pick in entry.picks" :key="pick.playerId" 
-                         class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/40 border border-mcu-border/30 text-xs group/pick hover:border-mcu-border/60 transition-all">
-                      <span class="text-white/70 font-bold group-hover/pick:text-white transition-colors flex items-center gap-1.5">
+                         class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/40 border border-mcu-border/30 text-xs group/pick hover:border-mcu-border/60 transition-all min-w-0">
+                      <span class="text-white/70 font-bold group-hover/pick:text-white transition-colors flex items-center gap-1.5 truncate max-w-[120px] sm:max-w-none">
                         <span v-if="pick.isCaptain" class="text-yellow-500/80" title="Capitaine">
                           <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 2a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 2zM5.5 3a.75.75 0 00-.75.75v1.5a.75.75 0 001.5 0v-1.5A.75.75 0 005.5 3zm9 0a.75.75 0 00-.75.75v1.5a.75.75 0 001.5 0v-1.5A.75.75 0 0014.5 3zM3 7.5A.75.75 0 013.75 7h12.5a.75.75 0 01.75.75v7.5a.75.75 0 01-.75.75H3.75a.75.75 0 01-.75-.75v-7.5zM4.5 8.5v6h11v-6h-11z" clip-rule="evenodd" /></svg>
                         </span>
                         {{ pick.pseudo }}
                       </span>
-                      <div class="w-px h-3.5 bg-white/10"></div>
-                      <span class="font-title text-sm mt-0.5" 
-                            :class="pick.score > 0 ? 'text-mcu-primary/80' : (pick.score < 0 ? 'text-red-400/80' : 'text-white/30')">
+                      <div class="w-px h-3.5 bg-white/10 shrink-0"></div>
+                      <span class="font-title text-sm mt-0.5 shrink-0 tabular-nums" 
+                            :class="pick.score > 0 ? 'text-mcu-primary/90' : (pick.score < 0 ? 'text-red-400/90' : 'text-white/50')">
                         {{ pick.score > 0 ? '+' : '' }}{{ pick.score.toFixed(2) }}
                       </span>
                     </div>
@@ -206,10 +206,8 @@ const leaderboard = ref<FantasyLeaderboardEntry[]>([]);
 const loadLeaderboard = async () => {
   loading.value = true;
   try {
-    const [playersRes, scoresDay1, scoresDay2, board] = await Promise.all([
+    const [playersRes, board] = await Promise.all([
       getPlayers(),
-      fantasyService.getPlayerScores(1),
-      fantasyService.getPlayerScores(2),
       fantasyService.getGlobalLeaderboard()
     ]);
 
@@ -224,14 +222,9 @@ const loadLeaderboard = async () => {
       if (entry.picks) {
         entry.picks = entry.picks.map(pick => {
           const player = playerMap.get(pick.playerId);
-          // For global leaderboard, we show the score from the day the pick was active
-          // entry.tournamentDay is the day these picks are from
-          const scores = entry.tournamentDay === 1 ? scoresDay1 : scoresDay2;
-          const rawScore = scores[pick.playerId] || 0;
           return {
             ...pick,
             pseudo: player ? player.pseudo : 'Unknown',
-            score: pick.isCaptain ? rawScore * 1.5 : rawScore
           };
         });
         

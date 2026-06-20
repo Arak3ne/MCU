@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase'
 import type { FantasyTeam, FantasyLeaderboardEntry } from '../types/fantasy'
-import { computeFantasyTeamTotal } from '../utils/fantasyLeaderboard'
+import { computeFantasyTeamTotal, computeLeaderboardPickScore } from '../utils/fantasyLeaderboard'
 import { effectiveFantasyPlayerScore, fantasyPointsBreakdown } from '../utils/fantasyMatchPoints'
 
 /** Colonne numeric / string PostgREST → nombre fini uniquement si la valeur existe en base. */
@@ -550,7 +550,16 @@ export const fantasyService = {
         teamName: pickDisplayName(day1, day2, rosterRow),
         tournamentDay: rosterRow.tournament_day as 1 | 2,
         totalPoints: cumulativeTotal,
-        picks: mapRowPicks(rosterRow.fantasy_picks)
+        picks: mapRowPicks(rosterRow.fantasy_picks).map((pick) => ({
+          ...pick,
+          score: computeLeaderboardPickScore(
+            pick,
+            rosterRow.tournament_day as 1 | 2,
+            day1?.fantasy_picks,
+            day1Scores,
+            day2Scores,
+          ),
+        })),
       })
     }
 
@@ -588,6 +597,7 @@ export const fantasyService = {
     }
 
     const day1TotalsByUser = new Map<string, number>()
+    const day1PicksByUser = new Map<string, { player_id: string; is_captain: boolean }[]>()
     if (tournamentDay === 2) {
       const { data: day1Teams } = await supabase
         .from('fantasy_teams')
@@ -600,6 +610,7 @@ export const fantasyService = {
         .eq('tournament_day', 1)
 
       for (const row of day1Teams ?? []) {
+        day1PicksByUser.set(row.user_id, row.fantasy_picks ?? [])
         day1TotalsByUser.set(
           row.user_id,
           computeFantasyTeamTotal(
@@ -612,12 +623,24 @@ export const fantasyService = {
     }
 
     return (data || []).map((row) => {
-      const picks = (row.fantasy_picks || []).map((p: any) => ({
-        playerId: p.player_id,
-        isCaptain: p.is_captain,
-        score: 0,
-        pseudo: ''
-      }))
+      const picks = (row.fantasy_picks || []).map((p: any) => {
+        const pick = {
+          playerId: p.player_id,
+          isCaptain: p.is_captain,
+          score: 0,
+          pseudo: '',
+        }
+        return {
+          ...pick,
+          score: computeLeaderboardPickScore(
+            pick,
+            tournamentDay,
+            tournamentDay === 2 ? day1PicksByUser.get(row.user_id) : undefined,
+            day1Scores,
+            day2Scores,
+          ),
+        }
+      })
 
       const scoresForDay = tournamentDay === 2 ? day2Scores : day1Scores
       const day1Base = tournamentDay === 2 ? (day1TotalsByUser.get(row.user_id) ?? 0) : 0
