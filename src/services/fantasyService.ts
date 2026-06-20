@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase'
 import type { FantasyTeam, FantasyLeaderboardEntry } from '../types/fantasy'
+import { computeFantasyTeamTotal } from '../utils/fantasyLeaderboard'
 import { effectiveFantasyPlayerScore, fantasyPointsBreakdown } from '../utils/fantasyMatchPoints'
 
 /** Colonne numeric / string PostgREST → nombre fini uniquement si la valeur existe en base. */
@@ -25,6 +26,36 @@ function normalizeFantasyTeamName(userId: string, name: string): string {
 }
 
 /** Nom d'équipe unique par joueur : synchronise J1 et J2 (le leaderboard global affiche souvent la ligne J2). */
+type FantasyTeamRow = {
+  id: string
+  user_id: string
+  name: string
+  tournament_day: number
+  total_points?: number | null
+  penalty_points?: number | null
+  locked?: boolean | null
+  is_locked?: boolean | null
+  transfers_made?: number | null
+  carried_over_budget?: unknown
+  created_at: string
+  updated_at: string
+  fantasy_picks?: { player_id: string; is_captain: boolean }[]
+}
+
+function teamPointsInputFromRow(row: FantasyTeamRow): Pick<
+  FantasyTeam,
+  'tournamentDay' | 'captainId' | 'playerIds' | 'penaltyPoints'
+> {
+  const picks = row.fantasy_picks ?? []
+  const captainPick = picks.find((p) => p.is_captain)
+  return {
+    tournamentDay: row.tournament_day as 1 | 2,
+    playerIds: picks.map((p) => p.player_id),
+    captainId: captainPick?.player_id ?? '',
+    penaltyPoints: row.penalty_points ?? 0,
+  }
+}
+
 async function syncFantasyTeamNameForUser(userId: string, name: string): Promise<void> {
   const finalName = normalizeFantasyTeamName(userId, name)
   const { error } = await supabase
@@ -66,7 +97,7 @@ export const fantasyService = {
     const captainPick = picks.find((p: any) => p.is_captain)
     const captainId = captainPick ? captainPick.player_id : ''
 
-    return {
+    const team: FantasyTeam = {
       id: teamData.id,
       userId: teamData.user_id,
       name: teamData.name,
@@ -81,6 +112,44 @@ export const fantasyService = {
       createdAt: teamData.created_at,
       updatedAt: teamData.updated_at
     }
+
+    const pointsInput = teamPointsInputFromRow({
+      ...teamData,
+      fantasy_picks: picks,
+    } as FantasyTeamRow)
+
+    if (tournamentDay === 1) {
+      const day1Scores = await this.getPlayerScores(1)
+      team.totalPoints = computeFantasyTeamTotal(pointsInput, day1Scores, 0)
+    } else {
+      const [day1Scores, day2Scores] = await Promise.all([
+        this.getPlayerScores(1),
+        this.getPlayerScores(2),
+      ])
+      const day1Base = await this.getDay1BaseTotal(teamData.user_id, day1Scores)
+      team.totalPoints = computeFantasyTeamTotal(pointsInput, day2Scores, day1Base)
+    }
+
+    return team
+  },
+
+  async getDay1BaseTotal(
+    userId: string,
+    day1Scores?: Record<string, number>,
+  ): Promise<number> {
+    const { data, error } = await supabase
+      .from('fantasy_teams')
+      .select('penalty_points, tournament_day, fantasy_picks(player_id, is_captain)')
+      .eq('user_id', userId)
+      .eq('tournament_day', 1)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (error || !data) return 0
+
+    const scores = day1Scores ?? (await this.getPlayerScores(1))
+    return computeFantasyTeamTotal(teamPointsInputFromRow(data as FantasyTeamRow), scores, 0)
   },
 
   /**
@@ -397,6 +466,7 @@ export const fantasyService = {
         user_id, 
         name, 
         total_points,
+        penalty_points,
         tournament_day,
         updated_at,
         fantasy_picks(player_id, is_captain)
@@ -408,11 +478,17 @@ export const fantasyService = {
       throw error
     }
 
+    const [day1Scores, day2Scores] = await Promise.all([
+      this.getPlayerScores(1),
+      this.getPlayerScores(2),
+    ])
+
     type TeamRow = {
       id: string
       user_id: string
       name: string
       total_points: number | null
+      penalty_points?: number | null
       tournament_day: number
       updated_at?: string
       fantasy_picks?: { player_id: string; is_captain: boolean }[]
@@ -447,15 +523,26 @@ export const fantasyService = {
 
     const entries: FantasyLeaderboardEntry[] = []
     for (const [userId, agg] of byUser) {
-      // J2 cumule déjà le total J1 : ne pas additionner les deux lignes.
-      const cumulativeTotal = agg.day2
-        ? (agg.day2.total_points || 0)
-        : (agg.day1?.total_points || 0)
-      // Avoid relying on row iteration order (global sort by points): pick roster explicitly.
       const { day1, day2 } = agg
       const rosterRow =
         picksCount(day2) > 0 ? day2! : picksCount(day1) > 0 ? day1! : day2 ?? day1
       if (!rosterRow) continue
+
+      const day1Base = day1
+        ? computeFantasyTeamTotal(
+            teamPointsInputFromRow(day1 as FantasyTeamRow),
+            day1Scores,
+            0,
+          )
+        : 0
+
+      const cumulativeTotal = day2
+        ? computeFantasyTeamTotal(
+            teamPointsInputFromRow(day2 as FantasyTeamRow),
+            day2Scores,
+            day1Base,
+          )
+        : day1Base
 
       entries.push({
         userId,
@@ -474,6 +561,11 @@ export const fantasyService = {
    * Get leaderboard for a specific day
    */
   async getLeaderboard(tournamentDay: 1 | 2): Promise<FantasyLeaderboardEntry[]> {
+    const [day1Scores, day2Scores] = await Promise.all([
+      this.getPlayerScores(1),
+      this.getPlayerScores(2),
+    ])
+
     // We fetch teams and their picks so we can display rosters
     const { data, error } = await supabase
       .from('fantasy_teams')
@@ -482,6 +574,8 @@ export const fantasyService = {
         user_id, 
         name, 
         total_points,
+        penalty_points,
+        tournament_day,
         fantasy_picks(player_id, is_captain)
       `)
       .eq('tournament_day', tournamentDay)
@@ -493,22 +587,54 @@ export const fantasyService = {
       throw error
     }
 
-    return (data || []).map(row => {
+    const day1TotalsByUser = new Map<string, number>()
+    if (tournamentDay === 2) {
+      const { data: day1Teams } = await supabase
+        .from('fantasy_teams')
+        .select(`
+          user_id,
+          penalty_points,
+          tournament_day,
+          fantasy_picks(player_id, is_captain)
+        `)
+        .eq('tournament_day', 1)
+
+      for (const row of day1Teams ?? []) {
+        day1TotalsByUser.set(
+          row.user_id,
+          computeFantasyTeamTotal(
+            teamPointsInputFromRow(row as FantasyTeamRow),
+            day1Scores,
+            0,
+          ),
+        )
+      }
+    }
+
+    return (data || []).map((row) => {
       const picks = (row.fantasy_picks || []).map((p: any) => ({
         playerId: p.player_id,
         isCaptain: p.is_captain,
         score: 0,
         pseudo: ''
       }))
-      
+
+      const scoresForDay = tournamentDay === 2 ? day2Scores : day1Scores
+      const day1Base = tournamentDay === 2 ? (day1TotalsByUser.get(row.user_id) ?? 0) : 0
+      const totalPoints = computeFantasyTeamTotal(
+        teamPointsInputFromRow(row as FantasyTeamRow),
+        scoresForDay,
+        day1Base,
+      )
+
       return {
         userId: row.user_id,
         teamId: row.id,
         teamName: row.name,
         tournamentDay,
-        totalPoints: row.total_points || 0,
+        totalPoints,
         picks
       }
-    })
+    }).sort((a, b) => b.totalPoints - a.totalPoints)
   }
 }

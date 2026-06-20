@@ -25,5 +25,44 @@ export function calculateTeamPoints(
 
   // Use Math.round to avoid floating point issues if necessary,
   // or return the raw decimal if the fantasy league uses fractional points.
-  return Math.round(totalPoints * 10) / 10 
+  return Math.round(totalPoints * 10) / 10
+}
+
+type TeamPointsInput = Pick<
+  FantasyTeam,
+  'tournamentDay' | 'captainId' | 'playerIds' | 'penaltyPoints'
+>
+
+/**
+ * Total équipe = somme des scores roster (capitaine ×1.5) − pénalités mercato.
+ * Jour 2 : on additionne le total jour 1 (déjà net de pénalités J1).
+ */
+export function computeFantasyTeamTotal(
+  team: TeamPointsInput,
+  playerScores: Record<string, number>,
+  day1BaseTotal = 0,
+): number {
+  const rosterPoints = calculateTeamPoints(
+    {
+      id: '',
+      userId: '',
+      name: '',
+      tournamentDay: team.tournamentDay,
+      playerIds: team.playerIds,
+      captainId: team.captainId,
+      isLocked: false,
+      transfersMade: 0,
+      penaltyPoints: team.penaltyPoints ?? 0,
+      createdAt: '',
+      updatedAt: '',
+    },
+    playerScores,
+  )
+  const penalty = team.penaltyPoints ?? 0
+
+  if (team.tournamentDay === 2) {
+    return Math.round((day1BaseTotal + rosterPoints - penalty) * 10) / 10
+  }
+
+  return Math.round((rosterPoints - penalty) * 10) / 10
 }
