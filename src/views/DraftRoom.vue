@@ -514,6 +514,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { supabase } from "../lib/supabase";
 import { getChampions, getPlayers } from "../lib/queries";
+import { championMatchesLaneFilter } from "../lib/championRoles";
 import {
   createInitialDraftState,
   enterWaitPhase,
@@ -700,19 +701,6 @@ const rightTeam = computed(() => {
   };
 });
 
-const roleAliases: Record<string, string> = {
-  top: "top",
-  toplane: "top",
-  jungle: "jungle",
-  jgl: "jungle",
-  mid: "mid",
-  middle: "mid",
-  adc: "adc",
-  bot: "adc",
-  support: "support",
-  supp: "support",
-};
-
 const roles = [
   { id: "top", name: "Top", icon: topIcon },
   { id: "jungle", name: "Jgl", icon: jglIcon },
@@ -843,8 +831,7 @@ const filteredChampions = computed(() => {
     if (showOnlyAvailable.value && isChampionDisabled(champ.id, champ.is_available)) return false;
     if (normalizedSearch.value && !champ.name.toLowerCase().includes(normalizedSearch.value)) return false;
     if (!selectedRole.value) return true;
-    const roles = (champ.roles ?? []).map((r) => roleAliases[String(r).toLowerCase()] ?? String(r).toLowerCase());
-    return roles.includes(selectedRole.value);
+    return championMatchesLaneFilter(champ.roles, selectedRole.value);
   });
 });
 

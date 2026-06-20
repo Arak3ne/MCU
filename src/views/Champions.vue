@@ -162,6 +162,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { getChampions, toggleChampion } from "../lib/queries";
+import { championMatchesLaneFilter } from "../lib/championRoles";
 import { subscribeToTable } from "../lib/realtime";
 import type { Database } from "../types/supabase";
 import { supabase } from "../lib/supabase";
@@ -193,65 +194,21 @@ function syncAdminFromSession() {
 
 // League of Legends Positions mapping with imported icons
 const roles = [
-  { name: "Top", icon: topIcon, tags: ["top"] },
-  { name: "Jgl", icon: jglIcon, tags: ["jungle"] },
-  { name: "Mid", icon: midIcon, tags: ["mid"] },
-  { name: "ADC", icon: adcIcon, tags: ["adc"] },
-  { name: "Supp", icon: supportIcon, tags: ["support"] },
+  { name: "Top", icon: topIcon, laneId: "top" },
+  { name: "Jgl", icon: jglIcon, laneId: "jungle" },
+  { name: "Mid", icon: midIcon, laneId: "mid" },
+  { name: "ADC", icon: adcIcon, laneId: "adc" },
+  { name: "Supp", icon: supportIcon, laneId: "support" },
 ];
-
-const roleAliases: Record<string, string> = {
-  top: "top",
-  toplane: "top",
-  jgl: "jungle",
-  jungle: "jungle",
-  mid: "mid",
-  middle: "mid",
-  adc: "adc",
-  bot: "adc",
-  bottom: "adc",
-  supp: "support",
-  support: "support",
-};
-
-const normalizeRole = (role: string | null | undefined): string | null => {
-  if (!role) return null;
-  const normalized = role.trim().toLowerCase();
-  return roleAliases[normalized] ?? normalized;
-};
 
 const filteredChampions = computed(() => {
   const normalizedSearch = searchQuery.value.trim().toLowerCase();
+  const selectedLane = roles.find((role) => role.name === selectedRole.value)?.laneId ?? null;
 
   return champions.value.filter((champ) => {
-    // 1. Availability filter
     if (showOnlyAvailable.value && !champ.is_available) return false;
-
-    // 2. Search filter
-    if (normalizedSearch && !champ.name.toLowerCase().includes(normalizedSearch))
-      return false;
-
-    // 3. Position filter
-    if (selectedRole.value) {
-      const position = roles.find((r) => r.name === selectedRole.value);
-      if (position && position.tags.length > 0) {
-        const normalizedPositionTags = new Set(
-          position.tags.map((tag) => normalizeRole(tag)).filter(Boolean),
-        );
-        const championRoles = (champ.roles ?? [])
-          .map((tag) => normalizeRole(tag))
-          .filter(Boolean) as string[];
-
-        // If champion has ANY of the tags associated with the selected role
-        if (
-          championRoles.length === 0 ||
-          !championRoles.some((tag) => normalizedPositionTags.has(tag))
-        ) {
-          return false;
-        }
-      }
-    }
-
+    if (normalizedSearch && !champ.name.toLowerCase().includes(normalizedSearch)) return false;
+    if (selectedLane && !championMatchesLaneFilter(champ.roles, selectedLane)) return false;
     return true;
   });
 });

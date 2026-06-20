@@ -1,6 +1,7 @@
 import { supabase } from "./supabase";
 import type { Database } from "../types/supabase";
 import type { PlayoffMatchInsert } from "./bracket";
+import { resolveChampionLaneRoles } from "./championRoles";
 
 type Champion = Database["public"]["Tables"]["champions"]["Row"];
 
@@ -55,10 +56,11 @@ export async function getChampions() {
     }
 
     const directRoles = Array.isArray(champion.roles) ? champion.roles : [];
+    const roles = resolveChampionLaneRoles(champion.name, relationRoles, directRoles);
 
     return {
       ...champion,
-      roles: relationRoles.length > 0 ? relationRoles : directRoles,
+      roles,
     };
   });
 
