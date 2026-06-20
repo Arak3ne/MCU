@@ -316,24 +316,30 @@
               </div>
 
               <!-- Audio Controls -->
-              <div class="relative group flex items-center justify-center">
-                <!-- Volume Slider Popover -->
-                <div class="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-[#111111]/95 border border-[#2A2A2A] rounded-lg p-3 shadow-xl pointer-events-none group-hover:pointer-events-auto flex flex-col items-center gap-3 z-50">
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    v-model.number="volume"
-                    @input="handleUserInteraction"
-                    class="h-24 w-1.5 appearance-none bg-[#2A2A2A] rounded-full outline-none cursor-pointer"
-                    style="-webkit-appearance: slider-vertical; writing-mode: bt-lr;"
-                  />
-                  <span class="text-[10px] font-bold text-[#A1A1AA]">{{ volume }}%</span>
+              <div class="relative inline-flex flex-col items-center group/volume">
+                <!-- Volume slider : même bloc hover que le bouton (pas de trou entre les deux) -->
+                <div
+                  class="flex max-h-0 flex-col items-center overflow-hidden opacity-0 transition-all duration-200 group-hover/volume:max-h-48 group-hover/volume:opacity-100"
+                >
+                  <div
+                    class="mb-1 flex flex-col items-center gap-3 rounded-lg border border-[#2A2A2A] bg-[#111111]/95 p-3 shadow-xl pointer-events-none group-hover/volume:pointer-events-auto z-50"
+                  >
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      v-model.number="volume"
+                      @input="handleUserInteraction"
+                      class="h-24 w-1.5 appearance-none bg-[#2A2A2A] rounded-full outline-none cursor-pointer"
+                      style="-webkit-appearance: slider-vertical; writing-mode: bt-lr;"
+                    />
+                    <span class="text-[10px] font-bold text-[#A1A1AA]">{{ volume }}%</span>
+                  </div>
                 </div>
                 <button
                   @click.stop="onToggleMute"
                   class="bg-[#111111]/80 backdrop-blur-sm border border-[#2A2A2A] hover:border-[#22C55E]/50 text-[#A1A1AA] hover:text-[#22C55E] p-2.5 rounded-full shadow-lg transition-all"
-                  title="Volume"
+                  title="Volume (survol pour régler)"
                 >
                   <svg v-if="isMuted || volume == 0" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" clip-rule="evenodd" />
