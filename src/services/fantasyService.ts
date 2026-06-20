@@ -68,6 +68,17 @@ async function syncFantasyTeamNameForUser(userId: string, name: string): Promise
   }
 }
 
+function matchHistoryFromRow(
+  row: { match_history?: unknown },
+): { game_creation?: string; game_duration?: number; tournament_day?: number } | null {
+  const mh = row.match_history
+  if (Array.isArray(mh)) return (mh[0] as { game_creation?: string; game_duration?: number; tournament_day?: number }) ?? null
+  if (mh && typeof mh === 'object') {
+    return mh as { game_creation?: string; game_duration?: number; tournament_day?: number }
+  }
+  return null
+}
+
 export const fantasyService = {
   /**
    * Fetch a user's fantasy team for a specific tournament day
@@ -362,10 +373,9 @@ export const fantasyService = {
       const deaths = Number(row.deaths) || 0
       const assists = Number(row.assists) || 0
       const win = Boolean(row.win)
+      const mh = matchHistoryFromRow(row)
       const gameDurationSec =
-        typeof row.match_history?.game_duration === 'number'
-          ? row.match_history.game_duration
-          : 0
+        typeof mh?.game_duration === 'number' ? mh.game_duration : 0
 
       const matchFantasyPoints = fantasyPointsBreakdown({
         kills: row.kills,
@@ -440,10 +450,9 @@ export const fantasyService = {
       const pid = row.player_id as string
       if (!pid || statsMap[pid]) continue
 
+      const mh = matchHistoryFromRow(row)
       const gameDurationSec =
-        typeof row.match_history?.game_duration === 'number'
-          ? row.match_history.game_duration
-          : 0
+        typeof mh?.game_duration === 'number' ? mh.game_duration : 0
 
       const breakdownInput = {
         kills: row.kills,
@@ -536,8 +545,8 @@ export const fantasyService = {
     }
 
     return [...(data ?? [])].sort((a, b) => {
-      const tA = new Date(a.match_history?.game_creation ?? 0).getTime()
-      const tB = new Date(b.match_history?.game_creation ?? 0).getTime()
+      const tA = new Date(matchHistoryFromRow(a)?.game_creation ?? 0).getTime()
+      const tB = new Date(matchHistoryFromRow(b)?.game_creation ?? 0).getTime()
       return tB - tA
     })
   },
