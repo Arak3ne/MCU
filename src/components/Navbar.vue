@@ -109,7 +109,7 @@
             />
           </div>
           <div
-            class="absolute top-[calc(100%-8px)] left-1/2 -translate-x-1/2 w-56 pt-2 invisible opacity-0 translate-y-2 group-hover:visible group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 z-[100]"
+            class="absolute top-[calc(100%-8px)] left-1/2 -translate-x-1/2 w-56 pt-2 invisible opacity-0 translate-y-2 pointer-events-none group-hover:visible group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all duration-300 z-[100]"
           >
             <div class="bg-[#0B0F0C]/95 backdrop-blur-lg border border-[#2A2A2A] rounded-b-lg shadow-[0_10px_30px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col">
               <router-link

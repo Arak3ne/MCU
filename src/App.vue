@@ -6,8 +6,9 @@ import { useGlobalDraftSync } from "./composables/useGlobalDraftSync";
 
 const route = useRoute();
 const showNavbar = computed(() => {
-  const isPublicRoute = ["/admin/login", "/overlay", "/register"].includes(route.path) || route.path.startsWith("/admin");
-  return !isPublicRoute;
+  if (["/register", "/overlay", "/admin/login"].includes(route.path)) return false;
+  if (route.path.startsWith("/admin")) return false;
+  return true;
 });
 
 useGlobalDraftSync();
