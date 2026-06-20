@@ -19,6 +19,24 @@ function shouldLogFantasyLastMatchBreakdown(): boolean {
   }
 }
 
+function normalizeFantasyTeamName(userId: string, name: string): string {
+  const trimmed = name.trim().slice(0, 64)
+  return trimmed.length > 0 ? trimmed : `Team ${userId.substring(0, 5)}`
+}
+
+/** Nom d'équipe unique par joueur : synchronise J1 et J2 (le leaderboard global affiche souvent la ligne J2). */
+async function syncFantasyTeamNameForUser(userId: string, name: string): Promise<void> {
+  const finalName = normalizeFantasyTeamName(userId, name)
+  const { error } = await supabase
+    .from('fantasy_teams')
+    .update({ name: finalName, updated_at: new Date().toISOString() })
+    .eq('user_id', userId)
+  if (error) {
+    console.error('Error syncing team name:', error)
+    throw error
+  }
+}
+
 export const fantasyService = {
   /**
    * Fetch a user's fantasy team for a specific tournament day
@@ -106,6 +124,10 @@ export const fantasyService = {
       throw teamError
     }
 
+    if (team.name !== undefined) {
+      await syncFantasyTeamNameForUser(team.userId, teamPayload.name)
+    }
+
     const savedCarryRaw = (teamData as Record<string, unknown>).carried_over_budget
       ?? (teamData as Record<string, unknown>).carriedOverBudget
 
@@ -150,19 +172,8 @@ export const fantasyService = {
   /**
    * Met à jour uniquement le nom d'une équipe (roster inchangé). Utile quand is_locked.
    */
-  async updateTeamName(teamId: string, userId: string, name: string): Promise<void> {
-    const trimmed = name.trim().slice(0, 64)
-    const finalName =
-      trimmed.length > 0 ? trimmed : `Team ${userId.substring(0, 5)}`
-    const { error } = await supabase
-      .from('fantasy_teams')
-      .update({ name: finalName, updated_at: new Date().toISOString() })
-      .eq('id', teamId)
-      .eq('user_id', userId)
-    if (error) {
-      console.error('Error updating team name:', error)
-      throw error
-    }
+  async updateTeamName(_teamId: string, userId: string, name: string): Promise<void> {
+    await syncFantasyTeamNameForUser(userId, name)
   },
 
   /**
@@ -387,6 +398,7 @@ export const fantasyService = {
         name, 
         total_points,
         tournament_day,
+        updated_at,
         fantasy_picks(player_id, is_captain)
       `)
       .order('total_points', { ascending: false })
@@ -402,7 +414,19 @@ export const fantasyService = {
       name: string
       total_points: number | null
       tournament_day: number
+      updated_at?: string
       fantasy_picks?: { player_id: string; is_captain: boolean }[]
+    }
+
+    const pickDisplayName = (day1?: TeamRow, day2?: TeamRow, fallback?: TeamRow): string => {
+      const rows = [day1, day2].filter(Boolean) as TeamRow[]
+      if (rows.length === 0) return fallback?.name ?? ''
+      const latest = rows.reduce((best, row) => {
+        const bestTs = best.updated_at ? new Date(best.updated_at).getTime() : 0
+        const rowTs = row.updated_at ? new Date(row.updated_at).getTime() : 0
+        return rowTs >= bestTs ? row : best
+      })
+      return latest.name
     }
 
     type UserAgg = { day1?: TeamRow; day2?: TeamRow }
@@ -436,7 +460,7 @@ export const fantasyService = {
       entries.push({
         userId,
         teamId: rosterRow.id,
-        teamName: rosterRow.name,
+        teamName: pickDisplayName(day1, day2, rosterRow),
         tournamentDay: rosterRow.tournament_day as 1 | 2,
         totalPoints: cumulativeTotal,
         picks: mapRowPicks(rosterRow.fantasy_picks)

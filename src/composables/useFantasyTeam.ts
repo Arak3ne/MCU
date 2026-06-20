@@ -274,6 +274,9 @@ export function useFantasyTeam(userId: Ref<string | null>, tournamentDay: Ref<1 
         trimmed.length > 0 ? trimmed : `Team ${userId.value.substring(0, 5)}`
       teamName.value = finalName
       team.value = { ...team.value, name: finalName }
+      if (previousTeam.value) {
+        previousTeam.value = { ...previousTeam.value, name: finalName }
+      }
       return true
     } catch (err: any) {
       error.value = err.message || 'Impossible de mettre à jour le nom'
