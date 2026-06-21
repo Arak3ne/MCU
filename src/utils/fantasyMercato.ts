@@ -82,3 +82,29 @@ export function computeAllMercatoDay2Prices(
 export function getMercatoPriceChange(priceDay2: number, priceDay1: number): number {
   return priceDay2 - priceDay1
 }
+
+export function rostersMatch(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false
+  const setB = new Set(b)
+  return a.every((id) => setB.has(id))
+}
+
+/**
+ * Source de vérité des picks affichés en mercato J2.
+ * Tant qu'aucun transfert n'est enregistré, le roster J1 fait foi (l'intro et le mercato restent alignés).
+ */
+export function resolveMercatoRosterPlayerIds(
+  day1PlayerIds: string[],
+  day2Team: { playerIds: string[]; isLocked: boolean; transfersMade: number } | null,
+): string[] {
+  if (!day2Team || day2Team.playerIds.length === 0) {
+    return day1PlayerIds
+  }
+  if (day2Team.isLocked) {
+    return day2Team.playerIds
+  }
+  if ((day2Team.transfersMade ?? 0) === 0 && !rostersMatch(day1PlayerIds, day2Team.playerIds)) {
+    return day1PlayerIds
+  }
+  return day2Team.playerIds
+}

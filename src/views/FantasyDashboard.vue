@@ -504,7 +504,6 @@
                 <div class="px-3 py-1 rounded-xl bg-black/60 border border-white/10 text-xs font-bold font-title shadow-inner flex items-center justify-center">
                   <span :class="budgetRemaining >= 0 ? 'text-mcu-primary drop-shadow-[0_0_10px_rgba(34,197,94,0.8)]' : 'text-red-500 drop-shadow-[0_0_10px_rgba(239,68,68,0.8)]'">{{ budgetRemaining }}</span>
                   <span class="text-white/40 ml-1">/ {{ maxBudget }}</span>
-                  <span v-if="isMercatoMode && saleCredit > 0" class="text-white/30 ml-1 text-[9px] uppercase">(+{{ saleCredit }} vente)</span>
                 </div>
               </div>
             </div>
@@ -1143,7 +1142,6 @@ const {
   isValid,
   budgetRemaining,
   maxBudget,
-  saleCredit,
   carriedOverBudget,
   previousRosterValue,
   transfersMade,

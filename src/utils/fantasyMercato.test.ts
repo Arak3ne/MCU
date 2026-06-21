@@ -7,6 +7,8 @@ import {
   computeTierMedians,
   getMercatoPriceChange,
   matchRentability,
+  resolveMercatoRosterPlayerIds,
+  rostersMatch,
 } from './fantasyMercato'
 
 function player(id: string, priceDay1: number): FantasyPlayer {
@@ -66,5 +68,40 @@ describe('fantasyMercato', () => {
   it('getMercatoPriceChange', () => {
     expect(getMercatoPriceChange(24, 12)).toBe(12)
     expect(getMercatoPriceChange(8, 28)).toBe(-20)
+  })
+
+  it('rostersMatch ignore l’ordre', () => {
+    expect(rostersMatch(['a', 'b', 'c'], ['c', 'a', 'b'])).toBe(true)
+    expect(rostersMatch(['a', 'b'], ['a', 'b', 'c'])).toBe(false)
+  })
+
+  it('resolveMercatoRosterPlayerIds : J2 désynchronisée sans transfert → J1', () => {
+    const day1 = ['p1', 'p2', 'p3', 'p4', 'p5']
+    const day2 = {
+      playerIds: ['x1', 'x2', 'p3', 'p4', 'p5'],
+      isLocked: false,
+      transfersMade: 0,
+    }
+    expect(resolveMercatoRosterPlayerIds(day1, day2)).toEqual(day1)
+  })
+
+  it('resolveMercatoRosterPlayerIds : transferts enregistrés → J2', () => {
+    const day1 = ['p1', 'p2', 'p3', 'p4', 'p5']
+    const day2 = {
+      playerIds: ['x1', 'p2', 'p3', 'p4', 'p5'],
+      isLocked: false,
+      transfersMade: 1,
+    }
+    expect(resolveMercatoRosterPlayerIds(day1, day2)).toEqual(day2.playerIds)
+  })
+
+  it('resolveMercatoRosterPlayerIds : équipe verrouillée → J2', () => {
+    const day1 = ['p1', 'p2', 'p3', 'p4', 'p5']
+    const day2 = {
+      playerIds: ['x1', 'x2', 'p3', 'p4', 'p5'],
+      isLocked: true,
+      transfersMade: 0,
+    }
+    expect(resolveMercatoRosterPlayerIds(day1, day2)).toEqual(day2.playerIds)
   })
 })

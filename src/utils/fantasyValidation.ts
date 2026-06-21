@@ -20,8 +20,6 @@ export function validateFantasyTeam(
   previousTeamRoster: string[] = [],
   carriedOverBudget: number = 0,
   previousRosterValue: number = 0,
-  /** Crédit mercato : valeur des joueurs vendus (snapshot ouverture) pas encore remplacés. */
-  saleCredit: number = 0,
 ): FantasyValidationResult {
   const errors: string[] = []
   let transfersMade = 0
@@ -52,7 +50,9 @@ export function validateFantasyTeam(
     }
 
     const baseMercatoBudget = carriedOverBudget + previousRosterValue
-    maxBudget = Math.max(0, baseMercatoBudget - penaltyPoints + saleCredit)
+    // Plafond fixe (reliquat + roster J1 aux prix J2 − pénalités). Les ventes libèrent du budget
+    // via la baisse de totalCost — ne pas rajouter saleCredit ici (double comptage).
+    maxBudget = Math.max(0, baseMercatoBudget - penaltyPoints)
     if (totalCost > maxBudget) {
       errors.push(`Budget exceeded. Max is ${maxBudget}, used ${totalCost}`)
     }
