@@ -339,7 +339,7 @@
                   <button
                     v-else
                     @click="addPlayer(player.fantasy)"
-                    :disabled="team?.isLocked || selectedPlayers.length >= 5 || !player.fantasy.fantasyEnabled"
+                    :disabled="!canAddPlayer(player.fantasy)"
                     class="px-3 py-1.5 bg-white/5 hover:bg-mcu-primary text-white border border-white/10 hover:border-mcu-primary rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-[0_0_20px_rgba(34,197,94,0.4)] backdrop-blur-md cursor-pointer disabled:cursor-not-allowed"
                   >
                     {{ !player.fantasy.fantasyEnabled ? 'Non Éligible' : 'Draft' }}
@@ -451,7 +451,7 @@
                     <button
                       v-else
                       @click="addPlayer(player.fantasy)"
-                      :disabled="team?.isLocked || selectedPlayers.length >= 5 || !player.fantasy.fantasyEnabled"
+                      :disabled="!canAddPlayer(player.fantasy)"
                       class="px-5 py-2 bg-white/5 border border-white/10 rounded-xl text-xs font-bold uppercase tracking-wider hover:border-mcu-primary hover:text-white hover:bg-mcu-primary/20 hover:shadow-[0_0_20px_rgba(34,197,94,0.3)] transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                     >
                       Draft
@@ -500,10 +500,11 @@
                 />
               </div>
               <div class="flex flex-col items-end shrink-0">
-                <span class="text-[9px] uppercase tracking-widest text-white/50 mb-0.5 font-bold">{{ isMercatoMode ? 'Budget Potentiel' : 'Budget Restant' }}</span>
+                <span class="text-[9px] uppercase tracking-widest text-white/50 mb-0.5 font-bold">{{ isMercatoMode ? 'Budget disponible' : 'Budget Restant' }}</span>
                 <div class="px-3 py-1 rounded-xl bg-black/60 border border-white/10 text-xs font-bold font-title shadow-inner flex items-center justify-center">
                   <span :class="budgetRemaining >= 0 ? 'text-mcu-primary drop-shadow-[0_0_10px_rgba(34,197,94,0.8)]' : 'text-red-500 drop-shadow-[0_0_10px_rgba(239,68,68,0.8)]'">{{ budgetRemaining }}</span>
                   <span class="text-white/40 ml-1">/ {{ maxBudget }}</span>
+                  <span v-if="isMercatoMode && saleCredit > 0" class="text-white/30 ml-1 text-[9px] uppercase">(+{{ saleCredit }} vente)</span>
                 </div>
               </div>
             </div>
@@ -1142,6 +1143,7 @@ const {
   isValid,
   budgetRemaining,
   maxBudget,
+  saleCredit,
   carriedOverBudget,
   previousRosterValue,
   transfersMade,
@@ -1152,7 +1154,8 @@ const {
   removePlayer,
   setCaptain,
   saveTeam,
-  saveTeamName
+  saveTeamName,
+  canAddPlayer,
 } = useFantasyTeam(currentUserId, tournamentDay);
 
 const budgetFlash = ref(false);

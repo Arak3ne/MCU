@@ -19,7 +19,9 @@ export function validateFantasyTeam(
   tournamentDay: 1 | 2 = 1,
   previousTeamRoster: string[] = [],
   carriedOverBudget: number = 0,
-  previousRosterValue: number = 0
+  previousRosterValue: number = 0,
+  /** Crédit mercato : valeur des joueurs vendus (snapshot ouverture) pas encore remplacés. */
+  saleCredit: number = 0,
 ): FantasyValidationResult {
   const errors: string[] = []
   let transfersMade = 0
@@ -50,7 +52,7 @@ export function validateFantasyTeam(
     }
 
     const baseMercatoBudget = carriedOverBudget + previousRosterValue
-    maxBudget = Math.max(0, baseMercatoBudget - penaltyPoints)
+    maxBudget = Math.max(0, baseMercatoBudget - penaltyPoints + saleCredit)
     if (totalCost > maxBudget) {
       errors.push(`Budget exceeded. Max is ${maxBudget}, used ${totalCost}`)
     }

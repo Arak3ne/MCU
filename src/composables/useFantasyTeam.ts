@@ -19,7 +19,58 @@ export function useFantasyTeam(userId: Ref<string | null>, tournamentDay: Ref<1 
   const validationResult = ref<ReturnType<typeof validateFantasyTeam> | null>(null)
   const validationErrors = computed(() => validationResult.value?.errors || [])
 
-  // Load team on initialization
+  /** Valeur J2 du roster J1 figée à l'ouverture du mercato. */
+  const initialMercatoRosterValue = ref(0)
+  /** Snapshot équipe au début de la session mercato (pour créditer les ventes). */
+  const initialMercatoSelection = ref<{ playerId: string; price: number }[]>([])
+
+  const snapshotInitialMercatoRosterValue = (allPlayers: FantasyPlayer[]) => {
+    if (tournamentDay.value !== 2 || !previousTeam.value?.playerIds?.length) {
+      initialMercatoRosterValue.value = 0
+      return
+    }
+    initialMercatoRosterValue.value = previousTeam.value.playerIds.reduce((sum, id) => {
+      const p = allPlayers.find((player) => player.id === id)
+      return sum + (p?.price ?? 0)
+    }, 0)
+  }
+
+  const snapshotInitialMercatoSelection = (reset = false) => {
+    if (tournamentDay.value !== 2) {
+      initialMercatoSelection.value = []
+      return
+    }
+    if (!reset && initialMercatoSelection.value.length > 0) return
+    initialMercatoSelection.value = selectedPlayers.value.map((p) => ({
+      playerId: p.id,
+      price: p.price,
+    }))
+  }
+
+  /** Somme des joueurs vendus depuis le snapshot d'ouverture (pas encore rachetés). */
+  const saleCredit = computed(() => {
+    const currentIds = new Set(selectedPlayers.value.map((p) => p.id))
+    return initialMercatoSelection.value
+      .filter((entry) => !currentIds.has(entry.playerId))
+      .reduce((sum, entry) => sum + entry.price, 0)
+  })
+
+  const mercatoBasePlafond = computed(() => {
+    const pen = validationResult.value?.penaltyPoints ?? 0
+    return Math.max(0, carriedOverBudget.value + initialMercatoRosterValue.value - pen)
+  })
+
+  const projectedBudgetUsed = (player: FantasyPlayer): number => {
+    const primaryRole = player.roles[0]?.toLowerCase()
+    const currentUsed = selectedPlayers.value.reduce((sum, p) => sum + p.price, 0)
+    if (!primaryRole) return currentUsed + player.price
+    const existing = selectedPlayers.value.find(
+      (p) => p.roles[0]?.toLowerCase() === primaryRole,
+    )
+    if (existing) return currentUsed - existing.price + player.price
+    return currentUsed + player.price
+  }
+
   const loadTeam = async () => {
     if (!userId.value) return
     
@@ -98,26 +149,21 @@ export function useFantasyTeam(userId: Ref<string | null>, tournamentDay: Ref<1 
     return Math.max(...candidates)
   })
 
-  const validate = (allPlayers: FantasyPlayer[]) => {
-    let previousRosterValue = 0
-    let carriedOverBudgetVal = carriedOverBudget.value
+  const validate = () => {
     let previousTeamRoster: string[] = []
 
-      if (tournamentDay.value === 2 && previousTeam.value) {
-        previousTeamRoster = previousTeam.value.playerIds
-        previousRosterValue = previousTeamRoster.reduce((sum, id) => {
-          const p = allPlayers.find(player => player.id === id)
-          return sum + (p ? p.price : 0)
-        }, 0)
-      }
+    if (tournamentDay.value === 2 && previousTeam.value) {
+      previousTeamRoster = previousTeam.value.playerIds
+    }
 
     validationResult.value = validateFantasyTeam(
       selectedPlayers.value,
       captainId.value,
       tournamentDay.value,
       previousTeamRoster,
-      carriedOverBudgetVal,
-      previousRosterValue
+      carriedOverBudget.value,
+      initialMercatoRosterValue.value,
+      saleCredit.value,
     )
   }
 
@@ -136,7 +182,9 @@ export function useFantasyTeam(userId: Ref<string | null>, tournamentDay: Ref<1 
       } else {
         selectedPlayers.value = []
       }
-      validate(allPlayers)
+      snapshotInitialMercatoRosterValue(allPlayers)
+      snapshotInitialMercatoSelection()
+      validate()
       return
     }
     
@@ -144,39 +192,53 @@ export function useFantasyTeam(userId: Ref<string | null>, tournamentDay: Ref<1 
       .map(id => allPlayers.find(p => p.id === id))
       .filter((p): p is FantasyPlayer => p !== undefined)
     
-    validate(allPlayers)
+    snapshotInitialMercatoRosterValue(allPlayers)
+    snapshotInitialMercatoSelection()
+    validate()
   }
 
-  const previousRosterValue = computed(() => {
-    if (tournamentDay.value === 2 && previousTeam.value) {
-      return previousTeam.value.playerIds.reduce((sum, id) => {
-        const p = knownPlayers.value.find(player => player.id === id)
-        return sum + (p ? p.price : 0)
-      }, 0)
-    }
-    return 0
-  })
+  const previousRosterValue = computed(() => initialMercatoRosterValue.value)
 
-  // Budget info
-  const budgetUsed = computed(() => validationResult.value?.totalCost ?? 0)
+  const budgetUsed = computed(() =>
+    selectedPlayers.value.reduce((sum, p) => sum + p.price, 0),
+  )
 
-  /** Jour 2 : même formule que validate – pénalité transferts retire du plafond mercato (en plus du score final). */
+  /** Jour 2 : reliquat + roster J1 + crédit ventes − pénalités. */
   const maxBudget = computed(() => {
     if (tournamentDay.value === 2 && previousTeam.value) {
-      const base = carriedOverBudget.value + previousRosterValue.value
-      const pen = validationResult.value?.penaltyPoints ?? 0
-      return Math.max(0, base - pen)
+      return mercatoBasePlafond.value + saleCredit.value
     }
     return validationResult.value?.maxBudget ?? MAX_BUDGET
   })
 
   const budgetRemaining = computed(() => maxBudget.value - budgetUsed.value)
 
-  /** Resync validation quand carry ou valeur roster jour 2 changent sans mouvement d’effectif (évite max figé uniquement Σ prix joueurs). */
-  watch([carriedOverBudget, previousRosterValue, tournamentDay], () => {
+  const canAffordPlayer = (player: FantasyPlayer): boolean => {
+    if (tournamentDay.value !== 2) return true
+    return projectedBudgetUsed(player) <= maxBudget.value
+  }
+
+  const canAddPlayer = (player: FantasyPlayer): boolean => {
+    if (team.value?.isLocked || !player.fantasyEnabled) return false
+    if (selectedPlayers.value.some((p) => p.id === player.id)) return false
+    const primaryRole = player.roles[0]?.toLowerCase()
+    const hasSameRole =
+      Boolean(primaryRole)
+      && selectedPlayers.value.some((p) => p.roles[0]?.toLowerCase() === primaryRole)
+    if (selectedPlayers.value.length >= 5 && !hasSameRole) return false
+    return canAffordPlayer(player)
+  }
+
+  watch(selectedPlayers, () => {
+    if (knownPlayers.value.length === 0) return
+    validate()
+  }, { deep: true })
+
+  /** Resync validation quand carry ou snapshot roster changent. */
+  watch([carriedOverBudget, initialMercatoRosterValue, tournamentDay], () => {
     if (knownPlayers.value.length === 0)
       return
-    validate(knownPlayers.value)
+    validate()
   })
   const transfersMade = computed(() => validationResult.value?.transfersMade ?? 0)
   const penaltyPoints = computed(() => validationResult.value?.penaltyPoints ?? 0)
@@ -184,21 +246,31 @@ export function useFantasyTeam(userId: Ref<string | null>, tournamentDay: Ref<1 
   // Actions
   const addPlayer = (player: FantasyPlayer) => {
     if (team.value?.isLocked) return
-    if (selectedPlayers.value.length >= 5) return
     if (selectedPlayers.value.some(p => p.id === player.id)) return
-    
-    // Enforce role limit on add to prevent UI confusion
+
     const primaryRole = player.roles[0]?.toLowerCase()
+    const nextSelection = [...selectedPlayers.value]
+
     if (primaryRole) {
-      const hasRole = selectedPlayers.value.some(p => p.roles[0]?.toLowerCase() === primaryRole)
-      if (hasRole) {
-        // Automatically remove the existing player with the same role
-        selectedPlayers.value = selectedPlayers.value.filter(p => p.roles[0]?.toLowerCase() !== primaryRole)
+      const sameRoleIndex = nextSelection.findIndex(
+        (p) => p.roles[0]?.toLowerCase() === primaryRole,
+      )
+      if (sameRoleIndex >= 0) {
+        nextSelection.splice(sameRoleIndex, 1)
+      } else if (nextSelection.length >= 5) {
+        return
       }
+    } else if (nextSelection.length >= 5) {
+      return
     }
-    
-    selectedPlayers.value.push(player)
-    validate(knownPlayers.value)
+
+    if (tournamentDay.value === 2 && projectedBudgetUsed(player) > maxBudget.value) {
+      return
+    }
+
+    nextSelection.push(player)
+    selectedPlayers.value = nextSelection
+    validate()
   }
 
   const removePlayer = (playerId: string) => {
@@ -207,7 +279,7 @@ export function useFantasyTeam(userId: Ref<string | null>, tournamentDay: Ref<1 
     if (captainId.value === playerId) {
       captainId.value = null
     }
-    validate(knownPlayers.value)
+    validate()
   }
 
   const setCaptain = (playerId: string) => {
@@ -215,7 +287,7 @@ export function useFantasyTeam(userId: Ref<string | null>, tournamentDay: Ref<1 
     if (selectedPlayers.value.some(p => p.id === playerId)) {
       captainId.value = playerId
     }
-    validate(knownPlayers.value)
+    validate()
   }
 
   const saveTeam = async () => {
@@ -250,6 +322,8 @@ export function useFantasyTeam(userId: Ref<string | null>, tournamentDay: Ref<1 
         carriedOverBudget: carriedOverBudget.value
       })
       team.value = saved
+      snapshotInitialMercatoSelection(true)
+      validate()
       return true
     } catch (err: any) {
       error.value = err.message || 'Failed to save team'
@@ -307,6 +381,8 @@ export function useFantasyTeam(userId: Ref<string | null>, tournamentDay: Ref<1 
     budgetUsed,
     budgetRemaining,
     maxBudget,
+    mercatoBasePlafond,
+    saleCredit,
     carriedOverBudget,
     previousRosterValue,
     transfersMade,
@@ -318,6 +394,8 @@ export function useFantasyTeam(userId: Ref<string | null>, tournamentDay: Ref<1 
     setCaptain,
     saveTeam,
     saveTeamName,
-    getLivePoints
+    getLivePoints,
+    canAffordPlayer,
+    canAddPlayer,
   }
 }
