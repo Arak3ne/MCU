@@ -264,14 +264,16 @@
           <p class="text-xs text-[#A1A1AA]">
             {{ fantasyDay2Stats.unlocked > 0
               ? `${fantasyDay2Stats.unlocked} équipe(s) encore en mercato.`
-              : fantasyDay2Stats.total === 0
-                ? 'Aucune équipe J2 (lancer initialize_day2_teams si besoin).'
-                : 'Toutes les équipes J2 sont verrouillées.' }}
+              : fantasyDay2Stats.total === 0 && fantasyDay1Stats.total > 0
+                ? `${fantasyDay1Stats.total} équipe(s) J1 seront promues en J2 au verrouillage.`
+                : fantasyDay2Stats.total === 0
+                  ? 'Aucune équipe J1 / J2.'
+                  : 'Toutes les équipes J2 sont verrouillées.' }}
           </p>
           <button
             type="button"
             @click="handleLockFantasyDay(2)"
-            :disabled="fantasyLockSaving !== null || fantasyDay2Stats.total === 0 || fantasyDay2Stats.unlocked === 0"
+            :disabled="fantasyLockSaving !== null || (fantasyDay2Stats.total === 0 && fantasyDay1Stats.total === 0) || (fantasyDay2Stats.total > 0 && fantasyDay2Stats.unlocked === 0)"
             class="cursor-pointer px-4 py-2.5 bg-amber-500/20 border border-amber-500/50 text-amber-300 font-bold rounded-sm hover:bg-amber-500/30 transition-colors text-sm disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -557,26 +559,46 @@ const loadFantasyLockStatus = async () => {
 const handleLockFantasyDay = async (day: 1 | 2) => {
   const stats = day === 1 ? fantasyDay1Stats.value : fantasyDay2Stats.value;
   const label = day === 1 ? 'Jour 1 (Championship)' : 'Jour 2 (Groupes + Knockout)';
+  const canPromoteDay1ToDay2 =
+    day === 2 && stats.total === 0 && fantasyDay1Stats.value.total > 0;
 
-  if (stats.total === 0) {
+  if (stats.total === 0 && !canPromoteDay1ToDay2) {
     showToast(`Aucune équipe Morue-verse pour le ${label}.`, 'error');
     return;
   }
 
-  if (stats.unlocked === 0) {
+  if (stats.unlocked === 0 && !canPromoteDay1ToDay2) {
     showToast(`Toutes les équipes ${label} sont déjà verrouillées.`, 'success');
     return;
   }
 
+  const unlockCount = canPromoteDay1ToDay2 ? fantasyDay1Stats.value.total : stats.unlocked;
+
   const confirmMsg =
     day === 1
-      ? `Verrouiller ${stats.unlocked} équipe(s) Morue-verse ${label} ?\n\nLes joueurs ne pourront plus modifier leur draft. Un snapshot budget mercato sera pris (comme au 1er match sync).`
-      : `Verrouiller ${stats.unlocked} équipe(s) Morue-verse ${label} ?\n\nLes joueurs ne pourront plus faire de transferts mercato.`;
+      ? `Verrouiller ${unlockCount} équipe(s) Morue-verse ${label} ?\n\nLes joueurs ne pourront plus modifier leur draft. Un snapshot budget mercato sera pris (comme au 1er match sync).`
+      : `Verrouiller ${unlockCount} équipe(s) Morue-verse ${label} ?\n\nLes équipes J1 sans ligne J2 seront créées automatiquement (roster J1 copié) avant verrouillage.`;
 
   if (!confirm(confirmMsg)) return;
 
   fantasyLockSaving.value = day;
   try {
+    if (day === 2) {
+      const { error: initErr } = await supabase.rpc('initialize_day2_teams');
+      if (initErr) throw initErr;
+      await loadFantasyLockStatus();
+    }
+
+    const refreshedStats = day === 1 ? fantasyDay1Stats.value : fantasyDay2Stats.value;
+    if (refreshedStats.total === 0) {
+      showToast(`Aucune équipe Morue-verse pour le ${label}.`, 'error');
+      return;
+    }
+    if (refreshedStats.unlocked === 0) {
+      showToast(`Toutes les équipes ${label} sont déjà verrouillées.`, 'success');
+      return;
+    }
+
     const { data, error } = await supabase
       .from('fantasy_teams')
       .update({ is_locked: true, updated_at: new Date().toISOString() })

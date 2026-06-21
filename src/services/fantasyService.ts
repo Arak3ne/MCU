@@ -144,6 +144,20 @@ export const fantasyService = {
     return team
   },
 
+  /**
+   * Crée la ligne J2 + picks copiés depuis J1 si le joueur n'a pas encore ouvert le mercato.
+   */
+  async ensureDay2TeamForUser(userId: string): Promise<FantasyTeam | null> {
+    const { error } = await supabase.rpc('ensure_day2_team_for_user', {
+      p_user_id: userId,
+    })
+    if (error) {
+      console.error('Error ensuring day 2 fantasy team:', error)
+      throw error
+    }
+    return this.getTeam(userId, 2)
+  },
+
   async getDay1BaseTotal(
     userId: string,
     day1Scores?: Record<string, number>,

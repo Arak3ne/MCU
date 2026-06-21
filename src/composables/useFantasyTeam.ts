@@ -59,14 +59,16 @@ export function useFantasyTeam(userId: Ref<string | null>, tournamentDay: Ref<1 
       // Always try to load Day 1 team to have it as reference for Day 2 transfers/budget
       previousTeam.value = await fantasyService.getTeam(userId.value, 1)
 
-      const fetchedTeam = await fantasyService.getTeam(userId.value, tournamentDay.value)
+      let fetchedTeam = await fantasyService.getTeam(userId.value, tournamentDay.value)
+      if (!fetchedTeam && tournamentDay.value === 2 && previousTeam.value) {
+        fetchedTeam = await fantasyService.ensureDay2TeamForUser(userId.value)
+      }
+
       if (fetchedTeam) {
         team.value = fetchedTeam
         captainId.value = fetchedTeam.captainId
         teamName.value = fetchedTeam.name
       } else {
-        // If Day 2 team doesn't exist but Day 1 does, we might want to initialize it or just show empty
-        // The initialize_day2_teams() SQL function handles the migration, but we can also handle the fallback here
         team.value = null
         selectedPlayers.value = []
         captainId.value = null

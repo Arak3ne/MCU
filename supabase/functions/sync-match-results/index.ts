@@ -31,6 +31,13 @@ async function lockFantasyTeamsForDay(
   supabase: ReturnType<typeof createClient>,
   tournamentDay: 1 | 2,
 ): Promise<void> {
+  if (tournamentDay === 2) {
+    const { error: initErr } = await supabase.rpc('initialize_day2_teams')
+    if (initErr) {
+      console.error(`initialize_day2_teams before lock: ${initErr.message}`)
+    }
+  }
+
   const { error: lockError } = await supabase
     .from('fantasy_teams')
     .update({ is_locked: true })
@@ -209,7 +216,7 @@ Deno.serve(async (req) => {
     const identities = (matchData.participantIdentities as any[]) || []
 
     const participantRecords = []
-    const playerScoresToUpdate = []
+    const matchedPlayerIds = new Set<string>()
 
     for (let i = 0; i < participants.length; i++) {
       const p = participants[i] as {
@@ -246,32 +253,6 @@ Deno.serve(async (req) => {
       const damage = Number(s.totalDamageDealtToChampions) || 0
       const gold = Number(s.goldEarned) || 0
       const timeDead = readTotalTimeSpentDead(s as Record<string, unknown>, participantRow)
-      
-      let points = 
-        (kills * 3) + 
-        (assists * 2) - 
-        (deaths * 1) + 
-        (cs * 0.02) + 
-        (win ? 5 : -2) + 
-        (firstBlood ? 2 : 0) + 
-        (vision * 0.1) + 
-        (damage * 0.001) + 
-        (gold * 0.001)
-
-      // Trash-talk / Punitive bonuses & penalties
-      if (deaths >= 10) {
-        points -= 10; // "Inter" penalty
-      }
-      
-      if (kills === 0 && assists === 0 && deaths > 0) {
-        points -= 5; // "Agent 007" or completely useless penalty
-      } else if ((kills + assists) < deaths) {
-        points -= 5; // "Le Boulet" (Dead Weight) penalty
-      }
-      
-      if (kills >= 10) {
-        points += 3; // "Carry" bonus
-      }
 
       const participantRecord = {
         match_id: matchId,
@@ -299,11 +280,7 @@ Deno.serve(async (req) => {
       participantRecords.push(participantRecord)
 
       if (playerId) {
-        playerScoresToUpdate.push({
-          playerId: playerId,
-          points: points,
-          tournamentDay,
-        })
+        matchedPlayerIds.add(playerId)
       }
     }
 
@@ -317,37 +294,11 @@ Deno.serve(async (req) => {
       throw new Error(`Failed to insert participants: ${partError.message}`)
     }
 
-    // Update fantasy_player_scores
-    for (const update of playerScoresToUpdate) {
-      const { data: existingScore, error: scoreLookupError } = await supabase
-        .from('fantasy_player_scores')
-        .select('id, score')
-        .eq('player_id', update.playerId)
-        .eq('tournament_day', update.tournamentDay)
-        .maybeSingle()
-
-      if (scoreLookupError) {
-        console.error(`fantasy_player_scores lookup: ${scoreLookupError.message}`)
-        continue
-      }
-
-      if (existingScore) {
-        const newScore = parseFloat(existingScore.score) + update.points
-        await supabase
-          .from('fantasy_player_scores')
-          .update({ score: newScore })
-          .eq('id', existingScore.id)
-      } else {
-        // Si le joueur n'a pas encore de score pour ce jour, on l'initialise
-        await supabase
-          .from('fantasy_player_scores')
-          .insert({
-            player_id: update.playerId,
-            tournament_day: update.tournamentDay,
-            score: update.points,
-            validated: true // On fait confiance au client LCU
-          })
-      }
+    // Recalc depuis match_participants (barème unique, pas d'addition incrémentale).
+    const { error: recalcErr } = await supabase.rpc('recalculate_fantasy_scores_from_matches')
+    if (recalcErr) {
+      console.error(`recalculate_fantasy_scores_from_matches: ${recalcErr.message}`)
+      throw new Error(`Failed to recalculate fantasy scores: ${recalcErr.message}`)
     }
 
     await lockFantasyTeamsForDay(supabase, tournamentDay)
@@ -357,7 +308,7 @@ Deno.serve(async (req) => {
         success: true, 
         message: `Match ${gameId} processed successfully!`,
         tournament_day: tournamentDay,
-        players_found: playerScoresToUpdate.length
+        players_found: matchedPlayerIds.size
       }),
       { 
         headers: { ...corsHeaders, "Content-Type": "application/json" },
